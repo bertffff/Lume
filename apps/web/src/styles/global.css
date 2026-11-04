@@ -206,6 +206,13 @@ button {
   border-radius: inherit;
 }
 
+.tr-thumb {
+  width: 72px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 .tr-empty {
   margin: 0;
   padding: 12px;

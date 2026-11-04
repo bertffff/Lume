@@ -26,6 +26,11 @@ export interface MediaExtractor {
   resolve(input: string): Promise<ResolvedMedia>;
 }
 
+/** Off unless FF_EXTRACTORS is exactly `1` or `true`. Embed playback does not use this. */
+export function extractorsEnabled(flag: string | undefined): boolean {
+  return flag === "1" || flag === "true";
+}
+
 export class ExtractorRegistry {
   constructor(private readonly extractors: readonly MediaExtractor[]) {}
 

@@ -1,8 +1,15 @@
-import { embedSrc, type PlaybackSnapshot } from "@lume/contracts";
-import { useEffect, useRef, useState } from "react";
+import {
+  shouldCorrectDrift,
+  positionAt,
+  type AdapterPhase,
+  type PlaybackSnapshot,
+  type PlayerAdapter,
+} from "@lume/contracts";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n/context.js";
 import { containSize } from "../contain.js";
-import { commandEmbed } from "../../player/command.js";
+import { createPlayerAdapter } from "../../player/create.js";
+import { useFollowSync } from "../../player/useFollowSync.js";
 import { useRoomActions } from "../../room/live.js";
 
 const aspects = [
@@ -30,17 +37,33 @@ export function PlayerPanel({
   onAspect,
 }: {
   aspect: number;
-  synced: boolean;
+  synced?: boolean;
   onAspect: (aspect: number) => void;
 }) {
   const { t } = useI18n();
   const live = useRoomActions();
   const frameRef = useRef<HTMLDivElement>(null);
-  const embedRef = useRef<HTMLIFrameElement>(null);
+  const mountRef = useRef<HTMLDivElement>(null);
+  const adapterRef = useRef<PlayerAdapter | null>(null);
+  const phaseRef = useRef<AdapterPhase>("idle");
   const [box, setBox] = useState({ width: 0, height: 0 });
+  const [limited, setLimited] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const current = nearestAspect(aspect);
   const playback: PlaybackSnapshot | null = live?.state.playback ?? null;
   const nowPlaying = live?.state.room.nowPlaying ?? null;
+  const reportedAspect = useRef(aspect);
+  const reportViewerRef = useRef(live?.reportViewer);
+  const canControlRef = useRef(live?.canControl);
+  const setPlaybackRef = useRef(live?.setPlayback);
+  reportViewerRef.current = live?.reportViewer;
+  canControlRef.current = live?.canControl;
+  setPlaybackRef.current = live?.setPlayback;
+  const onBlocked = useCallback(() => setBlocked(true), []);
+  const playbackStatusRef = useRef(playback?.status);
+  playbackStatusRef.current = playback?.status;
+  const onAspectRef = useRef(onAspect);
+  onAspectRef.current = onAspect;
 
   useEffect(() => {
     const element = frameRef.current;
@@ -58,16 +81,89 @@ export function PlayerPanel({
   }, [aspect]);
 
   useEffect(() => {
-    if (!nowPlaying || !playback) {
+    const mount = mountRef.current;
+    if (!mount || !nowPlaying) {
+      adapterRef.current?.destroy();
+      adapterRef.current = null;
       return;
     }
-    commandEmbed(
-      embedRef.current,
-      nowPlaying.provider,
-      playback.status === "playing" ? "play" : "pause",
-      playback.positionMs,
-    );
-  }, [nowPlaying?.id, nowPlaying?.provider, playback?.version, playback?.status, playback?.positionMs]);
+    let cancelled = false;
+    setLimited(false);
+    setBlocked(false);
+    void createPlayerAdapter(nowPlaying, mount, window.location.hostname)
+      .then((adapter) => {
+        if (cancelled) {
+          adapter.destroy();
+          return;
+        }
+        adapterRef.current = adapter;
+        setLimited(adapter.limited);
+        adapter.onState((state) => {
+          phaseRef.current = state.phase;
+          if (canControlRef.current && playbackStatusRef.current === "playing" && state.phase === "ready") {
+            void adapter.play();
+          }
+          if (
+            state.aspectRatio &&
+            state.aspectRatio > 0 &&
+            Math.abs(state.aspectRatio - reportedAspect.current) > 0.04
+          ) {
+            reportedAspect.current = state.aspectRatio;
+            onAspectRef.current(state.aspectRatio);
+          }
+          if (
+            !canControlRef.current &&
+            (state.phase === "buffering" || state.phase === "ready" || state.phase === "playing")
+          ) {
+            reportViewerRef.current?.(state.phase === "buffering" ? "buffering" : "ready");
+          }
+        });
+      })
+      .catch(() => {
+        phaseRef.current = "error";
+      });
+    return () => {
+      cancelled = true;
+      adapterRef.current?.destroy();
+      adapterRef.current = null;
+    };
+  }, [nowPlaying]);
+
+  useFollowSync({
+    enabled: Boolean(live && !live.canControl && playback),
+    playback,
+    offsetMs: live?.offsetMs ?? 0,
+    adapterRef,
+    phaseRef,
+    onBlocked,
+  });
+
+  useEffect(() => {
+    if (!live?.canControl || !playback || playback.status !== "playing") {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      const adapter = adapterRef.current;
+      if (!adapter) {
+        return;
+      }
+      const predicted = positionAt(
+        {
+          status: playback.status,
+          anchorPositionMs: playback.anchorPositionMs,
+          anchorServerTimeMs: playback.anchorServerTimeMs,
+          version: playback.version,
+          updatedBy: playback.updatedBy,
+        },
+        Date.now() + (live.offsetMs ?? 0),
+      );
+      const actual = adapter.getCurrentTime();
+      if (shouldCorrectDrift(actual, predicted)) {
+        setPlaybackRef.current?.("seek", Math.max(0, Math.round(actual)));
+      }
+    }, 5_000);
+    return () => window.clearInterval(timer);
+  }, [live?.canControl, live?.offsetMs, playback]);
 
   function cycleAspect() {
     const index = aspects.findIndex((item) => item.id === current.id);
@@ -77,8 +173,54 @@ export function PlayerPanel({
     }
   }
 
+  async function toggle() {
+    const adapter = adapterRef.current;
+    if (!live) {
+      return;
+    }
+    if (playback?.status === "playing") {
+      const position = Math.round(adapter?.getCurrentTime() ?? live.positionMs);
+      live.setPlayback("pause", position);
+      await adapter?.pause();
+      return;
+    }
+    const position = Math.round(adapter?.getCurrentTime() ?? 0);
+    live.setPlayback("play", position);
+    if (!adapter) {
+      return;
+    }
+    try {
+      await adapter.play();
+      setBlocked(false);
+    } catch {
+      setBlocked(true);
+    }
+  }
+
+  async function seekForward() {
+    const adapter = adapterRef.current;
+    const base = adapter?.getCurrentTime() ?? live?.positionMs ?? 0;
+    const next = Math.round(base + 15_000);
+    await adapter?.seek(next);
+    live?.setPlayback("seek", next);
+  }
+
+  async function unblock() {
+    try {
+      await adapterRef.current?.play();
+      setBlocked(false);
+    } catch {
+      setBlocked(true);
+    }
+  }
+
   const playing = playback?.status === "playing";
   const label = `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock((live?.positionMs ?? 0) / 1000)}`;
+  const bufferingNames =
+    live?.state.viewers
+      .filter((viewer) => viewer.phase === "buffering")
+      .map((viewer) => live.state.members.find((member) => member.userId === viewer.userId)?.displayName ?? viewer.userId) ??
+    [];
 
   return (
     <section className="tr-panel tr-player" aria-label={t("player.stage")}>
@@ -91,14 +233,7 @@ export function PlayerPanel({
       <div className="tr-frame" ref={frameRef}>
         <div className="tr-stage" style={{ width: box.width, height: box.height }}>
           {nowPlaying ? (
-            <iframe
-              ref={embedRef}
-              className="tr-embed"
-              src={embedSrc(nowPlaying, window.location.hostname)}
-              title={nowPlaying.title}
-              allow="autoplay; fullscreen; encrypted-media"
-              allowFullScreen
-            />
+            <div ref={mountRef} className="tr-embed" data-testid="player-mount" />
           ) : (
             <p className="tr-empty">{t("player.empty")}</p>
           )}
@@ -107,10 +242,15 @@ export function PlayerPanel({
               type="button"
               className="tr-play"
               data-testid="playback-play"
-              onClick={live.togglePlayback}
+              onClick={() => void toggle()}
               aria-label={playing ? t("player.pause") : t("player.play")}
             >
               {playing ? "II" : "▶"}
+            </button>
+          ) : null}
+          {blocked ? (
+            <button type="button" className="tr-play" onClick={() => void unblock()}>
+              {t("player.unblock")}
             </button>
           ) : null}
         </div>
@@ -120,11 +260,17 @@ export function PlayerPanel({
           {t("player.aspect")} {current.id}
         </button>
         {live?.canControl ? (
-          <button type="button" className="tr-text-button" onClick={live.seekForward}>
+          <button type="button" className="tr-text-button" onClick={() => void seekForward()}>
             {t("player.seek")}
           </button>
         ) : null}
         {nowPlaying ? <span>{nowPlaying.title}</span> : null}
+        {limited ? <span className="tr-chip">{t("player.limited")}</span> : null}
+        {bufferingNames.length > 0 ? (
+          <span className="tr-chip" data-testid="buffering-list">
+            {t("player.buffering")}: {bufferingNames.join(", ")}
+          </span>
+        ) : null}
       </footer>
     </section>
   );

@@ -32,6 +32,7 @@ export interface LiveRoom {
   messages: ChatMessage[];
   queue: QueueItem[];
   playback: PlaybackSnapshot;
+  viewers: { userId: string; phase: "buffering" | "ready" }[];
 }
 
 export type ChannelStatus = "off" | "connecting" | "online" | "error";
@@ -70,7 +71,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
         client.on("room:state", (payload: unknown) => {
           const parsed = stateSchema.safeParse(payload);
           if (parsed.success) {
-            setState(parsed.data);
+            setState({ ...parsed.data, viewers: [] });
           }
         });
         client.on("room:presence", (payload: unknown) => {
@@ -144,6 +145,17 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
               : current,
           );
         });
+        client.on("playback:viewers", (payload: unknown) => {
+          const parsed = z
+            .object({
+              viewers: z.array(z.object({ userId: z.string(), phase: z.enum(["buffering", "ready"]) })),
+            })
+            .safeParse(payload);
+          if (!parsed.success) {
+            return;
+          }
+          setState((current) => (current ? { ...current, viewers: parsed.data.viewers } : current));
+        });
         client.on("room:error", (payload: unknown) => {
           const parsed = z.object({ code: z.string() }).safeParse(payload);
           if (parsed.success) {
@@ -196,22 +208,18 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       }
       emit("queue:next", { roomId });
     },
-    togglePlayback() {
-      if (!roomId || !state) {
+    setPlayback(mode: "play" | "pause" | "seek", positionMs: number) {
+      if (!roomId) {
         return;
       }
-      const event = state.playback.status === "playing" ? "playback:pause" : "playback:play";
-      emit(event, { roomId, clientTimeMs: Date.now() });
+      const event = mode === "seek" ? "playback:seek" : mode === "play" ? "playback:play" : "playback:pause";
+      emit(event, { roomId, clientTimeMs: Date.now(), positionMs: Math.max(0, Math.round(positionMs)) });
     },
-    seekForward() {
-      if (!roomId || !state) {
+    reportViewer(phase: "buffering" | "ready") {
+      if (!roomId) {
         return;
       }
-      emit("playback:seek", {
-        roomId,
-        clientTimeMs: Date.now(),
-        positionMs: state.playback.positionMs + 15_000,
-      });
+      emit("playback:viewer", { roomId, phase });
     },
     kick(userId: string) {
       if (!roomId) {

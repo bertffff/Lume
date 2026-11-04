@@ -8,6 +8,7 @@ export const queueItemSchema = z.object({
   provider: embedProviderSchema,
   externalId: z.string().min(1),
   title: z.string().min(1),
+  thumbnailUrl: z.string().min(1).nullable(),
   position: z.number().int().nonnegative(),
   addedById: z.string().min(1),
 });

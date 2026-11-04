@@ -11,6 +11,7 @@ import {
   playbackCommandSchema,
   playbackSeekSchema,
   playbackSyncRequestSchema,
+  playbackViewerSchema,
   queueAddSchema,
   roomJoinSchema,
   roomLeaveSchema,
@@ -23,6 +24,7 @@ import type { RealtimeEnv } from "../env.js";
 import type { RedisPair } from "../redis.js";
 import { commitPlayback, readPlayback, snapshotFor } from "../rooms/playback.js";
 import { joinRoom, leaveRoom, listMembers } from "../rooms/presence.js";
+import { listViewerPhases, setViewerPhase, clearViewerPhase } from "../rooms/viewers.js";
 import { ApiFailure, createRoomApi, type RoomApi, type RoomSession } from "./api.js";
 
 interface Binding {
@@ -126,6 +128,9 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
     });
     socket.on("playback:sync", (payload: unknown) => {
       void sync(redis, socket, payload);
+    });
+    socket.on("playback:viewer", (payload: unknown) => {
+      void reportViewer(io, redis, socket, payload);
     });
     socket.on("clock:ping", (payload: unknown) => {
       const t1 = Date.now();
@@ -236,7 +241,15 @@ async function control(
     fail(socket, { code: "forbidden", message: "only the host or a mod moves playback" });
     return;
   }
-  const result = await commitPlayback(redis.pub, parsed.data.roomId, { ...op, actorId: actor.userId });
+  const result = await commitPlayback(
+    redis.pub,
+    parsed.data.roomId,
+    op.type === "seek"
+      ? { type: "seek", actorId: actor.userId, positionMs: op.positionMs }
+      : parsed.data.positionMs === undefined
+        ? { type: op.type, actorId: actor.userId }
+        : { type: op.type, actorId: actor.userId, positionMs: parsed.data.positionMs },
+  );
   if (result === "version_conflict") {
     fail(socket, { code: "version_conflict", message: "playback write lost the race" });
     return;
@@ -429,8 +442,23 @@ async function onDisconnect(io: Server, redis: RedisPair | null, socket: Socket)
 async function depart(io: Server, redis: RedisPair, socket: Socket, roomId: string, userId: string): Promise<void> {
   bindings.delete(socket.id);
   await socket.leave(roomId);
+  await clearViewerPhase(redis.pub, roomId, userId);
   const members = await leaveRoom(redis.pub, roomId, userId);
   io.to(roomId).emit("room:presence", { roomId, members });
+  io.to(roomId).emit("playback:viewers", { roomId, viewers: await listViewerPhases(redis.pub, roomId) });
+}
+
+async function reportViewer(io: Server, redis: RedisPair | null, socket: Socket, payload: unknown): Promise<void> {
+  const parsed = playbackViewerSchema.safeParse(payload);
+  const actor = actorOf(socket);
+  if (!parsed.success || !actor || !redis) {
+    return;
+  }
+  await setViewerPhase(redis.pub, parsed.data.roomId, actor.userId, parsed.data.phase);
+  io.to(parsed.data.roomId).emit("playback:viewers", {
+    roomId: parsed.data.roomId,
+    viewers: await listViewerPhases(redis.pub, parsed.data.roomId),
+  });
 }
 
 async function roleOf(redis: RedisPair, roomId: string, userId: string): Promise<MemberRole | null> {

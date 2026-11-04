@@ -50,6 +50,7 @@ export function QueuePanel({
       <ol className="tr-queue">
         {items.map((item) => (
           <li key={item.id} className={item.id === currentId ? "is-current" : undefined}>
+            {item.thumbnailUrl ? <img className="tr-thumb" src={item.thumbnailUrl} alt="" /> : null}
             <span>{item.id === currentId ? t("queue.nowPlaying") : item.provider}</span>
             {item.title}
           </li>

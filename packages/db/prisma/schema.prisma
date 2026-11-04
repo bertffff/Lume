@@ -162,6 +162,7 @@ model QueueItem {
   provider       String
   externalId     String
   title          String
+  thumbnail      String?
   position       Int
   addedById      String
   played         Boolean  @default(false)

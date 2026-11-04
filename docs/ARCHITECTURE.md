@@ -77,7 +77,7 @@ ownerIndex = FNV-1a(roomId) % REALTIME_REPLICA_COUNT
 
 ## Экстракторы
 
-`MediaExtractor` и `ExtractorRegistry` описаны в контрактах. Реестр worker пустой, задача `media.resolve` возвращает `no_extractor`. yt-dlp не подключаем, пока нет решения, где ему жить и какие источники разрешены.
+`MediaExtractor` остаётся пустым. `media.resolve` возвращает `no_extractor`, пока переменная `FF_EXTRACTORS` не равна `true` или `1`. Даже с флагом реестр пуст: yt-dlp в эту фазу не входит. Матрица embed-плееров — в [PLAYERS.md](PLAYERS.md).
 
 ## База
 

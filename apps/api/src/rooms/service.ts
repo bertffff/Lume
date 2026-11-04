@@ -2,6 +2,7 @@ import {
   canActOnMember,
   canAssignRole,
   canControlPlayback,
+  mediaFallbackTitle,
   parseEmbedInput,
   roomOverMemberCap,
   type ChatMessage,
@@ -41,7 +42,12 @@ export interface RoomDetail {
   queue: QueueItem[];
 }
 
-export type TitleResolver = (item: ParsedEmbed) => Promise<string | null>;
+export interface ResolvedMeta {
+  title: string | null;
+  thumbnailUrl: string | null;
+}
+
+export type TitleResolver = (item: ParsedEmbed) => Promise<ResolvedMeta | null>;
 
 function active(members: readonly MemberRecord[]): MemberRecord[] {
   return members.filter((member) => member.leftAt === null);
@@ -55,6 +61,7 @@ function toQueueItem(item: QueueRecord): QueueItem {
     provider: item.provider,
     externalId: item.externalId,
     title: item.title,
+    thumbnailUrl: item.thumbnailUrl,
     position: item.position,
     addedById: item.addedById,
   };
@@ -244,7 +251,8 @@ export class RoomService {
     if (!parsed) {
       throw new RoomFailure("invalid_media");
     }
-    const title = (await this.titles(parsed)) ?? parsed.titleHint;
+    const meta = await this.titles(parsed);
+    const title = meta?.title?.trim() || mediaFallbackTitle(parsed.url);
     const queue = await this.repo.listQueue(roomId);
     const last = queue[queue.length - 1];
     await this.repo.insertQueueItem({
@@ -254,6 +262,7 @@ export class RoomService {
       provider: parsed.provider,
       externalId: parsed.externalId,
       title,
+      thumbnailUrl: meta?.thumbnailUrl ?? null,
       position: (last?.position ?? 0) + 1,
       addedById: actor.userId,
       played: false,

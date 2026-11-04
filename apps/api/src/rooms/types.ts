@@ -38,6 +38,7 @@ export interface QueueRecord {
   provider: EmbedProvider;
   externalId: string;
   title: string;
+  thumbnailUrl: string | null;
   position: number;
   addedById: string;
   played: boolean;

@@ -58,7 +58,29 @@ export {
   type PlaybackStatus,
 } from "./playback.js";
 export { decideCas } from "./decide-cas.js";
-export { embedSrc, oEmbedEndpoint, parseEmbedInput, embedProviderSchema, type EmbedProvider, type ParsedEmbed } from "./embed.js";
+export {
+  embedProviderSchema,
+  embedSrc,
+  isHlsUrl,
+  mediaFallbackTitle,
+  oEmbedEndpoint,
+  parseEmbedInput,
+  playerKind,
+  type EmbedProvider,
+  type ParsedEmbed,
+  type PlayerKind,
+} from "./embed.js";
+export { extractorsEnabled } from "./extractors.js";
+export {
+  planFollowerSync,
+  shouldCorrectDrift,
+  SYNC_DRIFT_MS,
+  adapterPhases,
+  type AdapterPhase,
+  type FollowerSyncPlan,
+  type PlayerAdapter,
+  type PlayerObservation,
+} from "./player.js";
 export { chatMessageSchema, chatReactSchema, chatSendSchema, type ChatMessage } from "./chat.js";
 export { queueAddSchema, queueItemSchema, queueNextSchema, type QueueItem } from "./queue.js";
 export {
@@ -77,6 +99,7 @@ export {
   clockPongSchema,
   playbackCommandSchema,
   playbackSeekSchema,
+  playbackViewerSchema,
   playbackSnapshotSchema,
   playbackSyncRequestSchema,
   presenceMemberSchema,

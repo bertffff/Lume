@@ -26,6 +26,7 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   await host.getByTestId("queue-add").click();
   await expect(host.locator(".tr-queue li")).toHaveCount(1, { timeout: 15_000 });
   await host.getByTestId("queue-next").click();
+  await expect(host.getByTestId("player-mount")).toBeVisible();
   await host.getByTestId("playback-play").click();
   await expect(guest.getByTestId("playback-status")).toContainText(/идёт|playing/, { timeout: 15_000 });
 

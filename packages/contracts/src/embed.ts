@@ -94,7 +94,38 @@ export function parseEmbedInput(input: string): ParsedEmbed | null {
       return { provider: "vimeo", externalId: id, url: original, titleHint: `Vimeo ${id}` };
     }
   }
-  return { provider: "direct", externalId: original, url: original, titleHint: original.slice(0, 80) };
+  return {
+    provider: "direct",
+    externalId: original,
+    url: original,
+    titleHint: host,
+  };
+}
+
+export function isHlsUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith(".m3u8");
+  } catch {
+    return url.toLowerCase().includes(".m3u8");
+  }
+}
+
+export type PlayerKind = EmbedProvider | "hls" | "file";
+
+/** Which adapter should mount. Direct URLs split into HLS and a plain file. */
+export function playerKind(item: { provider: EmbedProvider; url: string }): PlayerKind {
+  if (item.provider !== "direct") {
+    return item.provider;
+  }
+  return isHlsUrl(item.url) ? "hls" : "file";
+}
+
+export function mediaFallbackTitle(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url.slice(0, 80);
+  }
 }
 
 export function embedSrc(

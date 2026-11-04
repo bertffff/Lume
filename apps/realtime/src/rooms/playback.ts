@@ -42,8 +42,8 @@ return {'ok', ARGV[2]}
 `;
 
 export type PlaybackOp =
-  | { type: "play"; actorId: string }
-  | { type: "pause"; actorId: string }
+  | { type: "play"; actorId: string; positionMs?: number }
+  | { type: "pause"; actorId: string; positionMs?: number }
   | { type: "seek"; actorId: string; positionMs: number };
 
 function isAnchor(value: unknown): value is PlaybackAnchor {
@@ -85,13 +85,15 @@ export function snapshotFor(
 }
 
 function nextAnchor(current: PlaybackAnchor, op: PlaybackOp, serverNowMs: number): PlaybackAnchor {
+  const reported =
+    op.positionMs === undefined ? current : applySeek(current, op.actorId, serverNowMs, op.positionMs);
   if (op.type === "play") {
-    return applyPlay(current, op.actorId, serverNowMs);
+    return applyPlay(reported, op.actorId, serverNowMs);
   }
   if (op.type === "pause") {
-    return applyPause(current, op.actorId, serverNowMs);
+    return applyPause(reported, op.actorId, serverNowMs);
   }
-  return applySeek(current, op.actorId, serverNowMs, op.positionMs);
+  return reported;
 }
 
 export async function commitPlayback(

@@ -14,6 +14,12 @@ export const roomLeaveSchema = z.object({
 export const playbackCommandSchema = z.object({
   roomId: z.string().min(1),
   clientTimeMs: z.number().int().nonnegative(),
+  positionMs: z.number().int().nonnegative().optional(),
+});
+
+export const playbackViewerSchema = z.object({
+  roomId: z.string().min(1),
+  phase: z.enum(["buffering", "ready"]),
 });
 
 export const playbackSeekSchema = playbackCommandSchema.extend({
@@ -97,6 +103,7 @@ export const clientEventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("playback:seek"), payload: playbackSeekSchema }),
   z.object({ event: z.literal("playback:sync"), payload: playbackSyncRequestSchema }),
   z.object({ event: z.literal("clock:ping"), payload: clockPingSchema }),
+  z.object({ event: z.literal("playback:viewer"), payload: playbackViewerSchema }),
   z.object({ event: z.literal("chat:send"), payload: chatSendSchema }),
   z.object({ event: z.literal("chat:react"), payload: chatReactSchema }),
   z.object({ event: z.literal("queue:add"), payload: queueAddSchema }),

@@ -9,3 +9,7 @@ export function presenceKey(roomId: string): string {
 export function playbackKey(roomId: string): string {
   return `lume:room:${roomId}:playback`;
 }
+
+export function viewerKey(roomId: string): string {
+  return `lume:room:${roomId}:viewers`;
+}

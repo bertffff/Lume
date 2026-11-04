@@ -5,14 +5,15 @@ import type { LiveRoom } from "../realtime/useRoomChannel.js";
 export interface RoomActions {
   state: LiveRoom;
   positionMs: number;
+  offsetMs: number;
   canControl: boolean;
   selfId: string;
   sendChat: (body: string, replyToId?: string | null) => void;
   react: (messageId: string, emoji: string) => void;
   addQueue: (url: string) => void;
   playNext: () => void;
-  togglePlayback: () => void;
-  seekForward: () => void;
+  setPlayback: (mode: "play" | "pause" | "seek", positionMs: number) => void;
+  reportViewer: (phase: "buffering" | "ready") => void;
   kick: (userId: string) => void;
   mute: (userId: string, muted: boolean) => void;
   promote: (userId: string) => void;
