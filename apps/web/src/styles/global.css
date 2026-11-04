@@ -168,10 +168,48 @@ button {
   color: var(--lume-muted);
 }
 
-.tr-lobby form {
+.tr-lobby form,
+.tr-lobby-grid {
   display: grid;
   gap: 14px;
   margin-top: 24px;
+}
+
+.tr-lobby-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.tr-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tr-public-list,
+.tr-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tr-banner {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lume-accent) 18%, transparent);
+}
+
+.tr-embed {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
+}
+
+.tr-empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--lume-muted);
 }
 
 .tr-lobby label {

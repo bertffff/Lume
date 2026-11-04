@@ -13,6 +13,7 @@
   "dependencies": {
     "@fastify/cors": "11.4.0",
     "@lume/contracts": "workspace:*",
+    "@lume/db": "workspace:*",
     "fastify": "5.12.8",
     "jose": "6.2.15",
     "livekit-server-sdk": "2.19.2",

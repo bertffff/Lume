@@ -8,8 +8,18 @@ import {
   type PlaybackAnchor,
   type PlaybackSnapshot,
 } from "@lume/contracts";
-import type { Redis } from "ioredis";
 import { playbackKey } from "./keys.js";
+
+interface PlaybackRedis {
+  get(key: string): Promise<string | null>;
+  eval(
+    script: string,
+    numKeys: number,
+    key: string,
+    expected: string,
+    nextJson: string,
+  ): Promise<unknown>;
+}
 
 const CAS_LUA = `
 local raw = redis.call('GET', KEYS[1])
@@ -62,7 +72,7 @@ function parseAnchor(raw: string | null): PlaybackAnchor | null {
   }
 }
 
-export async function readPlayback(redis: Redis, roomId: string): Promise<PlaybackAnchor | null> {
+export async function readPlayback(redis: PlaybackRedis, roomId: string): Promise<PlaybackAnchor | null> {
   return parseAnchor(await redis.get(playbackKey(roomId)));
 }
 
@@ -85,7 +95,7 @@ function nextAnchor(current: PlaybackAnchor, op: PlaybackOp, serverNowMs: number
 }
 
 export async function commitPlayback(
-  redis: Redis,
+  redis: PlaybackRedis,
   roomId: string,
   op: PlaybackOp,
 ): Promise<PlaybackSnapshot | "version_conflict"> {

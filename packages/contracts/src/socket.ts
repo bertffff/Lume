@@ -1,19 +1,18 @@
 import { z } from "zod";
+import { chatReactSchema, chatSendSchema } from "./chat.js";
+import { queueAddSchema, queueNextSchema } from "./queue.js";
+import { memberRoleSchema } from "./roles.js";
 
 export const roomJoinSchema = z.object({
   roomId: z.string().min(1).max(80),
-  userId: z.string().min(1),
-  displayName: z.string().min(1).max(80),
 });
 
 export const roomLeaveSchema = z.object({
   roomId: z.string().min(1).max(80),
-  userId: z.string().min(1),
 });
 
 export const playbackCommandSchema = z.object({
   roomId: z.string().min(1),
-  userId: z.string().min(1),
   clientTimeMs: z.number().int().nonnegative(),
 });
 
@@ -23,7 +22,6 @@ export const playbackSeekSchema = playbackCommandSchema.extend({
 
 export const playbackSyncRequestSchema = z.object({
   roomId: z.string().min(1),
-  userId: z.string().min(1),
 });
 
 export const clockPingSchema = z.object({
@@ -34,6 +32,8 @@ export const clockPingSchema = z.object({
 export const presenceMemberSchema = z.object({
   userId: z.string().min(1),
   displayName: z.string().min(1),
+  role: memberRoleSchema,
+  muted: z.boolean(),
   joinedAtMs: z.number().int().nonnegative(),
 });
 
@@ -52,9 +52,18 @@ export const roomErrorSchema = z.object({
   code: z.enum([
     "invalid_payload",
     "not_host",
+    "forbidden",
+    "muted",
     "redis_unavailable",
     "not_owner",
     "version_conflict",
+    "not_member",
+    "room_full",
+    "persistence_unavailable",
+    "invalid_media",
+    "empty_queue",
+    "unauthorized",
+    "not_found",
   ]),
   message: z.string().min(1),
   ownerIndex: z.number().int().nonnegative().optional(),
@@ -67,6 +76,19 @@ export const clockPongSchema = z.object({
   t2: z.number().finite(),
 });
 
+export const modKickSchema = z.object({
+  roomId: z.string().min(1),
+  userId: z.string().min(1),
+});
+
+export const modMuteSchema = modKickSchema.extend({
+  muted: z.boolean(),
+});
+
+export const modRoleSchema = modKickSchema.extend({
+  role: z.enum(["mod", "viewer"]),
+});
+
 export const clientEventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("room:join"), payload: roomJoinSchema }),
   z.object({ event: z.literal("room:leave"), payload: roomLeaveSchema }),
@@ -75,6 +97,13 @@ export const clientEventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("playback:seek"), payload: playbackSeekSchema }),
   z.object({ event: z.literal("playback:sync"), payload: playbackSyncRequestSchema }),
   z.object({ event: z.literal("clock:ping"), payload: clockPingSchema }),
+  z.object({ event: z.literal("chat:send"), payload: chatSendSchema }),
+  z.object({ event: z.literal("chat:react"), payload: chatReactSchema }),
+  z.object({ event: z.literal("queue:add"), payload: queueAddSchema }),
+  z.object({ event: z.literal("queue:next"), payload: queueNextSchema }),
+  z.object({ event: z.literal("mod:kick"), payload: modKickSchema }),
+  z.object({ event: z.literal("mod:mute"), payload: modMuteSchema }),
+  z.object({ event: z.literal("mod:role"), payload: modRoleSchema }),
 ]);
 
 export type ClientEvent = z.infer<typeof clientEventSchema>;

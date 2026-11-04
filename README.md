@@ -77,7 +77,16 @@ pnpm dev
 - worker: <http://localhost:3003/health>
 - bot: <http://localhost:3004/health>
 
-`pnpm dev` поднимает все приложения. Веб открывается и без Docker: сцена локальная, пока не задан `VITE_REALTIME_URL=http://localhost:3002`.
+`pnpm dev` поднимает все приложения. Зал, синхронизация и чат требуют Postgres, Redis и два значения в `.env`:
+
+```bash
+JWT_SECRET=замените-длинной-строкой
+ALLOW_STUB_AUTH=true
+```
+
+`ALLOW_STUB_AUTH` только на своей машине. С токеном бота проверка initData идёт по HMAC, а гостевая кнопка «Представиться» пишет пользователя в базу и выдаёт JWT.
+
+Два браузера: в каждом представиться разными именами, в первом открыть зал, во втором ввести код. Хост вставляет ссылку YouTube, VK, Rutube, Twitch, Vimeo или прямой URL, жмёт «Дальше», затем пуск. Второй видит статус «идёт». Сообщение в чате приходит соседу. Лимит бесплатной комнаты — 25 человек. После четырёх часов появляется напоминание, никого не выкидывает.
 
 Проверки:
 
@@ -86,7 +95,10 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm test:e2e
 ```
+
+`pnpm test:e2e` поднимает собранные API, realtime и веб против Postgres и Redis. Это смоук: два гостя, код зала, пуск, сообщение в чате.
 
 ## Дорожная карта
 
@@ -95,11 +107,11 @@ pnpm build
 | Фаза | Смысл |
 | --- | --- |
 | 0 | Инструменты, схема, контракты, локальная инфраструктура, оболочка зала |
-| 1 | Настоящая сессия: initData в проде, запись пользователя, веб-вход |
-| 2 | Комнаты: реконнект, передача хоста, устойчивый playback |
-| 3 | Очередь и совместный просмотр, первые экстракторы |
-| 4 | Голос LiveKit, привязанный к участникам комнаты |
-| 5 | Друзья, сообщения, реакции, уведомления |
+| 1 | Telegram initData, гостевой JWT, запись пользователя |
+| 2 | Комната в Postgres, присутствие, playback, чат, очередь embed |
+| 3 | Настоящие плееры провайдеров и догрузка метаданных. yt-dlp нет |
+| 4 | Голос LiveKit Cloud, привязанный к участникам комнаты |
+| 5 | Друзья, уведомления, передача хоста |
 | 6 | Полировка Mini App, deep links, webhook бота |
 | 7 | Витрина косметики и достижения. Тяжёлые возможности — отдельным решением |
 
@@ -113,9 +125,9 @@ pnpm build
 | `REDIS_URL` | Realtime и worker. Без него они живые, но не готовы |
 | `JWT_SECRET` | Подпись access token. Без него выпуск токена отвечает `jwt_unconfigured` |
 | `TELEGRAM_BOT_TOKEN` | Проверка initData и polling бота |
-| `ALLOW_STUB_AUTH` | `true` только на машине разработчика, чтобы принять initData без токена |
-| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Выпуск токена голоса. Пока пусто — `livekit_disabled` |
-| `VITE_REALTIME_URL` | Если задан, веб открывает Socket.io. Иначе сцена локальная |
+| `ALLOW_STUB_AUTH` | `true` только локально: гостевой вход и initData без токена бота |
+| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Учётные данные LiveKit Cloud. Пока пусто — `livekit_disabled` |
+| `VITE_API_URL`, `VITE_REALTIME_URL` | Необязательно. По умолчанию `127.0.0.1:3001` и `:3002` |
 | `REALTIME_REPLICA_COUNT`, `REALTIME_REPLICA_INDEX`, `REALTIME_ENFORCE_ROOM_OWNER` | Несколько реплик и запрет чужих записей |
 
 ## English
@@ -130,4 +142,4 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Web runs at <http://localhost:5173> even without Docker. `pnpm lint`, `pnpm test`, and `pnpm build` do not need a database. Roadmap phases 0–7 are in the table above; this branch is phase 0.
+Set `JWT_SECRET` and `ALLOW_STUB_AUTH=true` in `.env`, then open two browsers on <http://localhost:5173>. Sign in under different names, create a room, join with the code, paste an embed URL, press play, and send a chat line. `pnpm lint`, `pnpm test`, and `pnpm build` do not need a database. `pnpm test:e2e` does: it boots API, realtime, and the web build against Postgres and Redis.

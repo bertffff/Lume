@@ -20,7 +20,8 @@ enum RoomStatus {
 
 enum MemberRole {
   host
-  member
+  mod
+  viewer
 }
 
 enum FriendshipStatus {
@@ -41,6 +42,8 @@ enum EntitlementSource {
   grant
   promo
   admin
+  stars
+  web
 }
 
 enum NotificationChannel {
@@ -69,6 +72,7 @@ model User {
   entitlements              Entitlement[]
   achievements              UserAchievement[]
   notificationPreferences   NotificationPreference[]
+  queueItems                QueueItem[]
 }
 
 model Session {
@@ -91,22 +95,27 @@ model Room {
   host        User       @relation("RoomHost", fields: [hostId], references: [id])
   status      RoomStatus @default(open)
   layout      Json
-  videoAspect Float      @default(1.777777)
-  isPublic    Boolean    @default(false)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  videoAspect  Float      @default(1.777777)
+  isPublic     Boolean    @default(false)
+  nowPlayingId String?    @unique
+  nowPlaying   QueueItem? @relation("NowPlaying", fields: [nowPlayingId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   members  RoomMember[]
   messages Message[]
+  queue    QueueItem[]   @relation("RoomQueue")
 
   @@index([hostId])
+  @@index([isPublic, createdAt])
 }
 
 model RoomMember {
   id       String     @id @default(cuid())
   roomId   String
   userId   String
-  role     MemberRole @default(member)
+  role     MemberRole @default(viewer)
+  muted    Boolean    @default(false)
   joinedAt DateTime   @default(now())
   leftAt   DateTime?
   room     Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -135,12 +144,33 @@ model Message {
   roomId    String
   userId    String
   body      String
+  replyToId String?
   createdAt DateTime   @default(now())
   room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replyTo   Message?   @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[]  @relation("MessageReplies")
   reactions Reaction[]
 
   @@index([roomId, createdAt])
+}
+
+model QueueItem {
+  id             String   @id @default(cuid())
+  roomId         String
+  url            String
+  provider       String
+  externalId     String
+  title          String
+  position       Int
+  addedById      String
+  played         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  room           Room     @relation("RoomQueue", fields: [roomId], references: [id], onDelete: Cascade)
+  addedBy        User     @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  nowPlayingFor  Room?    @relation("NowPlaying")
+
+  @@index([roomId, position])
 }
 
 model Reaction {

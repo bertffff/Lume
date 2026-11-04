@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useI18n } from "../../i18n/context.js";
-import type { MessageKey } from "../../i18n/ru.js";
+import { useRoomActions } from "../../room/live.js";
+
+const reactions = ["👍", "🔥", "😂"];
 
 export function ChatPanel({
   collapsed,
@@ -12,8 +14,9 @@ export function ChatPanel({
   onToggle: () => void;
 }) {
   const { t } = useI18n();
+  const live = useRoomActions();
   const [draft, setDraft] = useState("");
-  const [extra, setExtra] = useState<string[]>([]);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
 
   if (collapsed) {
     return (
@@ -26,17 +29,15 @@ export function ChatPanel({
   function submit(event: FormEvent) {
     event.preventDefault();
     const body = draft.trim();
-    if (!body) {
+    if (!body || !live) {
       return;
     }
-    setExtra((messages) => [...messages, body].slice(-30));
+    live.sendChat(body, replyToId);
     setDraft("");
+    setReplyToId(null);
   }
 
-  const samples: Array<{ author: MessageKey; body: MessageKey }> = [
-    { author: "chat.sampleAuthor1", body: "chat.sample1" },
-    { author: "chat.sampleAuthor2", body: "chat.sample2" },
-  ];
+  const messages = live?.state.messages ?? [];
 
   return (
     <section className="tr-panel" aria-label={t("chat.title")}>
@@ -48,31 +49,50 @@ export function ChatPanel({
           </button>
         ) : null}
       </header>
-      <div className="tr-chat-log">
-        {samples.map((sample) => (
-          <p key={sample.body}>
-            <strong>{t(sample.author)}</strong>
-            {t(sample.body)}
-          </p>
-        ))}
-        {extra.map((body, index) => (
-          <p key={`${index}-${body}`}>
-            <strong>{t("voice.you")}</strong>
-            {body}
+      <div className="tr-chat-log" data-testid="chat-log">
+        {messages.length === 0 ? <p className="tr-empty">{t("chat.empty")}</p> : null}
+        {messages.map((message) => (
+          <p key={message.id}>
+            <strong>{message.displayName}</strong>
+            {message.body}
+            <span className="tr-inline-actions">
+              <button type="button" className="tr-text-button" onClick={() => setReplyToId(message.id)}>
+                {t("chat.reply")}
+              </button>
+              {reactions.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  className="tr-text-button"
+                  onClick={() => live?.react(message.id, emoji)}
+                >
+                  {emoji}
+                  {message.reactions.filter((reaction) => reaction.emoji === emoji).length || ""}
+                </button>
+              ))}
+            </span>
           </p>
         ))}
       </div>
       <form className="tr-composer" onSubmit={submit}>
+        {replyToId ? (
+          <button type="button" className="tr-text-button" onClick={() => setReplyToId(null)}>
+            {t("chat.cancelReply")}
+          </button>
+        ) : null}
         <label className="tr-sr" htmlFor="room-chat">
           {t("chat.placeholder")}
         </label>
         <input
           id="room-chat"
+          data-testid="chat-input"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t("chat.placeholder")}
         />
-        <button type="submit">{t("chat.send")}</button>
+        <button type="submit" data-testid="chat-send">
+          {t("chat.send")}
+        </button>
       </form>
     </section>
   );

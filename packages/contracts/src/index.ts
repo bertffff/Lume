@@ -13,7 +13,16 @@ export {
   type RoomLayout,
   type SidePanelId,
 } from "./layout.js";
-export { roomSchema, roomStatusSchema, type Room, type RoomStatus } from "./room.js";
+export {
+  createRoomSchema,
+  joinRoomSchema,
+  roomSchema,
+  roomStatusSchema,
+  roomSummarySchema,
+  type Room,
+  type RoomStatus,
+  type RoomSummary,
+} from "./room.js";
 export { themeSchema, type Theme } from "./theme.js";
 export {
   capabilityAllowed,
@@ -28,6 +37,7 @@ export {
 } from "./premium.js";
 export {
   accessTokenRequestSchema,
+  devAuthRequestSchema,
   telegramAuthPayloadSchema,
   telegramAuthRequestSchema,
   telegramWebAppUserSchema,
@@ -47,6 +57,19 @@ export {
   type PlaybackAnchor,
   type PlaybackStatus,
 } from "./playback.js";
+export { decideCas } from "./decide-cas.js";
+export { embedSrc, oEmbedEndpoint, parseEmbedInput, embedProviderSchema, type EmbedProvider, type ParsedEmbed } from "./embed.js";
+export { chatMessageSchema, chatReactSchema, chatSendSchema, type ChatMessage } from "./chat.js";
+export { queueAddSchema, queueItemSchema, queueNextSchema, type QueueItem } from "./queue.js";
+export {
+  canActOnMember,
+  canAssignRole,
+  canControlPlayback,
+  canModerate,
+  memberRoleSchema,
+  type MemberRole,
+} from "./roles.js";
+export { FREE_ROOM_MEMBER_CAP, SESSION_SOFT_WARN_MS, roomOverMemberCap, sessionSoftWarn } from "./limits.js";
 export { foreignOwnerIndex, replicaForRoom, roomHash } from "./routing.js";
 export {
   clientEventSchema,
@@ -58,6 +81,9 @@ export {
   playbackSyncRequestSchema,
   presenceMemberSchema,
   roomErrorSchema,
+  modKickSchema,
+  modMuteSchema,
+  modRoleSchema,
   roomJoinSchema,
   roomLeaveSchema,
   toPlaybackSnapshot,

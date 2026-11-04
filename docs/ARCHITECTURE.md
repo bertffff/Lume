@@ -53,6 +53,14 @@ ownerIndex = FNV-1a(roomId) % REALTIME_REPLICA_COUNT
 
 Функции `roomHash`, `replicaForRoom`, `foreignOwnerIndex` лежат в `@lume/contracts` и покрыты тестом на стабильные значения.
 
+## Комната
+
+`POST /auth/dev` (только `ALLOW_STUB_AUTH`) или `POST /auth/telegram` создаёт `User` и JWT. Мутации комнаты требуют `Authorization: Bearer`. Сокет принимает тот же токен в `handshake.auth.token` и не верит `userId` из события.
+
+`POST /rooms` создаёт зал и членство хоста. `POST /rooms/join` с кодом (`slug`) сажает зрителя, пока активных меньше 25. `GET /rooms` отдаёт открытые залы. `POST /rooms/:id/leave` ставит `leftAt`. Роли: `host`, `mod`, `viewer`.
+
+Чат и очередь пишет realtime, вызывая API, и тут же рассылает событие. Сообщения и реакции лежат в Postgres. Очередь — `QueueItem`. «Дальше» ставит следующий элемент в `Room.nowPlayingId` и сбрасывает якорь на паузу в начале. Присутствие и якорь по-прежнему в Redis.
+
 ## API
 
 | Метод | Путь | Поведение |

@@ -8,6 +8,12 @@ function parseMember(raw: string): PresenceMember | null {
     if (!value.userId || !value.displayName || typeof value.joinedAtMs !== "number") {
       return null;
     }
+    if (value.role !== "host" && value.role !== "mod" && value.role !== "viewer") {
+      return null;
+    }
+    if (typeof value.muted !== "boolean") {
+      return null;
+    }
     return value;
   } catch {
     return null;

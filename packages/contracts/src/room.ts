@@ -15,3 +15,25 @@ export const roomSchema = z.object({
 });
 
 export type Room = z.infer<typeof roomSchema>;
+
+export const roomSummarySchema = z.object({
+  id: z.string().min(1),
+  code: z.string().min(1).max(16),
+  title: z.string().min(1).max(120),
+  hostId: z.string().min(1),
+  status: roomStatusSchema,
+  isPublic: z.boolean(),
+  memberCount: z.number().int().nonnegative(),
+  createdAt: z.string().min(1),
+});
+
+export type RoomSummary = z.infer<typeof roomSummarySchema>;
+
+export const createRoomSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  isPublic: z.boolean().optional(),
+});
+
+export const joinRoomSchema = z.object({
+  code: z.string().trim().min(1).max(16),
+});

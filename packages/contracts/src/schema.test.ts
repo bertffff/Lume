@@ -83,18 +83,18 @@ describe("contracts", () => {
     ).toBe(42);
     const play = clientEventSchema.parse({
       event: "playback:play",
-      payload: { roomId: "room_1", userId: "user_1", clientTimeMs: 10 },
+      payload: { roomId: "room_1", clientTimeMs: 10 },
     });
     expect(play.event).toBe("playback:play");
     const seek = clientEventSchema.parse({
       event: "playback:seek",
-      payload: { roomId: "room_1", userId: "user_1", clientTimeMs: 10, positionMs: 5000 },
+      payload: { roomId: "room_1", clientTimeMs: 10, positionMs: 5000 },
     });
     expect(seek.event).toBe("playback:seek");
     expect(
       clientEventSchema.safeParse({
         event: "playback:pause",
-        payload: { roomId: "", userId: "user_1", clientTimeMs: 1 },
+        payload: { roomId: "", clientTimeMs: 1 },
       }).success,
     ).toBe(false);
   });

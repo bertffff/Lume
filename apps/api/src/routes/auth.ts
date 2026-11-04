@@ -3,10 +3,13 @@ import {
   telegramAuthRequestSchema,
   type User,
 } from "@lume/contracts";
+import { devAuthRequestSchema } from "@lume/contracts";
+import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import type { ApiEnv } from "../env.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import { localeFromTelegram, verifyTelegramInitData } from "../auth/telegram.js";
+import { toPublicUser, upsertDevUser, upsertTelegramUser } from "../auth/users.js";
 
 function publicUser(input: {
   id: string;
@@ -25,7 +28,7 @@ function publicUser(input: {
   };
 }
 
-export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv): void {
+export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: PrismaClient): void {
   app.post("/auth/telegram", async (request, reply) => {
     const body = telegramAuthRequestSchema.safeParse(request.body);
     if (!body.success) {
@@ -50,6 +53,16 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv): void {
       if (!parsedUser.id || !parsedUser.first_name) {
         return reply.code(400).send({ error: "invalid_body" });
       }
+      if (prisma) {
+        const stored = await upsertTelegramUser(prisma, {
+          id: parsedUser.id,
+          first_name: parsedUser.first_name,
+          ...(parsedUser.username ? { username: parsedUser.username } : {}),
+          ...(parsedUser.language_code ? { language_code: parsedUser.language_code } : {}),
+        });
+        const user = toPublicUser(stored);
+        return reply.send({ authMode: "stub", user, accessToken: await maybeMint(env, user) });
+      }
       const user = publicUser({
         id: `tg:${parsedUser.id}`,
         telegramId: String(parsedUser.id),
@@ -73,18 +86,52 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv): void {
       return reply.code(401).send({ error: verified.reason });
     }
 
-    const user = publicUser({
-      id: `tg:${verified.user.id}`,
-      telegramId: String(verified.user.id),
-      username: verified.user.username ?? null,
-      displayName: verified.user.first_name,
-      locale: localeFromTelegram(verified.user.language_code),
-    });
+    const stored = prisma ? await upsertTelegramUser(prisma, verified.user) : null;
+    const user = stored
+      ? toPublicUser(stored)
+      : publicUser({
+          id: `tg:${verified.user.id}`,
+          telegramId: String(verified.user.id),
+          username: verified.user.username ?? null,
+          displayName: verified.user.first_name,
+          locale: localeFromTelegram(verified.user.language_code),
+        });
     return reply.send({
       authMode: "verified",
       user,
       accessToken: await maybeMint(env, user),
     });
+  });
+
+  app.post("/auth/dev", async (request, reply) => {
+    if (!env.ALLOW_STUB_AUTH) {
+      return reply.code(403).send({ error: "stub_auth_disabled" });
+    }
+    const body = devAuthRequestSchema.safeParse(request.body);
+    if (!body.success) {
+      return reply.code(400).send({ error: "invalid_body" });
+    }
+    if (!prisma) {
+      return reply.code(503).send({ error: "database_unconfigured" });
+    }
+    if (!env.JWT_SECRET) {
+      return reply.code(503).send({ error: "jwt_unconfigured" });
+    }
+    const stored = await upsertDevUser(prisma, body.data.displayName);
+    const user = toPublicUser(stored);
+    return reply.send({
+      authMode: "stub",
+      user,
+      accessToken: await maybeMint(env, user),
+    });
+  });
+
+  app.post("/auth/password", async (_request, reply) => {
+    return reply.code(501).send({ error: "not_available", method: "password" });
+  });
+
+  app.post("/auth/passkey", async (_request, reply) => {
+    return reply.code(501).send({ error: "not_available", method: "passkey" });
   });
 
   app.post("/auth/token", async (request, reply) => {
@@ -102,6 +149,7 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv): void {
       secret: env.JWT_SECRET,
       userId: body.data.userId,
       telegramId: body.data.telegramId ?? null,
+      displayName: body.data.displayName ?? "Гость",
       ttlSeconds: env.JWT_TTL_SECONDS,
     });
     return reply.send({ accessToken, tokenType: "Bearer" });
@@ -116,6 +164,7 @@ async function maybeMint(env: ApiEnv, user: User): Promise<string | null> {
     secret: env.JWT_SECRET,
     userId: user.id,
     telegramId: user.telegramId,
+    displayName: user.displayName,
     ttlSeconds: env.JWT_TTL_SECONDS,
   });
 }

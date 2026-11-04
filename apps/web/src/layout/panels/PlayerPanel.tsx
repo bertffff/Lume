@@ -1,6 +1,9 @@
+import { embedSrc, type PlaybackSnapshot } from "@lume/contracts";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n/context.js";
 import { containSize } from "../contain.js";
+import { commandEmbed } from "../../player/command.js";
+import { useRoomActions } from "../../room/live.js";
 
 const aspects = [
   { id: "16:9", value: 16 / 9 },
@@ -16,14 +19,14 @@ function nearestAspect(aspect: number) {
 }
 
 function clock(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 export function PlayerPanel({
   aspect,
-  synced,
   onAspect,
 }: {
   aspect: number;
@@ -31,11 +34,13 @@ export function PlayerPanel({
   onAspect: (aspect: number) => void;
 }) {
   const { t } = useI18n();
+  const live = useRoomActions();
   const frameRef = useRef<HTMLDivElement>(null);
+  const embedRef = useRef<HTMLIFrameElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
-  const [playing, setPlaying] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const current = nearestAspect(aspect);
+  const playback: PlaybackSnapshot | null = live?.state.playback ?? null;
+  const nowPlaying = live?.state.room.nowPlaying ?? null;
 
   useEffect(() => {
     const element = frameRef.current;
@@ -53,14 +58,16 @@ export function PlayerPanel({
   }, [aspect]);
 
   useEffect(() => {
-    if (!playing) {
+    if (!nowPlaying || !playback) {
       return;
     }
-    const timer = window.setInterval(() => {
-      setElapsed((value) => value + 1);
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [playing]);
+    commandEmbed(
+      embedRef.current,
+      nowPlaying.provider,
+      playback.status === "playing" ? "play" : "pause",
+      playback.positionMs,
+    );
+  }, [nowPlaying?.id, nowPlaying?.provider, playback?.version, playback?.status, playback?.positionMs]);
 
   function cycleAspect() {
     const index = aspects.findIndex((item) => item.id === current.id);
@@ -70,29 +77,54 @@ export function PlayerPanel({
     }
   }
 
+  const playing = playback?.status === "playing";
+  const label = `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock((live?.positionMs ?? 0) / 1000)}`;
+
   return (
     <section className="tr-panel tr-player" aria-label={t("player.stage")}>
       <header className="tr-panel-bar">
         <span>{t("player.stage")}</span>
-        <span className="tr-chip">{synced ? t("player.synced") : t("player.local")}</span>
+        <span className="tr-chip" data-testid="playback-status">
+          {label}
+        </span>
       </header>
       <div className="tr-frame" ref={frameRef}>
         <div className="tr-stage" style={{ width: box.width, height: box.height }}>
-          <button
-            type="button"
-            className="tr-play"
-            onClick={() => setPlaying((value) => !value)}
-            aria-label={playing ? t("player.pause") : t("player.play")}
-          >
-            {playing ? "II" : "▶"}
-          </button>
-          <span className="tr-timecode">{clock(elapsed)}</span>
+          {nowPlaying ? (
+            <iframe
+              ref={embedRef}
+              className="tr-embed"
+              src={embedSrc(nowPlaying, window.location.hostname)}
+              title={nowPlaying.title}
+              allow="autoplay; fullscreen; encrypted-media"
+              allowFullScreen
+            />
+          ) : (
+            <p className="tr-empty">{t("player.empty")}</p>
+          )}
+          {live?.canControl ? (
+            <button
+              type="button"
+              className="tr-play"
+              data-testid="playback-play"
+              onClick={live.togglePlayback}
+              aria-label={playing ? t("player.pause") : t("player.play")}
+            >
+              {playing ? "II" : "▶"}
+            </button>
+          ) : null}
         </div>
       </div>
       <footer className="tr-panel-bar">
         <button type="button" className="tr-text-button" onClick={cycleAspect}>
           {t("player.aspect")} {current.id}
         </button>
+        {live?.canControl ? (
+          <button type="button" className="tr-text-button" onClick={live.seekForward}>
+            {t("player.seek")}
+          </button>
+        ) : null}
+        {nowPlaying ? <span>{nowPlaying.title}</span> : null}
       </footer>
     </section>
   );

@@ -15,7 +15,12 @@
 
 Тема «Уголь» (`ember`) бесплатная. «Аврора» (`aurora`) помечена `premium: true`. В оболочке её можно переключить как образец: аккаунта ещё нет, лента только показывает метку. Гейт, которым API будет закрывать тему, уже в `@lume/contracts`: `themeAccess`.
 
-Право в базе — `Entitlement`: `sku`, `kind`, `source` (`grant`, `promo`, `admin`), `active`, `expiresAt`. Источника `payment` нет, пока не выбран провайдер.
+Право в базе — `Entitlement`: `sku`, `kind`, `source` (`grant`, `promo`, `admin`, `stars`, `web`), `active`, `expiresAt`. Платежей нет. Когда они появятся, первым будет Telegram Stars, следом веб-касса. Оба источника уже есть в enum, записей от кассы код не создаёт.
+
+Пока нет тяжёлых прав, у бесплатной комнаты мягкие границы, они же в `@lume/contracts`:
+
+- не больше **25** активных участников (`FREE_ROOM_MEMBER_CAP`); лишнему вход отвечает `room_full`;
+- через **4 часа** после создания зала интерфейс показывает напоминание (`SESSION_SOFT_WARN_MS`). Сеанс не обрывается и никого не удаляет.
 
 ## Что не продаётся этим срезом
 
@@ -31,4 +36,4 @@
 
 ## English
 
-Free TeleRave is the whole session. Payment, later, buys themes, flair, decorations, and nameplates. Aurora is the sample premium theme. Heavy capabilities are listed and denied. There is no checkout in this branch.
+Free TeleRave is the whole session. Payment, later, is Telegram Stars first and web checkout second. The entitlement enum already has `stars` and `web`, and nothing writes them yet. A free room holds 25 members. After four hours the UI warns and keeps going. Aurora is the sample premium theme. Heavy capabilities stay denied.

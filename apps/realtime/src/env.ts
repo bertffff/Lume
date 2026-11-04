@@ -27,6 +27,8 @@ export const realtimeEnvSchema = z.object({
   REALTIME_ENFORCE_ROOM_OWNER: boolFromEnv.default(false),
   WEB_ORIGIN: z.string().min(1).default("http://localhost:5173"),
   REDIS_URL: optionalString,
+  API_URL: z.string().min(1).default("http://127.0.0.1:3001"),
+  JWT_SECRET: optionalString,
 });
 
 export type RealtimeEnv = z.infer<typeof realtimeEnvSchema>;

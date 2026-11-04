@@ -21,17 +21,10 @@ TeleRave — место, где несколько человек смотрят
 - интерфейс экстрактора, за которым позже встанут провайдеры;
 - два языка с первого дня.
 
-Видео по ссылке в этом срезе не резолвится. Очередь в интерфейсе — образец.
+Ролик в зале — embed. Сейчас разбираются ссылки YouTube, VK, Rutube, Twitch, Vimeo и прямой URL. Плеер провайдера показывается в iframe. Пуск, пауза и перемотка синхронизируются нашим якорем; команда в iframe уходит туда, где это уже возможно (YouTube, Vimeo). Файлы Telegram и yt-dlp — позже. Заголовок по oEmbed подставляется, если провайдер ответил за секунду, иначе остаётся короткая подпись.
 
-## Открытые вопросы
-
-- Какие провайдеры видео первые: прямая ссылка, файл Telegram, embed?
-- Вход в веб только через Telegram или ещё пароль / passkey?
-- LiveKit у себя или облако?
-- Оплата косметики: Telegram Stars, веб, оба?
-- Лимит размера комнаты и длины сеанса до появления тяжёлых прав?
-- Модерация до фазы с моделью: только хост?
+Вход: Telegram initData, когда задан токен бота. Локально `ALLOW_STUB_AUTH` выдаёт JWT гостю и пишет его в `User`. Пароль и passkey отвечают `501 not_available` — это крючки, не вход. LiveKit — облачные ключи из env, свой сервер позже. Оплата косметики позже: сначала Telegram Stars, потом веб. Модерация до модели: хост и явная роль мода. Хост может выгнать и заглушить мода и зрителя, мод — только зрителя. Хост назначает мода. Зритель не двигает плеер.
 
 ## English
 
-TeleRave is a watch-together room: picture, voice, chat, queue. The web app is the primary client. The Telegram Mini App is the same React app behind an adapter. LiveKit carries voice. Redis holds room state. Free use includes the whole session. Paid items are cosmetic. Heavy capabilities exist in the model and stay off. Questions above are unresolved on purpose.
+Watch sources are embeds first: YouTube, VK, Rutube, Twitch, Vimeo, plus a pasted URL. Telegram files and yt-dlp are later. Sign-in is Telegram initData, with a dev-only guest JWT. Password and passkey routes exist and return 501. LiveKit Cloud credentials stay in env. Stars come before web checkout, and neither is wired. A free room caps at 25 people and warns after four hours. Host and mod moderate; viewers do not control playback.

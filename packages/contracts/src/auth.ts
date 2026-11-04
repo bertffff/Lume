@@ -34,4 +34,8 @@ export const accessTokenRequestSchema = z.object({
   displayName: z.string().min(1).max(80).optional(),
 });
 
+export const devAuthRequestSchema = z.object({
+  displayName: z.string().trim().min(1).max(80),
+});
+
 export type AccessTokenRequest = z.infer<typeof accessTokenRequestSchema>;

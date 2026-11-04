@@ -1,10 +1,12 @@
 import { defaultRoomLayout, type RoomLayout } from "@lume/contracts";
 import { themeById } from "@lume/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { api } from "./api/client.js";
 import { detectLocale, I18nProvider, useI18n } from "./i18n/context.js";
-import { connectRealtime } from "./realtime/client.js";
+import { useRoomChannel, type ChannelStatus } from "./realtime/useRoomChannel.js";
 import { Lobby } from "./screens/Lobby.js";
 import { RoomScreen } from "./screens/RoomScreen.js";
+import { clearSession, loadSession, saveSession, type ClientSession } from "./session.js";
 import { ThemeProvider } from "./theme/ThemeProvider.js";
 import {
   bindBackButton,
@@ -14,44 +16,6 @@ import {
 } from "./telegram/adapter.js";
 import { readTelegramWebApp } from "./telegram/types.js";
 
-type RealtimeStatus = "off" | "connecting" | "online" | "error";
-
-function useRealtimeStatus(url: string | undefined): RealtimeStatus {
-  const [status, setStatus] = useState<RealtimeStatus>(url ? "connecting" : "off");
-
-  useEffect(() => {
-    if (!url) {
-      setStatus("off");
-      return;
-    }
-    let stopped = false;
-    let socket: { close: () => void } | undefined;
-    setStatus("connecting");
-    void connectRealtime(url)
-      .then((client) => {
-        if (stopped) {
-          client.close();
-          return;
-        }
-        socket = client;
-        client.on("connect", () => setStatus("online"));
-        client.on("connect_error", () => setStatus("error"));
-        client.on("disconnect", () => setStatus("error"));
-      })
-      .catch(() => {
-        if (!stopped) {
-          setStatus("error");
-        }
-      });
-    return () => {
-      stopped = true;
-      socket?.close();
-    };
-  }, [url]);
-
-  return status;
-}
-
 export function App() {
   const webApp = useMemo(() => readTelegramWebApp(), []);
   const inTelegram = webApp !== null;
@@ -60,12 +24,15 @@ export function App() {
   );
   const [themeId, setThemeId] = useState("ember");
   const [preview, setPreview] = useState(false);
-  const [screen, setScreen] = useState<"lobby" | "room">("lobby");
-  const [title, setTitle] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [session, setSession] = useState<ClientSession | null>(() => loadSession());
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [layout, setLayout] = useState<RoomLayout>(defaultRoomLayout);
   const [haptic, setHaptic] = useState<string | null>(null);
-  const realtime = useRealtimeStatus(import.meta.env.VITE_REALTIME_URL);
+  const live = useRoomChannel(
+    session && roomId ? { token: session.accessToken, roomId, selfId: session.user.id } : null,
+  );
+  const screen = roomId ? "room" : "lobby";
+  const realtime: ChannelStatus = roomId ? live.status : "off";
   const theme = themeById(themeId);
   const overrides = useMemo(() => {
     if (inTelegram && webApp.themeParams) {
@@ -87,8 +54,14 @@ export function App() {
     if (!inTelegram || screen !== "room") {
       return;
     }
-    return bindBackButton(webApp, () => setScreen("lobby"));
+    return bindBackButton(webApp, () => setRoomId(null));
   }, [inTelegram, screen, webApp]);
+
+  useEffect(() => {
+    if (live.error === "kicked") {
+      setRoomId(null);
+    }
+  }, [live.error]);
 
   function pulse(style: "light" | "medium") {
     const delivered = hapticImpact(inTelegram ? webApp : null, style);
@@ -117,25 +90,37 @@ export function App() {
             pulse("medium");
           }}
           onPreview={() => setPreview((value) => !value)}
-          onBack={() => setScreen("lobby")}
+          onBack={() => setRoomId(null)}
           screen={screen}
         >
-          {screen === "lobby" ? (
+          {screen === "lobby" || !session || !roomId ? (
             <Lobby
-              onEnter={(input) => {
-                setTitle(input.title);
-                setDisplayName(input.displayName);
-                setScreen("room");
+              session={session}
+              onSession={(next) => {
+                saveSession(next);
+                setSession(next);
+                pulse("light");
+              }}
+              onSignOut={() => {
+                clearSession();
+                setSession(null);
+                setRoomId(null);
+              }}
+              onOpen={(id) => {
+                setRoomId(id);
                 pulse("medium");
               }}
             />
           ) : (
             <RoomScreen
-              title={title}
-              displayName={displayName}
+              selfId={session.user.id}
+              live={live}
               layout={layout}
               onLayout={setLayout}
-              onLeave={() => setScreen("lobby")}
+              onLeave={() => {
+                void api.leave(session.accessToken, roomId).catch(() => undefined);
+                setRoomId(null);
+              }}
             />
           )}
         </Shell>
@@ -160,7 +145,7 @@ function Shell({
 }: {
   locale: "ru" | "en";
   themeId: string;
-  realtime: RealtimeStatus;
+  realtime: ChannelStatus;
   inTelegram: boolean;
   preview: boolean;
   haptic: string | null;
