@@ -1,0 +1,21 @@
+/*
+ * Shared Tailwind v4 theme. Runtime values come from --lume-* variables
+ * set by @lume/ui themes (and, inside Telegram, by themeParams).
+ */
+@theme inline {
+  --color-bg: var(--lume-bg);
+  --color-surface: var(--lume-surface);
+  --color-panel: var(--lume-panel);
+  --color-ink: var(--lume-text);
+  --color-muted: var(--lume-muted);
+  --color-accent: var(--lume-accent);
+  --color-accent-ink: var(--lume-accent-text);
+  --color-line: var(--lume-line);
+  --color-danger: var(--lume-danger);
+  --color-ok: var(--lume-ok);
+  --font-sans: var(--lume-font-sans);
+  --font-display: var(--lume-font-display);
+  --radius-sm: var(--lume-radius-sm);
+  --radius-md: var(--lume-radius-md);
+  --radius-lg: var(--lume-radius-lg);
+}

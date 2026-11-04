@@ -1,0 +1,40 @@
+# Local infrastructure for Lume / TeleRave.
+# LiveKit is optional and stays commented until voice is wired.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lume
+      POSTGRES_PASSWORD: lume
+      POSTGRES_DB: lume
+    ports:
+      - "5432:5432"
+    volumes:
+      - lume_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lume -d lume"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # livekit:
+  #   image: livekit/livekit-server:v1.8
+  #   command: --dev --bind 0.0.0.0
+  #   ports:
+  #     - "7880:7880"
+  #     - "7881:7881"
+  #     - "7882:7882/udp"
+
+volumes:
+  lume_pg:
