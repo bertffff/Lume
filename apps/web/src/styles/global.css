@@ -474,8 +474,28 @@ button {
   background: var(--lume-muted);
 }
 
-.tr-voice-list i.is-hot {
+.tr-voice-list i.is-hot,
+.tr-voice-list i.is-speaking {
   background: var(--lume-ok);
+}
+
+.tr-voice-list i.is-speaking {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lume-ok) 35%, transparent);
+}
+
+.tr-voice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px 8px;
+}
+
+.tr-voice-controls select {
+  background: transparent;
+  border: 1px solid var(--lume-line);
+  border-radius: var(--lume-radius-sm);
+  padding: 6px 8px;
 }
 
 .tr-queue {

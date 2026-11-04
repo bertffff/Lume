@@ -84,6 +84,14 @@ export {
 export { chatMessageSchema, chatReactSchema, chatSendSchema, type ChatMessage } from "./chat.js";
 export { queueAddSchema, queueItemSchema, queueNextSchema, type QueueItem } from "./queue.js";
 export {
+  voiceDisconnectSchema,
+  voiceJoinSchema,
+  voiceMemberSchema,
+  voiceMuteSchema,
+  voiceStateSchema,
+  type VoiceMember,
+} from "./voice.js";
+export {
   canActOnMember,
   canAssignRole,
   canControlPlayback,

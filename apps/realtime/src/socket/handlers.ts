@@ -26,6 +26,7 @@ import { commitPlayback, readPlayback, snapshotFor } from "../rooms/playback.js"
 import { joinRoom, leaveRoom, listMembers } from "../rooms/presence.js";
 import { listViewerPhases, setViewerPhase, clearViewerPhase } from "../rooms/viewers.js";
 import { ApiFailure, createRoomApi, type RoomApi, type RoomSession } from "./api.js";
+import { clearVoiceOnDepart, registerVoiceEvents } from "./voice.js";
 
 interface Binding {
   roomId: string;
@@ -162,6 +163,7 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
     socket.on("mod:role", (payload: unknown) => {
       void moderate(io, redis, api, socket, payload, "role");
     });
+    registerVoiceEvents(io, redis, api, socket);
   });
 }
 
@@ -443,6 +445,7 @@ async function depart(io: Server, redis: RedisPair, socket: Socket, roomId: stri
   bindings.delete(socket.id);
   await socket.leave(roomId);
   await clearViewerPhase(redis.pub, roomId, userId);
+  await clearVoiceOnDepart(io, redis, roomId, userId);
   const members = await leaveRoom(redis.pub, roomId, userId);
   io.to(roomId).emit("room:presence", { roomId, members });
   io.to(roomId).emit("playback:viewers", { roomId, viewers: await listViewerPhases(redis.pub, roomId) });

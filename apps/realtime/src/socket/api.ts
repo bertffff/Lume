@@ -65,6 +65,18 @@ export function createRoomApi(baseUrl: string) {
     leave(token: string, roomId: string) {
       return request<{ ok: boolean }>(token, `/rooms/${roomId}/leave`, { method: "POST", body: {} });
     },
+    muteVoice(token: string, roomId: string, userId?: string) {
+      return request<{ muted: string[] }>(token, "/voice/livekit/mute", {
+        method: "POST",
+        body: userId ? { roomId, userId } : { roomId },
+      });
+    },
+    disconnectVoice(token: string, roomId: string, userId: string) {
+      return request<{ disconnected: string }>(token, "/voice/livekit/disconnect", {
+        method: "POST",
+        body: { roomId, userId },
+      });
+    },
   };
 }
 

@@ -25,7 +25,7 @@ export async function buildApp(
   registerHealthRoutes(app, env);
   registerAuthRoutes(app, env, options?.prisma);
   registerRoomRoutes(app, env, service);
-  registerVoiceRoutes(app, env);
+  registerVoiceRoutes(app, env, service);
 
   app.setErrorHandler((error, _request, reply) => {
     app.log.error(error);

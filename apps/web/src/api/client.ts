@@ -51,4 +51,14 @@ export const api = {
   leave(token: string, roomId: string) {
     return request<{ ok: boolean }>(`/rooms/${roomId}/leave`, { method: "POST", token, body: {} });
   },
+  voiceStatus() {
+    return request<{ enabled: boolean }>("/voice/livekit");
+  },
+  voiceToken(token: string, roomId: string) {
+    return request<{ token: string; url: string }>("/voice/livekit/token", {
+      method: "POST",
+      token,
+      body: { roomId },
+    });
+  },
 };

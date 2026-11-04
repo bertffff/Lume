@@ -115,7 +115,7 @@ pnpm test:e2e
 | 6 | Полировка Mini App, deep links, webhook бота |
 | 7 | Витрина косметики и достижения. Тяжёлые возможности — отдельным решением |
 
-Документы: [продукт](docs/PRODUCT.md), [архитектура](docs/ARCHITECTURE.md), [плееры](docs/PLAYERS.md), [premium](docs/PREMIUM.md), [раскладка](docs/LAYOUT_SYSTEM.md).
+Документы: [продукт](docs/PRODUCT.md), [архитектура](docs/ARCHITECTURE.md), [плееры](docs/PLAYERS.md), [голос](docs/VOICE.md), [premium](docs/PREMIUM.md), [раскладка](docs/LAYOUT_SYSTEM.md).
 
 ## Переменные, которые задаёт человек
 

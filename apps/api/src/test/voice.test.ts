@@ -21,15 +21,29 @@ describe("livekit token", () => {
     expect(response.json()).toEqual({ error: "livekit_disabled" });
   });
 
-  it("signs a token locally when credentials exist", async () => {
+  it("signs a join token for the member identity without voice priority", async () => {
     const token = await mintLiveKitToken({
       apiKey: "devkey",
       apiSecret: "devsecret-devsecret-devsecret",
       identity: "user_1",
       name: "Аня",
-      roomName: "room_1",
+      roomName: "lume_room_1",
       ttlSeconds: 600,
     });
-    expect(token.split(".")).toHaveLength(3);
+    const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString()) as {
+      sub?: string;
+      name?: string;
+      metadata?: string;
+      video?: { room?: string; roomJoin?: boolean; canPublish?: boolean; canSubscribe?: boolean };
+    };
+    expect(payload.sub).toBe("user_1");
+    expect(payload.name).toBe("Аня");
+    expect(payload.video).toMatchObject({
+      room: "lume_room_1",
+      roomJoin: true,
+      canPublish: true,
+      canSubscribe: true,
+    });
+    expect(JSON.parse(payload.metadata ?? "{}")).toEqual({ "voice.priority": false });
   });
 });

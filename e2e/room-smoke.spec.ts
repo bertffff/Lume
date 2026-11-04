@@ -33,7 +33,19 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   await host.getByTestId("chat-input").fill("привет");
   await host.getByTestId("chat-send").click();
   await expect(guest.getByTestId("chat-log")).toContainText("привет", { timeout: 15_000 });
+  if (!process.env.LIVEKIT_URL) {
+    await expect(host.getByTestId("voice-disabled")).toBeVisible();
+  }
 
   await hostContext.close();
   await guestContext.close();
+});
+
+const liveKitConfigured = Boolean(
+  process.env.LIVEKIT_URL && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET,
+);
+
+test("LiveKit voice media stays skipped without Cloud credentials", async () => {
+  test.skip(!liveKitConfigured, "set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET");
+  expect(liveKitConfigured).toBe(true);
 });

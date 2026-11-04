@@ -33,6 +33,7 @@ export interface LiveRoom {
   queue: QueueItem[];
   playback: PlaybackSnapshot;
   viewers: { userId: string; phase: "buffering" | "ready" }[];
+  voice: { userId: string; muted: boolean; speaking: boolean }[];
 }
 
 export type ChannelStatus = "off" | "connecting" | "online" | "error";
@@ -41,6 +42,11 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
   const [state, setState] = useState<LiveRoom | null>(null);
   const [status, setStatus] = useState<ChannelStatus>(input ? "connecting" : "off");
   const [error, setError] = useState<string | null>(null);
+  const [voiceForce, setVoiceForce] = useState<{
+    id: number;
+    userId: string;
+    action: "mute" | "disconnect";
+  } | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
@@ -71,7 +77,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
         client.on("room:state", (payload: unknown) => {
           const parsed = stateSchema.safeParse(payload);
           if (parsed.success) {
-            setState({ ...parsed.data, viewers: [] });
+            setState({ ...parsed.data, viewers: [], voice: [] });
           }
         });
         client.on("room:presence", (payload: unknown) => {
@@ -156,6 +162,28 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
           }
           setState((current) => (current ? { ...current, viewers: parsed.data.viewers } : current));
         });
+        client.on("voice:presence", (payload: unknown) => {
+          const parsed = z
+            .object({
+              members: z.array(
+                z.object({ userId: z.string(), muted: z.boolean(), speaking: z.boolean() }),
+              ),
+            })
+            .safeParse(payload);
+          if (!parsed.success) {
+            return;
+          }
+          setState((current) => (current ? { ...current, voice: parsed.data.members } : current));
+        });
+        client.on("voice:force", (payload: unknown) => {
+          const parsed = z
+            .object({ userId: z.string(), action: z.enum(["mute", "disconnect"]) })
+            .safeParse(payload);
+          if (!parsed.success) {
+            return;
+          }
+          setVoiceForce({ id: Date.now(), ...parsed.data });
+        });
         client.on("room:error", (payload: unknown) => {
           const parsed = z.object({ code: z.string() }).safeParse(payload);
           if (parsed.success) {
@@ -220,6 +248,38 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
         return;
       }
       emit("playback:viewer", { roomId, phase });
+    },
+    token: input?.token ?? "",
+    voiceForce,
+    joinVoicePresence() {
+      if (!roomId) {
+        return;
+      }
+      emit("voice:join", { roomId });
+    },
+    leaveVoicePresence() {
+      if (!roomId) {
+        return;
+      }
+      emit("voice:leave", { roomId });
+    },
+    reportVoice(muted: boolean, speaking: boolean) {
+      if (!roomId) {
+        return;
+      }
+      emit("voice:state", { roomId, muted, speaking });
+    },
+    muteVoices(userId?: string) {
+      if (!roomId) {
+        return;
+      }
+      emit("voice:mute", userId ? { roomId, userId } : { roomId });
+    },
+    disconnectVoice(userId: string) {
+      if (!roomId) {
+        return;
+      }
+      emit("voice:disconnect", { roomId, userId });
     },
     kick(userId: string) {
       if (!roomId) {

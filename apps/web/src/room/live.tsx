@@ -14,6 +14,13 @@ export interface RoomActions {
   playNext: () => void;
   setPlayback: (mode: "play" | "pause" | "seek", positionMs: number) => void;
   reportViewer: (phase: "buffering" | "ready") => void;
+  accessToken: string;
+  voiceForce: { id: number; userId: string; action: "mute" | "disconnect" } | null;
+  joinVoicePresence: () => void;
+  leaveVoicePresence: () => void;
+  reportVoice: (muted: boolean, speaking: boolean) => void;
+  muteVoices: (userId?: string) => void;
+  disconnectVoice: (userId: string) => void;
   kick: (userId: string) => void;
   mute: (userId: string, muted: boolean) => void;
   promote: (userId: string) => void;

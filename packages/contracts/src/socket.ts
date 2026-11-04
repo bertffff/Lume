@@ -2,6 +2,7 @@ import { z } from "zod";
 import { chatReactSchema, chatSendSchema } from "./chat.js";
 import { queueAddSchema, queueNextSchema } from "./queue.js";
 import { memberRoleSchema } from "./roles.js";
+import { voiceDisconnectSchema, voiceJoinSchema, voiceMuteSchema, voiceStateSchema } from "./voice.js";
 
 export const roomJoinSchema = z.object({
   roomId: z.string().min(1).max(80),
@@ -104,6 +105,11 @@ export const clientEventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("playback:sync"), payload: playbackSyncRequestSchema }),
   z.object({ event: z.literal("clock:ping"), payload: clockPingSchema }),
   z.object({ event: z.literal("playback:viewer"), payload: playbackViewerSchema }),
+  z.object({ event: z.literal("voice:join"), payload: voiceJoinSchema }),
+  z.object({ event: z.literal("voice:leave"), payload: voiceJoinSchema }),
+  z.object({ event: z.literal("voice:state"), payload: voiceStateSchema }),
+  z.object({ event: z.literal("voice:mute"), payload: voiceMuteSchema }),
+  z.object({ event: z.literal("voice:disconnect"), payload: voiceDisconnectSchema }),
   z.object({ event: z.literal("chat:send"), payload: chatSendSchema }),
   z.object({ event: z.literal("chat:react"), payload: chatReactSchema }),
   z.object({ event: z.literal("queue:add"), payload: queueAddSchema }),

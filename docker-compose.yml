@@ -1,5 +1,5 @@
 # Local infrastructure for Lume / TeleRave.
-# LiveKit is optional and stays commented until voice is wired.
+# Voice uses LiveKit Cloud (see docs/VOICE.md). The server below is an optional self-host later, not the default.
 
 services:
   postgres:
