@@ -8,6 +8,7 @@ import { RoomService } from "./rooms/service.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerRoomRoutes } from "./routes/rooms.js";
+import { registerExtraRoutes } from "./routes/extras.js";
 import { registerSocialRoutes } from "./routes/social.js";
 import { registerVideoRoutes } from "./routes/video.js";
 import { registerVoiceRoutes } from "./routes/voice.js";
@@ -30,6 +31,7 @@ export async function buildApp(
   registerVoiceRoutes(app, env, service);
   registerSocialRoutes(app, env, options?.prisma ?? null, service);
   registerVideoRoutes(app, env);
+  registerExtraRoutes(app, env, options?.prisma ?? null);
 
   app.setErrorHandler((error, _request, reply) => {
     app.log.error(error);

@@ -142,7 +142,21 @@ export {
   type FriendshipState,
 } from "./parity/social.js";
 export { detectSource, planPlayback, sourceRules, type PlaybackPlan, type SourceRule } from "./parity/sources.js";
-export { hostnameBlocked, ipBlocked, urlBlocked } from "./parity/ssrf.js";
+export { dnsPinned, hostnameBlocked, ipBlocked, urlBlocked } from "./parity/ssrf.js";
+export {
+  consumeMagic,
+  dayScore,
+  imageKind,
+  innertubeFromFixture,
+  moveQueueItem,
+  rotateRefresh,
+  runExtractorChain,
+  shouldRefreshLink,
+  slowRemainingMs,
+  type ExtractHit,
+  type MagicRow,
+  type RefreshRow,
+} from "./parity/flow.js";
 export { castSkipVote, votesNeeded, withdrawSkipVote } from "./parity/vote.js";
 export { foreignOwnerIndex, replicaForRoom, roomHash } from "./routing.js";
 export {

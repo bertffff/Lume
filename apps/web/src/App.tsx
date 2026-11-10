@@ -51,7 +51,24 @@ export function App() {
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     }
-  }, [locale, webApp]);
+    const start = webApp?.initDataUnsafe?.start_param;
+    if (start?.startsWith("room_")) {
+      sessionStorage.setItem("lume-pending-room", start.slice("room_".length));
+    }
+    if (start?.startsWith("user_")) {
+      sessionStorage.setItem("lume-pending-user", start.slice("user_".length));
+    }
+    const button = webApp?.MainButton;
+    if (button && !roomId) {
+      button.setText("Создать комнату");
+      button.show();
+      const open = () => setRoomId(sessionStorage.getItem("lume-pending-room"));
+      button.onClick(open);
+      return () => button.offClick(open);
+    }
+    button?.hide();
+    return undefined;
+  }, [locale, roomId, webApp]);
 
   useEffect(() => {
     if (!inTelegram || screen !== "room") {

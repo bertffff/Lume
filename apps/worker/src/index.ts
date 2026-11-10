@@ -4,7 +4,7 @@ import { loadWorkerEnv } from "./env.js";
 import { listenHealth } from "./health.js";
 import { loadRepoEnv } from "./load-env.js";
 import { mediaResolveQueue, resolveMedia, type MediaResolveJob } from "./jobs/resolve-media.js";
-import { accountPurgeQueue, purgeDueAccounts, purgeRepeat } from "./jobs/purge.js";
+import { accountPurgeQueue, digestQueue, digestRepeat, purgeDueAccounts, purgeRepeat, releaseDueDigests } from "./jobs/purge.js";
 
 loadRepoEnv();
 const env = loadWorkerEnv(process.env);
@@ -32,6 +32,12 @@ if (env.REDIS_URL) {
   const purge = new Queue(accountPurgeQueue, { connection });
   await purge.upsertJobScheduler("account-purge-daily", purgeRepeat, { name: "purge", data: {} });
   const purgeWorker = new Worker(accountPurgeQueue, async () => purgeDueAccounts(), { connection });
+  const digests = new Queue(digestQueue, { connection });
+  await digests.upsertJobScheduler("notify-digest", digestRepeat, { name: "digest", data: {} });
+  const digestWorker = new Worker(digestQueue, async () => releaseDueDigests(), { connection });
+  digestWorker.on("failed", (job, error) => {
+    console.error(JSON.stringify({ queue: digestQueue, jobId: job?.id, message: error.message }));
+  });
   purgeWorker.on("failed", (job, error) => {
     console.error(JSON.stringify({ queue: accountPurgeQueue, jobId: job?.id, message: error.message }));
   });

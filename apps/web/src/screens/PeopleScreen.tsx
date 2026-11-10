@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, ClientError } from "../api/client.js";
+import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
 
@@ -11,14 +11,22 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
   const [friends, setFriends] = useState<Array<{ id: string; displayName: string }>>([]);
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [resume, setResume] = useState<string | null>(null);
+  const [studio, setStudio] = useState<string | null>(null);
+  const [admin, setAdmin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function reload() {
-    const [list, feed, card] = await Promise.all([
+    const [list, feed, card, profile] = await Promise.all([
       api.friends(session.accessToken),
       api.notifications(session.accessToken),
       api.resume(session.accessToken),
+      fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()),
     ]);
+    setStudio(typeof profile.level === "number" ? `${t("studio.title")} ${profile.level}` : null);
+    if (profile.role === "ADMIN" || profile.role === "SUPERADMIN") {
+      const overview = await fetch(`${apiUrl}/admin/overview`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json());
+      setAdmin(`${t("admin.title")} ${overview.users ?? 0}`);
+    }
     setIncoming(list.incoming);
     setFriends(list.friends);
     setNotes(feed.notifications.filter((item) => !item.read));
@@ -44,6 +52,40 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
     <section className="tr-lobby" data-testid="people">
       <h2>{t("people.title")}</h2>
       {resume ? <p data-testid="resume-card">{t("people.resume")} {resume}</p> : <p className="tr-empty">{t("people.noResume")}</p>}
+      {studio ? <p data-testid="studio">{studio}</p> : null}
+      {admin ? <p data-testid="admin-overview">{admin}</p> : null}
+      <button
+        type="button"
+        className="tr-text-button"
+        onClick={() => {
+          void fetch(`${apiUrl}/me/export`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })
+            .then((response) => response.json())
+            .then((payload: { token?: string }) => {
+              if (payload.token) window.location.assign(`${apiUrl}/me/export/${payload.token}`);
+            });
+        }}
+      >
+        {t("people.export")}
+      </button>
+      <label className="tr-check">
+        <input
+          type="checkbox"
+          onChange={(event) => {
+            void fetch(`${apiUrl}/me/notification-preferences`, {
+              method: "PUT",
+              headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+              body: JSON.stringify({
+                channel: "telegram",
+                kind: "ROOM_INVITE",
+                enabled: true,
+                quietHoursEnabled: event.target.checked,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              }),
+            });
+          }}
+        />
+        {t("people.quiet")}
+      </label>
       <form onSubmit={(event) => void search(event)}>
         <label>
           {t("people.search")}

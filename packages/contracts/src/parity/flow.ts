@@ -1,0 +1,100 @@
+export function slowRemainingMs(
+  lastSentAtMs: number | null,
+  nowMs: number,
+  intervalSeconds: number,
+  host: boolean,
+): number {
+  if (host || intervalSeconds <= 0 || lastSentAtMs === null) {
+    return 0;
+  }
+  return Math.max(0, intervalSeconds * 1000 - (nowMs - lastSentAtMs));
+}
+
+export function moveQueueItem(ids: readonly string[], id: string, direction: -1 | 1): string[] {
+  const index = ids.indexOf(id);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= ids.length) {
+    return [...ids];
+  }
+  const next = [...ids];
+  const [item] = next.splice(index, 1);
+  next.splice(target, 0, item ?? id);
+  return next;
+}
+
+export function shouldRefreshLink(expiresAtMs: number, nowMs: number, leadMs = 5 * 60 * 1000): boolean {
+  return expiresAtMs - nowMs <= leadMs;
+}
+
+export interface ExtractHit {
+  url: string;
+  title: string;
+  expiresAtMs: number;
+}
+
+export function runExtractorChain(
+  steps: readonly (() => ExtractHit | null)[],
+): ExtractHit | { error: "unconfigured" } {
+  for (const step of steps) {
+    const hit = step();
+    if (hit) {
+      return hit;
+    }
+  }
+  return { error: "unconfigured" };
+}
+
+export function innertubeFromFixture(fixture: { playability?: string; url?: string; title?: string; expiresAtMs?: number } | null): ExtractHit | null {
+  if (!fixture || fixture.playability !== "OK" || !fixture.url) {
+    return null;
+  }
+  return { url: fixture.url, title: fixture.title ?? "YouTube", expiresAtMs: fixture.expiresAtMs ?? 0 };
+}
+
+export function imageKind(bytes: Uint8Array): "jpeg" | "png" | "gif" | "webp" | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "jpeg";
+  if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "png";
+  if (bytes.length >= 3 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return "gif";
+  if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[8] === 0x57 && bytes[9] === 0x45) return "webp";
+  return null;
+}
+
+export function dayScore(watchSeconds: number, messages: number, reactions: number): number {
+  return watchSeconds + 30 * messages + 5 * reactions;
+}
+
+export interface RefreshRow {
+  userId: string;
+  expiresAt: number;
+}
+
+export function rotateRefresh(
+  store: Map<string, RefreshRow>,
+  current: string,
+  next: string,
+  nowMs: number,
+  ttlMs: number,
+): string | null {
+  const row = store.get(current);
+  if (!row || row.expiresAt <= nowMs) {
+    return null;
+  }
+  store.delete(current);
+  store.set(next, { userId: row.userId, expiresAt: nowMs + ttlMs });
+  return row.userId;
+}
+
+export interface MagicRow {
+  email: string;
+  expiresAt: number;
+  used: boolean;
+}
+
+export function consumeMagic(store: Map<string, MagicRow>, token: string, nowMs: number): string | null {
+  const row = store.get(token);
+  if (!row || row.used || row.expiresAt <= nowMs) {
+    return null;
+  }
+  row.used = true;
+  return row.email;
+}

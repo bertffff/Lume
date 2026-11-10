@@ -43,6 +43,8 @@ export function PlayerPanel({
 }) {
   const { t } = useI18n();
   const handed = useRef(false);
+  const [hideFloats, setHideFloats] = useState(() => window.localStorage.getItem("lume-hide-floats") === "1");
+  const [hideRoomFloats, setHideRoomFloats] = useState(false);
   const live = useRoomActions();
   const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -338,8 +340,35 @@ export function PlayerPanel({
           {t("player.share")}
         </button>
       </footer>
+      <label className="tr-check">
+        <input
+          type="checkbox"
+          checked={hideFloats}
+          onChange={(event) => {
+            setHideFloats(event.target.checked);
+            window.localStorage.setItem("lume-hide-floats", event.target.checked ? "1" : "0");
+          }}
+        />
+        {t("player.hideMine")}
+      </label>
+      <label className="tr-check">
+        <input
+          type="checkbox"
+          checked={hideRoomFloats}
+          onChange={(event) => {
+            setHideRoomFloats(event.target.checked);
+            if (!live) return;
+            void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/rooms/${live.state.room.id}/settings`, {
+              method: "PATCH",
+              headers: { "content-type": "application/json", authorization: `Bearer ${live.accessToken}` },
+              body: JSON.stringify({ hideReactions: event.target.checked }),
+            });
+          }}
+        />
+        {t("player.hideRoom")}
+      </label>
       <div className="tr-floats" aria-hidden="true">
-        {(live?.floats ?? []).map((item) => (
+        {(live?.floats ?? []).filter((item) => !hideRoomFloats && !(hideFloats && item.userId !== live?.selfId)).map((item) => (
           <span key={item.id} style={{ left: `${item.x}%`, top: `${item.y}%` }}>
             {item.emoji}
           </span>

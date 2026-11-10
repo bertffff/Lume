@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { moveQueueItem } from "@lume/contracts";
+import { useEffect, useState, type FormEvent } from "react";
+import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
 import { useRoomActions } from "../../room/live.js";
 
@@ -14,6 +16,28 @@ export function QueuePanel({
   const { t } = useI18n();
   const live = useRoomActions();
   const [url, setUrl] = useState("");
+  const [pending, setPending] = useState<string | null>(null);
+  const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
+  const [tips, setTips] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
+  const roomId = live?.state.room.id;
+  const token = live?.accessToken;
+
+  useEffect(() => {
+    if (!live) return;
+    if (live.state.queue.some((item) => item.url === pending)) setPending(null);
+  }, [live, pending]);
+
+  useEffect(() => {
+    if (!roomId || !token) return;
+    void fetch(`${apiUrl}/rooms/${roomId}/history`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { history?: Array<{ id: string; title: string | null; url: string }> }) => setHistory(payload.history ?? []))
+      .catch(() => setHistory([]));
+    void fetch(`${apiUrl}/me/discovery`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { items?: Array<{ url: string; title: string | null; reason: string }> }) => setTips(payload.items ?? []))
+      .catch(() => setTips([]));
+  }, [roomId, token]);
 
   if (collapsed) {
     return (
@@ -29,8 +53,19 @@ export function QueuePanel({
     if (!next || !live) {
       return;
     }
+    setPending(next);
     live.addQueue(next);
     setUrl("");
+  }
+
+  function reorder(id: string, direction: -1 | 1) {
+    if (!live) return;
+    const ids = moveQueueItem(live.state.queue.map((item) => item.id), id, direction);
+    void fetch(`${apiUrl}/rooms/${live.state.room.id}/queue/order`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${live.accessToken}` },
+      body: JSON.stringify({ ids }),
+    });
   }
 
   const items = live?.state.queue ?? [];
@@ -46,13 +81,16 @@ export function QueuePanel({
           </button>
         ) : null}
       </header>
-      {items.length === 0 ? <p className="tr-empty">{t("queue.empty")}</p> : null}
+      {items.length === 0 && !pending ? <p className="tr-empty">{t("queue.empty")}</p> : null}
+      {pending ? <p data-testid="queue-pending">{pending}</p> : null}
       <ol className="tr-queue">
         {items.map((item) => (
           <li key={item.id} className={item.id === currentId ? "is-current" : undefined}>
             {item.thumbnailUrl ? <img className="tr-thumb" src={item.thumbnailUrl} alt="" /> : null}
             <span>{item.id === currentId ? t("queue.nowPlaying") : item.provider}</span>
             {item.title}
+            <button type="button" className="tr-text-button" aria-label={t("queue.up")} onClick={() => reorder(item.id, -1)}>↑</button>
+            <button type="button" className="tr-text-button" aria-label={t("queue.down")} onClick={() => reorder(item.id, 1)}>↓</button>
           </li>
         ))}
       </ol>
@@ -68,6 +106,8 @@ export function QueuePanel({
           {t("queue.add")}
         </button>
       </form>
+      {history.length > 0 ? <p className="tr-note">{t("queue.history")} {history.length}</p> : null}
+      {tips.length > 0 ? <p className="tr-note">{t("queue.tips")} {tips[0]?.title ?? tips[0]?.url}</p> : null}
       {live?.canControl ? (
         <footer className="tr-panel-bar">
           <button type="button" className="tr-text-button" data-testid="queue-next" onClick={live.playNext}>

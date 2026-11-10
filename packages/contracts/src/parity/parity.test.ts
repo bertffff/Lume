@@ -9,7 +9,18 @@ import { allowsAction, allowsModeration, defaultViewerPermissions } from "./perm
 import { buildDigest, inQuietHours, nextDigestAt } from "./quiet.js";
 import { decideFriendRequest, canToggleReaction, extractTimecodeSeconds, mentionsUser } from "./social.js";
 import { detectSource, planPlayback } from "./sources.js";
-import { hostnameBlocked, ipBlocked, urlBlocked } from "./ssrf.js";
+import { hostnameBlocked, ipBlocked, urlBlocked, dnsPinned } from "./ssrf.js";
+import {
+  consumeMagic,
+  dayScore,
+  imageKind,
+  innertubeFromFixture,
+  moveQueueItem,
+  rotateRefresh,
+  runExtractorChain,
+  shouldRefreshLink,
+  slowRemainingMs,
+} from "./flow.js";
 import { castSkipVote, withdrawSkipVote } from "./vote.js";
 
 describe("parity rules", () => {
@@ -154,5 +165,31 @@ describe("parity rules", () => {
     expect(slowModeAllows(0, 1_000, 5, false)).toBe(false);
     expect(slowModeAllows(0, 1_000, 5, true)).toBe(true);
     expect(resumeCard({ title: "Зал", description: "", isPublic: false, maxMembers: 12, videoUrl: "https://youtu.be/a", positionMs: 1000, queue: [], historyCount: 2 })?.historyCount).toBe(2);
+  });
+
+  it("covers queue moves, link refresh, extractors, images, and sessions", async () => {
+    expect(slowRemainingMs(0, 2_000, 5, false)).toBe(3_000);
+    expect(slowRemainingMs(0, 2_000, 5, true)).toBe(0);
+    expect(moveQueueItem(["a", "b", "c"], "b", -1)).toEqual(["b", "a", "c"]);
+    expect(shouldRefreshLink(1_000, 800, 300)).toBe(true);
+    expect(shouldRefreshLink(10_000, 0, 300)).toBe(false);
+    const chain = runExtractorChain([
+      () => innertubeFromFixture({ playability: "UNPLAYABLE" }),
+      () => innertubeFromFixture({ playability: "OK", url: "https://cdn.example/a.mp4", title: "Ролик", expiresAtMs: 50 }),
+    ]);
+    expect(chain).toMatchObject({ title: "Ролик" });
+    expect(runExtractorChain([() => null])).toEqual({ error: "unconfigured" });
+    expect(imageKind(Uint8Array.from([0xff, 0xd8, 0xff, 0]))).toBe("jpeg");
+    expect(imageKind(Uint8Array.from([1, 2, 3]))).toBeNull();
+    expect(dayScore(10, 2, 4)).toBe(10 + 60 + 20);
+    const tokens = new Map([["old", { userId: "u", expiresAt: 100 }]]);
+    expect(rotateRefresh(tokens, "old", "new", 50, 100)).toBe("u");
+    expect(tokens.has("old")).toBe(false);
+    expect(tokens.get("new")?.expiresAt).toBe(150);
+    const magic = new Map([["tok", { email: "a@b.c", expiresAt: 100, used: false }]]);
+    expect(consumeMagic(magic, "tok", 50)).toBe("a@b.c");
+    expect(consumeMagic(magic, "tok", 50)).toBeNull();
+    await expect(dnsPinned("cdn.example", async () => ["8.8.8.8"])).resolves.toBe(true);
+    await expect(dnsPinned("cdn.example", async () => ["127.0.0.1"])).resolves.toBe(false);
   });
 });

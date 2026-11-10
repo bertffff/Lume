@@ -121,6 +121,19 @@ export const ru = {
   "mod.tempMute": "Временный мут",
   "mod.seconds": "Секунды, от 30 до суток",
   "mod.empty": "Журнал пуст",
+  "chat.pinned": "Закреплено",
+  "chat.slow": "Медленный режим",
+  "chat.photo": "Фото",
+  "queue.up": "Выше",
+  "queue.down": "Ниже",
+  "queue.history": "История",
+  "queue.tips": "Рекомендации",
+  "player.hideMine": "Скрыть чужие реакции",
+  "player.hideRoom": "Скрыть реакции в зале",
+  "studio.title": "Профиль",
+  "admin.title": "Админка",
+  "people.export": "Скачать мои данные",
+  "people.quiet": "Тихие часы",
 } as const;
 
 export type MessageKey = keyof typeof ru;

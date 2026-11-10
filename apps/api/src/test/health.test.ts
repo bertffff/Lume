@@ -19,6 +19,11 @@ describe("health", () => {
 
     const ready = await app.inject({ method: "GET", url: "/ready" });
     expect(ready.statusCode).toBe(200);
+    const metrics = await app.inject({ method: "GET", url: "/metrics" });
+    expect(metrics.statusCode).toBe(200);
+    expect(metrics.body).toContain("lume_up 1");
+    expect(metrics.body).toContain("lume_sentry_configured 0");
+
     expect(ready.json()).toMatchObject({
       status: "ready",
       mode: "config",

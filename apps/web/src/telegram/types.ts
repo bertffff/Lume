@@ -19,14 +19,25 @@ export interface TelegramBackButton {
   offClick: (handler: () => void) => void;
 }
 
+export interface TelegramMainButton {
+  setText: (text: string) => void;
+  show: () => void;
+  hide: () => void;
+  onClick: (handler: () => void) => void;
+  offClick: (handler: () => void) => void;
+}
+
 export interface TelegramWebApp {
   initData?: string;
-  initDataUnsafe?: { user?: { language_code?: string } };
+  initDataUnsafe?: { user?: { language_code?: string }; start_param?: string };
   themeParams?: TelegramThemeParams;
+  colorScheme?: "light" | "dark";
   ready?: () => void;
   expand?: () => void;
+  onEvent?: (event: string, handler: () => void) => void;
   HapticFeedback?: TelegramHapticFeedback;
   BackButton?: TelegramBackButton;
+  MainButton?: TelegramMainButton;
 }
 
 interface TelegramGlobal {

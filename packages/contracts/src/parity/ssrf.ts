@@ -32,6 +32,21 @@ export function ipBlocked(ip: string): boolean {
   return false;
 }
 
+/** Resolves the host and rejects the URL when any address is private. */
+export async function dnsPinned(
+  hostname: string,
+  lookup: (host: string) => Promise<readonly string[]>,
+): Promise<boolean> {
+  if (hostnameBlocked(hostname)) {
+    return false;
+  }
+  const addresses = await lookup(hostname);
+  if (addresses.length === 0) {
+    return false;
+  }
+  return addresses.every((address) => !ipBlocked(address));
+}
+
 export function urlBlocked(raw: string): boolean {
   let parsed: URL;
   try {
