@@ -7,8 +7,8 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 | --- | ---: |
 | Done | 55 |
 | Done (needs creds) | 8 |
-| Partial | 45 |
-| Missing | 29 |
+| Partial | 48 |
+| Missing | 26 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -20,7 +20,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F002 | Email + password login | Done | Login is limited to 20 attempts per 15 minutes per email. |
 | F003 | JWT access + rotating refresh | Partial | POST /auth/refresh rotates a token. The web client does not call it yet. |
 | F004 | Logout with server revocation | Partial | Client clears the session. The server does not revoke it. |
-| F005 | Magic-link login | Partial | Magic links are single-use for 15 minutes and returned in the response when SMTP is unset. There is no login form yet. |
+| F005 | Magic-link login | Partial | The landing page can request a link. It does not sign the browser in when the link returns. |
 | F006 | Telegram Mini App auth | Partial | HMAC initData works. Max age is 24h, not 300s. |
 | F007 | Telegram Login Widget | Missing | No widget hash verification. |
 | F008 | Link / unlink Telegram | Missing | No link routes. |
@@ -80,7 +80,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
 | F064 | SearXNG search | Done (needs creds) | The queue has a search box. It stays empty until SEARXNG_URL is set. |
-| F065 | Cobalt services list | Missing | No endpoint. |
+| F065 | Cobalt services list | Partial | GET /video/services is empty until COBALT_API_URL is set. No screen lists it. |
 | F066 | Video detect endpoint | Partial | POST /video/detect classifies a URL. The queue field does not call it. |
 | F067 | Shared queue | Done | Reorder, a pending line, and a duplicate URL rejection are in place. |
 | F068 | Queue history | Partial | The queue panel shows how many history rows the room has. |
@@ -110,7 +110,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F092 | Voice preflight | Partial | Mic picker after permission. No speaker test or network score. |
 | F093 | Voice mute broadcast | Partial | voice:state carries muted. No VoiceSession duration. |
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
-| F095 | TURN/STUN endpoint | Partial | LiveKit Cloud owns ICE. No /ice-servers. |
+| F095 | TURN/STUN endpoint | Partial | GET /ice-servers returns Google STUN. LiveKit still owns the voice ICE path. |
 | F096 | Friends | Partial | Request, accept, decline, remove, block, and name search with a 20/minute limit. No legacy duplicate API. |
 | F097 | Friend presence | Done | A friend row shows the room they are in. |
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |
@@ -129,7 +129,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |
 | F112 | Engagement widget | Missing | No voice-second total. |
 | F113 | Host stats | Done | Hosted room count is shown. |
-| F114 | Leaderboards | Missing | No /stats. |
+| F114 | Leaderboards | Partial | GET /stats exists and returns empty lists. No screen ranks people. |
 | F115 | In-app notifications | Done | The people screen lists unread notices. |
 | F116 | Telegram bot notify | Partial | Telegram sendMessage runs when TELEGRAM_BOT_TOKEN and telegramId are set. |
 | F117 | Email notifications | Done (needs creds) | Email send is skipped until SMTP_HOST is set. Documented in docs/CONFIG.md. |
@@ -145,7 +145,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F127 | Admin deep links | Missing | No /admin route. |
 | F128 | Health / live / ready | Partial | /health only. It does not fail when Postgres is down. |
 | F129 | Prometheus metrics | Done (needs creds) | GET /metrics is tested. Events are not uploaded until SENTRY_DSN is set. |
-| F130 | Rate limiting | Missing | No sliding window. |
+| F130 | Rate limiting | Partial | Login, search, and reports use an in-memory window. It is not Redis-backed for every route. |
 | F131 | Feature flags | Done | GET /flags lists the product flags, including whether extractors are on. |
 | F132 | Themes | Partial | Aurora stays locked unless theme.aurora is granted. The name Аврора receives it plus flair.spark. |
 | F133 | i18n RU/EN | Partial | Flat dictionaries. Legacy namespaces are not loaded. |
