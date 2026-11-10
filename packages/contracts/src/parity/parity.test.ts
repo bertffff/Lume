@@ -13,12 +13,16 @@ import { hostnameBlocked, ipBlocked, urlBlocked, dnsPinned } from "./ssrf.js";
 import {
   autoQuality,
   consumeMagic,
+  duplicateQueue,
   dayScore,
   gestureDelta,
   imageKind,
   innertubeFromFixture,
   moveQueueItem,
+  notificationChannels,
+  notificationKinds,
   pageSlice,
+  playbackRates,
   playerShortcut,
   rotateRefresh,
   runExtractorChain,
@@ -204,5 +208,8 @@ describe("parity rules", () => {
     expect(autoQuality(0.2)).toBe("low");
     expect(playerShortcut("j", true)).toBe("back");
     expect(playerShortcut("j", false)).toBeNull();
+    expect(notificationChannels.length * notificationKinds.length).toBe(24);
+    expect(playbackRates).toContain(1);
+    expect(duplicateQueue(["https://youtu.be/a"], "https://youtu.be/a")).toBe(true);
   });
 });

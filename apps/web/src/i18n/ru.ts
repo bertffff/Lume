@@ -155,6 +155,17 @@ export const ru = {
   "onboard.2": "Напишите в чат",
   "onboard.3": "Войдите в голос",
   "onboard.done": "Понятно",
+  "player.quality": "Качество",
+  "player.speed": "Скорость",
+  "player.low": "Слабая сеть",
+  "studio.bio": "О себе",
+  "people.digest": "В дайджесте",
+  "queue.search": "Найти видео",
+  "chat.unpin": "Снять",
+  "member.makeHost": "Сделать хостом",
+  "member.report": "Пожаловаться",
+  "lobby.magic": "Ссылка на почту",
+  "people.remind": "Напомнить через минуты",
 } as const;
 
 export type MessageKey = keyof typeof ru;

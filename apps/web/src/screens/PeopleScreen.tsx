@@ -1,4 +1,4 @@
-import { imageKind } from "@lume/contracts";
+import { imageKind, notificationChannels, notificationKinds } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -16,6 +16,9 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
   const [hostRooms, setHostRooms] = useState(0);
   const [achievements, setAchievements] = useState<Array<{ key: string; title: string; pinSlot: number | null }>>([]);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [topFriends, setTopFriends] = useState<Array<{ partnerId: string; seconds: number }>>([]);
+  const [digestCount, setDigestCount] = useState(0);
+  const [bio, setBio] = useState("");
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [resume, setResume] = useState<string | null>(null);
   const [studio, setStudio] = useState<string | null>(null);
@@ -34,6 +37,10 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
     setPlatforms(Array.isArray(profile.platforms) ? profile.platforms : []);
     setHostRooms(profile.host?.roomsHosted ?? 0);
     setAchievements(Array.isArray(profile.achievements) ? profile.achievements : []);
+    setTopFriends(Array.isArray(profile.topFriends) ? profile.topFriends : []);
+    setBio(typeof profile.bio === "string" ? profile.bio : "");
+    const preview = await fetch(`${apiUrl}/notifications/digest-preview`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json());
+    setDigestCount(preview.count ?? 0);
     if (profile.role === "ADMIN" || profile.role === "SUPERADMIN") {
       const overview = await fetch(`${apiUrl}/admin/overview`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json());
       setAdmin(`${t("admin.title")} ${overview.users ?? 0}`);
@@ -80,6 +87,41 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
         {platforms.map((item) => <li key={item.source}>{item.source} {item.count}</li>)}
       </ul>
       <p data-testid="host-stats">{t("studio.hosted")} {hostRooms}</p>
+      <ul data-testid="top-friends">
+        {topFriends.map((friend) => <li key={friend.partnerId}>{friend.partnerId} {friend.seconds}</li>)}
+      </ul>
+      <p data-testid="digest-count">{t("people.digest")} {digestCount}</p>
+      <div data-testid="notify-grid">
+        {notificationChannels.flatMap((channel) => notificationKinds.map((kind) => (
+          <label key={`${channel}-${kind}`} className="tr-check">
+            <input
+              type="checkbox"
+              defaultChecked
+              onChange={(event) => {
+                void fetch(`${apiUrl}/me/notification-preferences`, {
+                  method: "PUT",
+                  headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+                  body: JSON.stringify({ channel, kind, enabled: event.target.checked }),
+                });
+              }}
+            />
+            {channel} {kind}
+          </label>
+        )))}
+      </div>
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        void fetch(`${apiUrl}/me`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+          body: JSON.stringify({ bio }),
+        });
+      }}>
+        <label>
+          {t("studio.bio")}
+          <input value={bio} onChange={(event) => setBio(event.target.value)} maxLength={100} />
+        </label>
+      </form>
       <div data-testid="pin-slots">
         {[0, 1, 2].map((slot) => {
           const pinned = achievements.find((item) => item.pinSlot === slot);
@@ -148,6 +190,22 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
         />
         {t("people.quiet")}
       </label>
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        const minutes = Number(new FormData(event.currentTarget).get("minutes"));
+        if (Number.isFinite(minutes)) {
+          void fetch(`${apiUrl}/rooms/${session.user.id}/reminders`, {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+            body: JSON.stringify({ minutes }),
+          });
+        }
+      }}>
+        <label>
+          {t("people.remind")}
+          <input name="minutes" type="number" min={5} max={10080} defaultValue={60} />
+        </label>
+      </form>
       <form onSubmit={(event) => void search(event)}>
         <label>
           {t("people.search")}

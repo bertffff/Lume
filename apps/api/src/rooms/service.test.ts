@@ -108,6 +108,18 @@ describe("room service", () => {
     expect(reclaimed.members.find((member) => member.userId === "mod")?.role).toBe("viewer");
   });
 
+  it("transfers the host and rejects a duplicate queue url", async () => {
+    const service = harness();
+    const created = await service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Передача" });
+    await service.joinByCode({ userId: "next", displayName: "Следующий" }, created.room.code);
+    const moved = await service.transferHost({ userId: "host", displayName: "Хост" }, created.room.id, "next");
+    expect(moved.members.find((member) => member.userId === "next")?.role).toBe("host");
+    await service.addQueueItem({ userId: "next", displayName: "Следующий" }, created.room.id, "https://youtu.be/dQw4w9WgXcQ");
+    await expect(
+      service.addQueueItem({ userId: "next", displayName: "Следующий" }, created.room.id, "https://youtu.be/dQw4w9WgXcQ"),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
+
   it("stops a fourth distinct reaction from the same person", async () => {
     const service = harness();
     const created = await service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Чат" });

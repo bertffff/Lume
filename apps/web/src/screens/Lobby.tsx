@@ -24,6 +24,14 @@ export function Lobby({
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [people, setPeople] = useState(false);
+  const [magicEmail, setMagicEmail] = useState("");
+
+  useEffect(() => {
+    const pending = sessionStorage.getItem("lume-pending-room");
+    const fromQuery = new URLSearchParams(window.location.search).get("code");
+    if (fromQuery) setCode(fromQuery);
+    else if (pending) setCode(pending);
+  }, []);
 
   useEffect(() => {
     let stopped = false;
@@ -113,6 +121,21 @@ export function Lobby({
           </button>
         </form>
       )}
+      {!session ? (
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/auth/magic-link`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ email: magicEmail }),
+          });
+        }}>
+          <label>
+            {t("lobby.magic")}
+            <input type="email" value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} />
+          </label>
+        </form>
+      ) : null}
       {session && !window.localStorage.getItem("lume-onboarded") ? (
         <div data-testid="onboarding">
           <p>{t("onboard.1")}</p>

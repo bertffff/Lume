@@ -134,6 +134,22 @@ export function playerShortcut(key: string, host: boolean): "play" | "back" | "f
 
 export const onboardingSteps = ["зал", "чат", "голос"] as const;
 
+export const notificationChannels = ["web", "telegram", "email", "push"] as const;
+export const notificationKinds = [
+  "FRIEND_REQUEST",
+  "FRIEND_ACCEPTED",
+  "ROOM_INVITE",
+  "ACHIEVEMENT_UNLOCKED",
+  "SYSTEM",
+  "MOD_ACTION",
+] as const;
+
+export const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
+export function duplicateQueue(urls: readonly string[], next: string): boolean {
+  return urls.includes(next);
+}
+
 export function consumeMagic(store: Map<string, MagicRow>, token: string, nowMs: number): string | null {
   const row = store.get(token);
   if (!row || row.used || row.expiresAt <= nowMs) {

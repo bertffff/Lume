@@ -1,6 +1,8 @@
 import {
+  autoQuality,
   gestureDelta,
   planDrift,
+  playbackRates,
   shouldCorrectDrift,
   positionAt,
   type AdapterPhase,
@@ -46,6 +48,8 @@ export function PlayerPanel({
   const handed = useRef(false);
   const [hideFloats, setHideFloats] = useState(() => window.localStorage.getItem("lume-hide-floats") === "1");
   const [hideRoomFloats, setHideRoomFloats] = useState(false);
+  const [quality, setQuality] = useState(() => window.localStorage.getItem("lume-quality") ?? "auto");
+  const [lowBandwidth, setLowBandwidth] = useState(() => window.localStorage.getItem("lume-low-bandwidth") === "1");
   const live = useRoomActions();
   const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -60,6 +64,8 @@ export function PlayerPanel({
   const reportedAspect = useRef(aspect);
   const reportViewerRef = useRef(live?.reportViewer);
   const canControlRef = useRef(live?.canControl);
+  const playNextRef = useRef(live?.playNext);
+  playNextRef.current = live?.playNext;
   useEffect(() => {
     if (handed.current || !live) return;
     const params = new URLSearchParams(window.location.search);
@@ -117,6 +123,9 @@ export function PlayerPanel({
           phaseRef.current = state.phase;
           if (canControlRef.current && playbackStatusRef.current === "playing" && state.phase === "ready") {
             void adapter.play();
+          }
+          if (canControlRef.current && state.phase === "ended") {
+            playNextRef.current?.();
           }
           if (
             state.aspectRatio &&
@@ -351,6 +360,44 @@ export function PlayerPanel({
         >
           {t("player.share")}
         </button>
+        <label>
+          {t("player.quality")}
+          <select
+            value={quality}
+            onChange={(event) => {
+              const next = event.target.value;
+              setQuality(next);
+              window.localStorage.setItem("lume-quality", next);
+            }}
+          >
+            <option value="auto">{autoQuality(null)}</option>
+            <option value="low">low</option>
+            <option value="high">high</option>
+          </select>
+        </label>
+        <label>
+          {t("player.speed")}
+          <select
+            onChange={(event) => adapterRef.current?.setPlaybackRate?.(Number(event.target.value))}
+            defaultValue="1"
+          >
+            {playbackRates.map((rate) => (
+              <option key={rate} value={rate}>{rate}</option>
+            ))}
+          </select>
+        </label>
+        <label className="tr-check">
+          <input
+            type="checkbox"
+            checked={lowBandwidth}
+            onChange={(event) => {
+              setLowBandwidth(event.target.checked);
+              window.localStorage.setItem("lume-low-bandwidth", event.target.checked ? "1" : "0");
+              document.documentElement.toggleAttribute("data-low-bandwidth", event.target.checked);
+            }}
+          />
+          {t("player.low")}
+        </label>
       </footer>
       <label className="tr-check">
         <input

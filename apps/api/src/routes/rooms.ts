@@ -192,6 +192,12 @@ export function registerRoomRoutes(
     );
   });
 
+  app.post("/rooms/:id/host", async (request, reply) => {
+    await memberAction(request, reply, env, service, kickSchema, (actor, roomId, body) =>
+      service!.transferHost(actor, roomId, body.userId),
+    );
+  });
+
   app.post("/rooms/:id/role", async (request, reply) => {
     await memberAction(request, reply, env, service, roleSchema, (actor, roomId, body) =>
       service!.setRole(actor, roomId, body.userId, body.role),

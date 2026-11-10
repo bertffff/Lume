@@ -110,7 +110,27 @@ export function VoicePanel({
               </span>
               {self && member.userId !== live?.selfId && canActOnMember(self, member.role) ? (
                 <span className="tr-inline-actions">
-                  <button type="button" className="tr-text-button" onClick={() => live?.kick(member.userId)}>
+                  <button type="button" className="tr-text-button" onClick={() => {
+                  void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/rooms/${live?.state.room.id}/host`, {
+                    method: "POST",
+                    headers: { "content-type": "application/json", authorization: `Bearer ${live?.accessToken ?? ""}` },
+                    body: JSON.stringify({ userId: member.userId }),
+                  });
+                }}
+              >
+                {t("member.makeHost")}
+              </button>
+              <button type="button" className="tr-text-button" onClick={() => {
+                  void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/reports`, {
+                    method: "POST",
+                    headers: { "content-type": "application/json", authorization: `Bearer ${live?.accessToken ?? ""}` },
+                    body: JSON.stringify({ targetKind: "user", targetId: member.userId, roomId: live?.state.room.id, reason: "report" }),
+                  });
+                }}
+              >
+                {t("member.report")}
+              </button>
+              <button type="button" className="tr-text-button" onClick={() => live?.kick(member.userId)}>
                     {t("member.kick")}
                   </button>
                   <button

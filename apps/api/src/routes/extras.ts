@@ -25,6 +25,30 @@ const magicLinks = new Map<string, MagicRow>();
 const refreshTokens = new Map<string, RefreshRow>();
 
 export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null): void {
+  app.get("/stats", async () => ({
+    watchers: [],
+    parties: [],
+  }));
+
+  app.get("/flags", async () => ({
+    smartQueue: true,
+    voicePreflight: true,
+    chatComfort: true,
+    moderationPresets: true,
+    lowBandwidth: true,
+    socialRetention: true,
+    extractors: env.FF_EXTRACTORS === "true",
+  }));
+
+  app.get("/ice-servers", async () => ({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  }));
+
+  app.get("/video/services", async () => ({
+    services: env.COBALT_API_URL ? ["cobalt"] : [],
+    unavailable: !env.COBALT_API_URL,
+  }));
+
   app.get("/metrics", async (request, reply) => {
     if (env.METRICS_TOKEN) {
       const header = request.headers.authorization;
@@ -226,6 +250,7 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     const sessions = await prisma.watchSession.groupBy({ by: ["partnerId"], where: { userId: user.id }, _sum: { watchDuration: true }, orderBy: { _sum: { watchDuration: "desc" } }, take: 5 });
     return reply.send({
       level: levelFromXp(user.xp),
+      bio: user.bio,
       heatmap: yearHeatmap(new Date(), {
         [new Date().toISOString().slice(0, 10)]: dayScore(user.totalWatchTime, messages, user.totalReactions),
       }),

@@ -4,7 +4,7 @@ import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
 import { useRoomActions } from "../../room/live.js";
 
-const reactions = ["👍", "🔥", "😂"];
+const reactions = ["👍", "🔥", "😂", "❤️", "😮", "😢"];
 
 export function ChatPanel({
   collapsed,
@@ -77,7 +77,25 @@ export function ChatPanel({
           </button>
         ) : null}
       </header>
-      {pin ? <p className="tr-banner" data-testid="pinned-message">{t("chat.pinned")} {pin}</p> : null}
+      {pin ? (
+        <p className="tr-banner" data-testid="pinned-message">
+          {t("chat.pinned")} {pin}
+          <button
+            type="button"
+            className="tr-text-button"
+            onClick={() => {
+              if (!roomId || !token) return;
+              void fetch(`${apiUrl}/rooms/${roomId}/pin`, {
+                method: "POST",
+                headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+                body: JSON.stringify({ messageId: null }),
+              }).then(() => setPin(null));
+            }}
+          >
+            {t("chat.unpin")}
+          </button>
+        </p>
+      ) : null}
       {waitMs > 0 ? <p className="tr-note" data-testid="slow-countdown">{t("chat.slow")} {Math.ceil(waitMs / 1000)}</p> : null}
       <div className="tr-chat-log" data-testid="chat-log">
         {messages.length === 0 ? <p className="tr-empty">{t("chat.empty")}</p> : null}

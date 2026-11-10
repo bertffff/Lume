@@ -4,6 +4,7 @@ import { liveKitConfigured } from "../voice/livekit.js";
 
 export function registerHealthRoutes(app: FastifyInstance, env: ApiEnv): void {
   app.get("/health", async () => ({ status: "ok" }));
+  app.get("/live", async () => ({ status: "ok" }));
 
   app.get("/ready", async () => ({
     status: "ready",

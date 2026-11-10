@@ -19,6 +19,8 @@ export function QueuePanel({
   const [pending, setPending] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
   const [tips, setTips] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
+  const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
+  const [search, setSearch] = useState("");
   const roomId = live?.state.room.id;
   const token = live?.accessToken;
 
@@ -94,6 +96,15 @@ export function QueuePanel({
           </li>
         ))}
       </ol>
+      <form className="tr-composer" onSubmit={(event) => {
+        event.preventDefault();
+        const q = search.trim();
+        if (!q) return;
+        void fetch(`${apiUrl}/video/search?q=${encodeURIComponent(q)}`).then((response) => response.json()).then((payload: { results?: Array<{ title: string; url: string }> }) => setFound(payload.results ?? []));
+      }}>
+        <input aria-label={t("queue.search")} placeholder={t("queue.search")} value={search} onChange={(event) => setSearch(event.target.value)} />
+      </form>
+      {found.map((item) => <button key={item.url} type="button" className="tr-text-button" onClick={() => live?.addQueue(item.url)}>{item.title || item.url}</button>)}
       <form className="tr-composer" onSubmit={submit}>
         <input
           data-testid="queue-input"

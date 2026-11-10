@@ -21,6 +21,7 @@ import type { ApiEnv } from "../env.js";
 import type { RoomService } from "../rooms/service.js";
 
 const searches = new Map<string, RateBucket>();
+const logins = new Map<string, RateBucket>();
 const reports = new Map<string, RateBucket>();
 
 function hourInZone(timeZone: string): number {
@@ -84,6 +85,10 @@ export function registerSocialRoutes(
     if (!body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
+    const key = body.data.email.toLowerCase();
+    const decision = allowHit(logins.get(key) ?? { hits: [] }, Date.now(), 20, 15 * 60_000);
+    logins.set(key, decision.bucket);
+    if (!decision.ok) return reply.code(429).send({ error: "rate_limited" });
     const user = await prisma.user.findUnique({ where: { email: body.data.email.toLowerCase() } });
     if (!user?.passwordHash || !(await verifyPassword(body.data.password, user.passwordHash))) {
       return reply.code(401).send({ error: "Неверный email или пароль" });

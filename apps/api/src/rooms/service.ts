@@ -3,6 +3,7 @@ import {
   canAssignRole,
   canControlPlayback,
   canToggleReaction,
+  duplicateQueue,
   nextHost,
   mediaFallbackTitle,
   parseEmbedInput,
@@ -219,6 +220,27 @@ export class RoomService {
     return this.detailFor(actor.userId, roomId);
   }
 
+  async transferHost(actor: Actor, roomId: string, targetUserId: string): Promise<RoomDetail> {
+    const { member } = await this.requireActive(roomId, actor.userId);
+    if (member.role !== "host") {
+      throw new RoomFailure("forbidden");
+    }
+    const target = await this.requireTarget(roomId, targetUserId);
+    await this.repo.saveMember({ ...member, role: "viewer" });
+    await this.repo.saveMember({ ...target, role: "host" });
+    await this.repo.insertMessage({
+      id: this.ids(),
+      roomId,
+      userId: actor.userId,
+      displayName: actor.displayName,
+      body: `${target.displayName} теперь хост`,
+      replyToId: null,
+      createdAt: this.now().toISOString(),
+      reactions: [],
+    });
+    return this.detailFor(actor.userId, roomId);
+  }
+
   async setRole(
     actor: Actor,
     roomId: string,
@@ -301,6 +323,9 @@ export class RoomService {
     const meta = await this.titles(parsed);
     const title = meta?.title?.trim() || mediaFallbackTitle(parsed.url);
     const queue = await this.repo.listQueue(roomId);
+    if (duplicateQueue(queue.map((item) => item.url), parsed.url)) {
+      throw new RoomFailure("conflict");
+    }
     const last = queue[queue.length - 1];
     await this.repo.insertQueueItem({
       id: this.ids(),
