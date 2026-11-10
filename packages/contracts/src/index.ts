@@ -148,6 +148,8 @@ export {
   consumeMagic,
   duplicateQueue,
   heartbeatLag,
+  isFavourite,
+  shouldRecordWatch,
   hlsProxyUrl,
   shouldHoldForReady,
   typingLine,

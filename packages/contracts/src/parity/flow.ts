@@ -161,6 +161,14 @@ export const notificationKinds = [
 
 export const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
+export function shouldRecordWatch(joinedAtMs: number, nowMs: number): boolean {
+  return nowMs - joinedAtMs > 30_000;
+}
+
+export function isFavourite(watchCount: number): boolean {
+  return watchCount > 1;
+}
+
 export function heartbeatLag(nowMs: number, sentAtMs: number): number {
   return Math.max(0, nowMs - sentAtMs);
 }

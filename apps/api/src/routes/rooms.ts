@@ -5,6 +5,7 @@ import { allowsModeration, slowModeAllows, tempMuteExpiry } from "@lume/contract
 import type { PrismaClient } from "@lume/db";
 import { banBlocksJoin } from "../access/gates.js";
 import { trackStat } from "../account/awards.js";
+import { shouldRecordWatch } from "@lume/contracts";
 import { requireUser } from "../auth/guard.js";
 import type { ApiEnv } from "../env.js";
 import { RoomService } from "../rooms/service.js";
@@ -151,6 +152,16 @@ export function registerRoomRoutes(
       return reply.code(400).send({ error: "invalid_body" });
     }
     await run(reply, async () => {
+      if (prisma) {
+        const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.data.id, userId: actor.userId } } });
+        const others = await prisma.roomMember.findMany({ where: { roomId: params.data.id, userId: { not: actor.userId }, leftAt: null } });
+        if (self && shouldRecordWatch(self.joinedAt.getTime(), Date.now())) {
+          const seconds = Math.round((Date.now() - self.joinedAt.getTime()) / 1000);
+          for (const other of others) {
+            await prisma.watchSession.create({ data: { userId: actor.userId, partnerId: other.userId, roomId: params.data.id, watchDuration: seconds } });
+          }
+        }
+      }
       await service.leave({ userId: actor.userId, displayName: actor.displayName }, params.data.id);
       if (prisma) {
         const active = await prisma.roomMember.count({ where: { roomId: params.data.id, leftAt: null } });
@@ -318,9 +329,18 @@ export function registerRoomRoutes(
     return run(reply, async () => {
       const detail = await service.playNext({ userId: actor.userId, displayName: actor.displayName }, params.data.id);
       if (prisma && detail.room.nowPlaying) {
+        const playing = detail.room.nowPlaying;
         await prisma.roomHistoryItem.create({
-          data: { roomId: params.data.id, url: detail.room.nowPlaying.url, title: detail.room.nowPlaying.title, source: detail.room.nowPlaying.provider },
+          data: { roomId: params.data.id, url: playing.url, title: playing.title, source: playing.provider },
         });
+        const members = await prisma.roomMember.findMany({ where: { roomId: params.data.id, leftAt: null } });
+        for (const member of members) {
+          await prisma.watchHistory.upsert({
+            where: { userId_videoUrl: { userId: member.userId, videoUrl: playing.url } },
+            create: { userId: member.userId, roomId: params.data.id, videoUrl: playing.url, title: playing.title, source: playing.provider },
+            update: { watchCount: { increment: 1 }, lastWatchedAt: new Date(), title: playing.title },
+          });
+        }
       }
       return detail;
     });

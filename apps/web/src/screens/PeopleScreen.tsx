@@ -21,6 +21,7 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
   const [bio, setBio] = useState("");
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [resume, setResume] = useState<string | null>(null);
+  const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null }>>([]);
   const [studio, setStudio] = useState<string | null>(null);
   const [admin, setAdmin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,10 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
       fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()),
     ]);
     void api.linkedAccounts(session.accessToken).then(setLinked).catch(() => undefined);
+    void fetch(`${apiUrl}/me/favourites`, { headers: { authorization: `Bearer ${session.accessToken}` } })
+      .then((response) => response.json())
+      .then((payload: { items?: Array<{ url: string; title: string | null }> }) => setFavourites(payload.items ?? []))
+      .catch(() => setFavourites([]));
     setStudio(typeof profile.level === "number" ? `${t("studio.title")} ${profile.level}` : null);
     setHeatmap(Array.isArray(profile.heatmap) ? profile.heatmap : []);
     setPlatforms(Array.isArray(profile.platforms) ? profile.platforms : []);
@@ -92,6 +97,7 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
         {t("people.restore")}
       </button>
       {studio ? <p data-testid="studio">{studio}</p> : null}
+      {favourites.map((item) => <p key={item.url}>{item.title || item.url}</p>)}
       {admin ? <AdminScreen token={session.accessToken} /> : null}
       <div data-testid="heatmap" aria-label={t("studio.heat")}>
         {heatmap.filter((day) => day.score > 0).slice(0, 12).map((day) => (

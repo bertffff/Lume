@@ -1,6 +1,7 @@
 import {
   allowHit,
   decideFriendRequest,
+  isFavourite,
   levelFromXp,
   passwordIssue,
   resumeCard,
@@ -506,6 +507,16 @@ export function registerSocialRoutes(
     const user = await prisma.user.findUnique({ where: { id: actor.userId } });
     const snapshot = (user?.lastRoomSnapshot ?? null) as ResumeSnapshot | null;
     return reply.send({ resume: resumeCard(snapshot) });
+  });
+
+  app.get("/me/favourites", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const rows = await prisma.watchHistory.findMany({ where: { userId: actor.userId, watchCount: { gt: 1 } }, orderBy: { watchCount: "desc" }, take: 20 });
+    return reply.send({ items: rows.filter((row) => isFavourite(row.watchCount)).map((row) => ({ url: row.videoUrl, title: row.title, watchCount: row.watchCount })) });
   });
 
   app.post("/rooms/resume-last", async (request, reply) => {

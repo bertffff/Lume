@@ -20,6 +20,8 @@ import {
   innertubeFromFixture,
   rutubeFromFixture,
   heartbeatLag,
+  isFavourite,
+  shouldRecordWatch,
   hlsProxyUrl,
   shouldHoldForReady,
   twitchFromFixture,
@@ -222,6 +224,8 @@ describe("parity rules", () => {
     expect(rutubeFromFixture({ m3u8: "https://rutube/a.m3u8" })?.url).toContain("rutube");
     expect(twitchFromFixture(null)).toBeNull();
     expect(heartbeatLag(2_000, 1_000)).toBe(1_000);
+    expect(shouldRecordWatch(0, 31_000)).toBe(true);
+    expect(isFavourite(2)).toBe(true);
     expect(shouldHoldForReady(true, 1)).toBe(true);
     expect(hlsProxyUrl("http://api", "https://cdn/a.m3u8")).toContain("hls-proxy");
     expect(typingLine(["Аня", "Боря"])).toBe("Аня и ещё 1 печатают…");
