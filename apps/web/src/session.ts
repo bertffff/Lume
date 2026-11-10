@@ -4,6 +4,7 @@ const storageKey = "lume.session";
 
 export interface ClientSession {
   accessToken: string;
+  refreshToken?: string;
   user: User;
 }
 

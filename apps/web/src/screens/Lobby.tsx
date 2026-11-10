@@ -25,6 +25,7 @@ export function Lobby({
   const [error, setError] = useState<string | null>(null);
   const [people, setPeople] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
+  const [magicToken, setMagicToken] = useState("");
 
   useEffect(() => {
     const pending = sessionStorage.getItem("lume-pending-room");
@@ -57,7 +58,11 @@ export function Lobby({
     setError(null);
     try {
       const result = await api.devLogin(displayName.trim() || t("voice.you"));
-      onSession({ accessToken: result.accessToken, user: result.user });
+      onSession({
+        accessToken: result.accessToken,
+        ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}),
+        user: result.user,
+      });
     } catch (caught) {
       setError(caught instanceof ClientError ? caught.code : "request_failed");
     }
@@ -105,7 +110,10 @@ export function Lobby({
           <button type="button" className="tr-text-button" onClick={() => { window.history.pushState({}, "", "/admin"); window.dispatchEvent(new PopStateEvent("popstate")); }}>
             {t("admin.title")}
           </button>{" "}
-          <button type="button" className="tr-text-button" onClick={onSignOut}>
+          <button type="button" className="tr-text-button" onClick={() => {
+            if (session.refreshToken) void api.logout(session.refreshToken).catch(() => undefined);
+            onSignOut();
+          }}>
             {t("lobby.signOut")}
           </button>
         </p>
@@ -131,12 +139,38 @@ export function Lobby({
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ email: magicEmail }),
+          }).then(async (response) => {
+            const body = (await response.json()) as { magicLink?: string };
+            const token = body.magicLink?.split("magic=")[1] ?? "";
+            if (token) setMagicToken(token);
           });
         }}>
           <label>
             {t("lobby.magic")}
             <input type="email" value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} />
           </label>
+          {magicToken ? (
+            <button type="button" onClick={() => void api.verifyMagic(magicToken).then((next) => onSession(next))}>
+              {t("lobby.signIn")}
+            </button>
+          ) : null}
+        </form>
+      ) : null}
+      {!session ? (
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/auth/telegram-widget`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(Object.fromEntries(data.entries())),
+          });
+        }}>
+          <input name="id" placeholder="id" />
+          <input name="auth_date" placeholder="auth_date" />
+          <input name="hash" placeholder="hash" />
+          <input name="first_name" placeholder="first_name" />
+          <button type="submit">Telegram</button>
         </form>
       ) : null}
       {session && !window.localStorage.getItem("lume-onboarded") ? (

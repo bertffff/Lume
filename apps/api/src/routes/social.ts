@@ -17,6 +17,8 @@ import { emailStub, notifyUser, pushStub } from "../account/notify.js";
 import { hashPassword, verifyPassword } from "../account/passwords.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import { requireUser } from "../auth/guard.js";
+import { issueRefresh } from "../auth/refresh-store.js";
+import { verifyLoginWidget } from "../auth/telegram.js";
 import type { ApiEnv } from "../env.js";
 import type { RoomService } from "../rooms/service.js";
 
@@ -44,11 +46,11 @@ export function registerSocialRoutes(
   service: RoomService | null,
 ): void {
   app.post("/auth/register", async (request, reply) => {
-    if (!prisma || !env.JWT_SECRET) {
-      return reply.code(503).send({ error: "database_unconfigured" });
-    }
     if (env.NODE_ENV === "production" && !env.REDIS_URL) {
       return reply.code(503).send({ error: "redis_unconfigured" });
+    }
+    if (!prisma || !env.JWT_SECRET) {
+      return reply.code(503).send({ error: "database_unconfigured" });
     }
     const body = z.object({
       email: z.string().email(),
@@ -77,7 +79,7 @@ export function registerSocialRoutes(
       displayName: user.displayName,
       ttlSeconds: env.JWT_TTL_SECONDS,
     });
-    return reply.send({ accessToken, user: { id: user.id, displayName: user.displayName, email } });
+    return reply.send({ accessToken, refreshToken: issueRefresh(user.id), user: { id: user.id, displayName: user.displayName, email } });
   });
 
   app.post("/auth/login", async (request, reply) => {
@@ -108,6 +110,7 @@ export function registerSocialRoutes(
     });
     return reply.send({
       accessToken,
+      refreshToken: issueRefresh(user.id),
       user: { id: user.id, displayName: user.displayName, email: user.email },
       deletionScheduled: Boolean(user.deletedAt),
     });

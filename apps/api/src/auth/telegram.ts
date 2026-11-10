@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { telegramWebAppUserSchema, type TelegramWebAppUser } from "@lume/contracts";
 
 export type TelegramVerifyResult =
@@ -73,6 +73,28 @@ export function verifyTelegramInitData(
   return queryId
     ? { ok: true, user: user.data, authDate, queryId }
     : { ok: true, user: user.data, authDate };
+}
+
+/** Telegram Login Widget: secret is SHA-256 of the bot token, not the WebAppData key. */
+export function verifyLoginWidget(
+  fields: Record<string, string>,
+  botToken: string,
+  nowMs: number,
+  maxAgeSeconds: number,
+): boolean {
+  const hash = fields.hash;
+  const authDate = Number(fields.auth_date);
+  if (!hash || !Number.isInteger(authDate)) return false;
+  const check = Object.keys(fields)
+    .filter((key) => key !== "hash")
+    .sort()
+    .map((key) => `${key}=${fields[key]}`)
+    .join("\n");
+  const secret = createHash("sha256").update(botToken).digest();
+  const expected = createHmac("sha256", secret).update(check).digest("hex");
+  if (!safeEqualHex(hash, expected)) return false;
+  const ageSeconds = nowMs / 1000 - authDate;
+  return ageSeconds <= maxAgeSeconds && ageSeconds >= -30;
 }
 
 export function localeFromTelegram(languageCode: string | undefined): "ru" | "en" {

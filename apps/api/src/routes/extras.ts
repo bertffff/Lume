@@ -6,19 +6,18 @@ import {
   levelFromXp,
   planPlayback,
   yearHeatmap,
-  rotateRefresh,
   rutubeFromFixture,
   runExtractorChain,
   twitchFromFixture,
   vkFromFixture,
   type MagicRow,
-  type RefreshRow,
 } from "@lume/contracts";
 import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireUser } from "../auth/guard.js";
+import { issueRefresh, revokeRefresh, rotateStoredRefresh } from "../auth/refresh-store.js";
 import { storeObject } from "../media/storage.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import type { ApiEnv } from "../env.js";
@@ -26,7 +25,6 @@ import { notifyUser } from "../account/notify.js";
 
 const uploads = new Map<string, { bytes: Buffer; type: string }>();
 const magicLinks = new Map<string, MagicRow>();
-const refreshTokens = new Map<string, RefreshRow>();
 
 export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null): void {
   app.get("/stats", async () => ({
@@ -327,27 +325,24 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
       create: { email, displayName: email.split("@")[0] ?? "Гость", username: `mail:${email}` },
     });
     const accessToken = await mintAccessToken({ secret: env.JWT_SECRET, userId: user.id, telegramId: null, displayName: user.displayName, ttlSeconds: env.JWT_TTL_SECONDS });
-    const refreshToken = randomBytes(24).toString("hex");
-    refreshTokens.set(refreshToken, { userId: user.id, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 });
-    return reply.send({ accessToken, refreshToken, user: { id: user.id, displayName: user.displayName } });
+    return reply.send({ accessToken, refreshToken: issueRefresh(user.id), user: { id: user.id, displayName: user.displayName } });
   });
 
   app.post("/auth/refresh", async (request, reply) => {
     if (!env.JWT_SECRET || !prisma) return reply.code(503).send({ error: "database_unconfigured" });
     const body = z.object({ refreshToken: z.string().min(8) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const next = randomBytes(24).toString("hex");
-    const userId = rotateRefresh(refreshTokens, body.data.refreshToken, next, Date.now(), 7 * 24 * 60 * 60 * 1000);
-    if (!userId) return reply.code(401).send({ error: "unauthorized" });
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const rotated = rotateStoredRefresh(body.data.refreshToken);
+    if (!rotated) return reply.code(401).send({ error: "unauthorized" });
+    const user = await prisma.user.findUnique({ where: { id: rotated.userId } });
     if (!user || user.deletedAt) return reply.code(401).send({ error: "unauthorized" });
     const accessToken = await mintAccessToken({ secret: env.JWT_SECRET, userId: user.id, telegramId: user.telegramId?.toString() ?? null, displayName: user.displayName, ttlSeconds: env.JWT_TTL_SECONDS });
-    return reply.send({ accessToken, refreshToken: next });
+    return reply.send({ accessToken, refreshToken: rotated.refreshToken });
   });
 
   app.post("/auth/logout", async (request, reply) => {
     const body = z.object({ refreshToken: z.string().min(1) }).safeParse(request.body);
-    if (body.success) refreshTokens.delete(body.data.refreshToken);
+    if (body.success) revokeRefresh(body.data.refreshToken);
     return reply.send({ ok: true });
   });
 }

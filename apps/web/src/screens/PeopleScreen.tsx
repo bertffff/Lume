@@ -24,6 +24,8 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
   const [studio, setStudio] = useState<string | null>(null);
   const [admin, setAdmin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [linked, setLinked] = useState<{ email: boolean; telegram: boolean } | null>(null);
+  const [telegramId, setTelegramId] = useState("");
 
   async function reload() {
     const [list, feed, card, profile] = await Promise.all([
@@ -32,6 +34,7 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
       api.resume(session.accessToken),
       fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()),
     ]);
+    void api.linkedAccounts(session.accessToken).then(setLinked).catch(() => undefined);
     setStudio(typeof profile.level === "number" ? `${t("studio.title")} ${profile.level}` : null);
     setHeatmap(Array.isArray(profile.heatmap) ? profile.heatmap : []);
     setPlatforms(Array.isArray(profile.platforms) ? profile.platforms : []);
@@ -170,6 +173,17 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
         }}
       >
         {t("people.export")}
+      </button>
+      <p>{linked?.email ? "email" : ""} {linked?.telegram ? "Telegram" : ""}</p>
+      <label>
+        Telegram
+        <input value={telegramId} onChange={(event) => setTelegramId(event.target.value)} />
+      </label>
+      <button type="button" className="tr-text-button" onClick={() => void api.linkTelegram(session.accessToken, telegramId).then(() => reload())}>
+        Telegram
+      </button>
+      <button type="button" className="tr-text-button" onClick={() => void api.unlinkTelegram(session.accessToken).then(() => reload())}>
+        {t("lobby.signOut")}
       </button>
       <label className="tr-check">
         <input

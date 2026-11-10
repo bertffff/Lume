@@ -6,9 +6,12 @@ import {
 import { devAuthRequestSchema } from "@lume/contracts";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import type { ApiEnv } from "../env.js";
 import { mintAccessToken } from "../auth/jwt.js";
-import { localeFromTelegram, verifyTelegramInitData } from "../auth/telegram.js";
+import { issueRefresh } from "../auth/refresh-store.js";
+import { requireUser } from "../auth/guard.js";
+import { localeFromTelegram, verifyLoginWidget, verifyTelegramInitData } from "../auth/telegram.js";
 import { toPublicUser, upsertDevUser, upsertTelegramUser } from "../auth/users.js";
 
 function publicUser(input: {
@@ -127,6 +130,7 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: P
       authMode: "stub",
       user,
       accessToken: await maybeMint(env, user),
+      refreshToken: issueRefresh(user.id),
     });
   });
 
@@ -157,6 +161,44 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: P
       ttlSeconds: env.JWT_TTL_SECONDS,
     });
     return reply.send({ accessToken, tokenType: "Bearer" });
+  });
+
+  app.post("/auth/telegram-widget", async (request, reply) => {
+    const body = z.object({ id: z.string(), auth_date: z.string(), hash: z.string(), first_name: z.string().optional() }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    if (!env.TELEGRAM_BOT_TOKEN) return reply.code(501).send({ error: "telegram_unconfigured" });
+    const fields = Object.fromEntries(Object.entries(body.data).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+    const ok = verifyLoginWidget(fields, env.TELEGRAM_BOT_TOKEN, Date.now(), env.TELEGRAM_AUTH_MAX_AGE_SECONDS);
+    if (!ok) return reply.code(401).send({ error: "bad_hash" });
+    return reply.send({ ok: true, telegramId: body.data.id });
+  });
+
+  app.get("/auth/linked-accounts", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor) return;
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const user = await prisma.user.findUnique({ where: { id: actor.userId } });
+    return reply.send({ email: Boolean(user?.email), telegram: Boolean(user?.telegramId) });
+  });
+
+  app.post("/auth/link-telegram", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor) return;
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const body = z.object({ telegramId: z.string().regex(/^\d+$/) }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    await prisma.user.update({ where: { id: actor.userId }, data: { telegramId: BigInt(body.data.telegramId) } });
+    return reply.send({ linked: true });
+  });
+
+  app.post("/auth/unlink-telegram", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor) return;
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const user = await prisma.user.findUnique({ where: { id: actor.userId } });
+    if (!user?.email) return reply.code(400).send({ error: "email_required" });
+    await prisma.user.update({ where: { id: actor.userId }, data: { telegramId: null } });
+    return reply.send({ linked: false });
   });
 }
 

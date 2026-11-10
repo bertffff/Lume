@@ -8,7 +8,11 @@ export class ClientError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: { method?: string; token?: string; body?: unknown }): Promise<T> {
+export function shouldRefresh(status: number, refreshToken: string | undefined, tried: boolean): boolean {
+  return status === 401 && Boolean(refreshToken) && !tried;
+}
+
+async function request<T>(path: string, init?: { method?: string; token?: string; body?: unknown }, tried = false): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, {
     method: init?.method ?? "GET",
     headers: {
@@ -17,6 +21,22 @@ async function request<T>(path: string, init?: { method?: string; token?: string
     },
     body: init?.body === undefined ? undefined : JSON.stringify(init.body),
   });
+  if (response.status === 401 && !tried && path !== "/auth/refresh") {
+    const raw = window.localStorage.getItem("lume.session");
+    const session = raw ? (JSON.parse(raw) as { accessToken?: string; refreshToken?: string }) : null;
+    if (shouldRefresh(401, session?.refreshToken, tried)) {
+      const refreshed = await fetch(`${apiUrl}/auth/refresh`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refreshToken: session?.refreshToken }),
+      });
+      if (refreshed.ok && raw && session) {
+        const next = (await refreshed.json()) as { accessToken: string; refreshToken: string };
+        window.localStorage.setItem("lume.session", JSON.stringify({ ...JSON.parse(raw), ...next }));
+        return request(path, { ...init, token: next.accessToken }, true);
+      }
+    }
+  }
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
   if (!response.ok) {
     throw new ClientError(typeof payload.error === "string" ? payload.error : "request_failed");
@@ -26,7 +46,7 @@ async function request<T>(path: string, init?: { method?: string; token?: string
 
 export const api = {
   devLogin(displayName: string) {
-    return request<{ accessToken: string; user: User }>("/auth/dev", {
+    return request<{ accessToken: string; refreshToken?: string; user: User }>("/auth/dev", {
       method: "POST",
       body: { displayName },
     });
@@ -98,5 +118,23 @@ export const api = {
       "/me/resume",
       { token },
     );
+  },
+  logout(refreshToken: string) {
+    return request<{ ok: boolean }>("/auth/logout", { method: "POST", body: { refreshToken } });
+  },
+  verifyMagic(token: string) {
+    return request<{ accessToken: string; refreshToken: string; user: User }>("/auth/magic-link/verify", {
+      method: "POST",
+      body: { token },
+    });
+  },
+  linkedAccounts(token: string) {
+    return request<{ email: boolean; telegram: boolean }>("/auth/linked-accounts", { token });
+  },
+  linkTelegram(token: string, telegramId: string) {
+    return request<{ linked: boolean }>("/auth/link-telegram", { method: "POST", token, body: { telegramId } });
+  },
+  unlinkTelegram(token: string) {
+    return request<{ linked: boolean }>("/auth/unlink-telegram", { method: "POST", token });
   },
 };
