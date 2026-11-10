@@ -46,6 +46,8 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
   const [clockOffset, setClockOffset] = useState(0);
   const [skip, setSkip] = useState({ votes: 0, needed: 1 });
   const [typingName, setTypingName] = useState<string | null>(null);
+  const [typingNames, setTypingNames] = useState<string[]>([]);
+  const [heartbeatAt, setHeartbeatAt] = useState<number | null>(null);
   const [floats, setFloats] = useState<Array<{ id: string; emoji: string; x: number; y: number; userId: string }>>([]);
   const [voiceForce, setVoiceForce] = useState<{
     id: number;
@@ -193,11 +195,18 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
           const parsed = z.object({ votes: z.number(), needed: z.number() }).safeParse(payload);
           if (parsed.success) setSkip(parsed.data);
         });
+        client.on("playback:heartbeat", (payload: { sentAtMs?: number }) => {
+          if (typeof payload?.sentAtMs === "number") setHeartbeatAt(payload.sentAtMs);
+        });
         client.on("chat:typing", (payload: unknown) => {
           const parsed = z.object({ displayName: z.string() }).safeParse(payload);
           if (!parsed.success) return;
           setTypingName(parsed.data.displayName);
-          window.setTimeout(() => setTypingName(null), 3000);
+          setTypingNames((current) => (current.includes(parsed.data.displayName) ? current : [...current, parsed.data.displayName]));
+          window.setTimeout(() => {
+            setTypingName(null);
+            setTypingNames((current) => current.filter((name) => name !== parsed.data.displayName));
+          }, 3000);
         });
         client.on("reaction:float", (payload: unknown) => {
           const parsed = z.object({ id: z.string(), emoji: z.string(), x: z.number(), y: z.number(), userId: z.string() }).safeParse(payload);
@@ -354,6 +363,8 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
     clockOffset,
     skip,
     typingName,
+    typingNames,
+    heartbeatAt,
     floats,
     voteSkip(withdraw = false) {
       if (!roomId) return;
@@ -366,6 +377,10 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
     sendFloat(emoji: string) {
       if (!roomId) return;
       emit("reaction:send", { roomId, emoji });
+    },
+    heartbeat() {
+      if (!roomId) return;
+      emit("playback:heartbeat", { roomId, sentAtMs: Date.now() });
     },
   };
 }

@@ -161,6 +161,24 @@ export const notificationKinds = [
 
 export const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
+export function heartbeatLag(nowMs: number, sentAtMs: number): number {
+  return Math.max(0, nowMs - sentAtMs);
+}
+
+export function shouldHoldForReady(wait: boolean, buffering: number): boolean {
+  return wait && buffering > 0;
+}
+
+export function hlsProxyUrl(apiBase: string, source: string): string {
+  return `${apiBase}/video/hls-proxy?url=${encodeURIComponent(source)}`;
+}
+
+export function typingLine(names: readonly string[]): string {
+  if (names.length === 0) return "";
+  if (names.length === 1) return `${names[0]} печатает…`;
+  return `${names[0]} и ещё ${names.length - 1} печатают…`;
+}
+
 export function duplicateQueue(urls: readonly string[], next: string): boolean {
   return urls.includes(next);
 }

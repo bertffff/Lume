@@ -19,7 +19,11 @@ import {
   imageKind,
   innertubeFromFixture,
   rutubeFromFixture,
+  heartbeatLag,
+  hlsProxyUrl,
+  shouldHoldForReady,
   twitchFromFixture,
+  typingLine,
   vkFromFixture,
   moveQueueItem,
   notificationChannels,
@@ -217,5 +221,9 @@ describe("parity rules", () => {
     expect(vkFromFixture({ hls: "https://vk.cdn/a.m3u8", title: "VK" })?.title).toBe("VK");
     expect(rutubeFromFixture({ m3u8: "https://rutube/a.m3u8" })?.url).toContain("rutube");
     expect(twitchFromFixture(null)).toBeNull();
+    expect(heartbeatLag(2_000, 1_000)).toBe(1_000);
+    expect(shouldHoldForReady(true, 1)).toBe(true);
+    expect(hlsProxyUrl("http://api", "https://cdn/a.m3u8")).toContain("hls-proxy");
+    expect(typingLine(["Аня", "Боря"])).toBe("Аня и ещё 1 печатают…");
   });
 });

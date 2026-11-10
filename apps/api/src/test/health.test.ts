@@ -16,6 +16,8 @@ describe("health", () => {
     const health = await app.inject({ method: "GET", url: "/health" });
     expect(health.statusCode).toBe(200);
     expect(health.json()).toEqual({ status: "ok" });
+    const blocked = await app.inject({ method: "GET", url: "/video/range?url=http://127.0.0.1/a.mp4", headers: { range: "bytes=0-1" } });
+    expect(blocked.statusCode).toBe(400);
 
     const ready = await app.inject({ method: "GET", url: "/ready" });
     expect(ready.statusCode).toBe(200);

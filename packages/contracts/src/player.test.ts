@@ -12,6 +12,7 @@ describe("player selection and drift", () => {
     expect(playerKind({ provider: "rutube", url: "https://rutube.ru/video/abc" })).toBe("rutube");
     expect(playerKind({ provider: "direct", url: "https://cdn.example/film.mp4" })).toBe("file");
     expect(playerKind({ provider: "direct", url: "https://cdn.example/live/index.m3u8" })).toBe("hls");
+    expect(playerKind({ provider: "direct", url: "https://cdn.example/film.mpd" })).toBe("dash");
   });
 
   it("seeks a follower only past the drift threshold", () => {

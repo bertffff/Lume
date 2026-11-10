@@ -1,4 +1,4 @@
-import { extractTimecodeSeconds, imageKind, mentionsUser, slowRemainingMs } from "@lume/contracts";
+import { extractTimecodeSeconds, imageKind, mentionsUser, slowRemainingMs, typingLine } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
@@ -99,7 +99,7 @@ export function ChatPanel({
       {waitMs > 0 ? <p className="tr-note" data-testid="slow-countdown">{t("chat.slow")} {Math.ceil(waitMs / 1000)}</p> : null}
       <div className="tr-chat-log" data-testid="chat-log">
         {messages.length === 0 ? <p className="tr-empty">{t("chat.empty")}</p> : null}
-        {live?.typingName ? <p className="tr-note">{live.typingName} {t("chat.typing")}</p> : null}
+        {live && live.typingNames.length > 0 ? <p className="tr-note">{typingLine(live.typingNames)}</p> : null}
         {messages.map((message) => {
           const timecode = extractTimecodeSeconds(message.body);
           const mentioned = mentionsUser(message.body, null, live?.state.members.find((member) => member.userId === live.selfId)?.displayName ?? "");

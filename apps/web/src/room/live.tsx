@@ -27,6 +27,9 @@ export interface RoomActions {
   clockOffset: number;
   skip: { votes: number; needed: number };
   typingName: string | null;
+  typingNames: string[];
+  heartbeatAt: number | null;
+  heartbeat: () => void;
   floats: Array<{ id: string; emoji: string; x: number; y: number; userId: string }>;
   voteSkip: (withdraw?: boolean) => void;
   sendTyping: () => void;

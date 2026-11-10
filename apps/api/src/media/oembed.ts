@@ -1,10 +1,7 @@
 import { oEmbedEndpoint, type ParsedEmbed } from "@lume/contracts";
 
 export async function fetchOEmbedTitle(item: ParsedEmbed): Promise<{ title: string | null; thumbnailUrl: string | null } | null> {
-  const endpoint = oEmbedEndpoint(item);
-  if (!endpoint) {
-    return null;
-  }
+  const endpoint = oEmbedEndpoint(item) ?? `https://noembed.com/embed?url=${encodeURIComponent(item.url)}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 1200);
   try {

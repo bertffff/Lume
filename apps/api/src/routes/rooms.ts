@@ -458,6 +458,20 @@ export function registerRoomRoutes(
     const rows = await prisma.roomHistoryItem.findMany({ where: { roomId: params.id }, orderBy: { watchedAt: "desc" }, take: 50 });
     return reply.send({ history: rows });
   });
+
+  app.post("/rooms/:id/sync-incident", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ note: z.string().max(200).optional() }).safeParse(request.body ?? {});
+    await prisma.moderationAction.create({
+      data: { roomId: params.id, actorId: actor.userId, action: "sync-incident", detail: body.success ? body.data.note ?? "" : "" },
+    });
+    return reply.send({ ok: true });
+  });
 }
 
 async function memberAction<T extends { userId: string }>(

@@ -170,6 +170,12 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
     socket.on("playback:vote-skip", (payload: unknown) => {
       void voteSkip(io, redis, api, socket, payload);
     });
+    socket.on("playback:heartbeat", (payload: unknown) => {
+      if (!payload || typeof payload !== "object") return;
+      const data = payload as { roomId?: string; sentAtMs?: number };
+      if (!data.roomId || typeof data.sentAtMs !== "number") return;
+      io.to(data.roomId).emit("playback:heartbeat", { roomId: data.roomId, sentAtMs: data.sentAtMs });
+    });
     socket.on("chat:typing", (payload: unknown) => {
       const parsed = z.object({ roomId: z.string().min(1) }).safeParse(payload);
       const actor = actorOf(socket);

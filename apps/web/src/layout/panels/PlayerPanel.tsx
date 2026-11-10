@@ -1,8 +1,10 @@
 import {
   autoQuality,
   gestureDelta,
+  heartbeatLag,
   planDrift,
   playbackRates,
+  shouldHoldForReady,
   shouldCorrectDrift,
   positionAt,
   type AdapterPhase,
@@ -10,6 +12,7 @@ import {
   type PlayerAdapter,
 } from "@lume/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
 import { containSize } from "../contain.js";
 import { createPlayerAdapter } from "../../player/create.js";
@@ -51,6 +54,11 @@ export function PlayerPanel({
   const [quality, setQuality] = useState(() => window.localStorage.getItem("lume-quality") ?? "auto");
   const [lowBandwidth, setLowBandwidth] = useState(() => window.localStorage.getItem("lume-low-bandwidth") === "1");
   const live = useRoomActions();
+  useEffect(() => {
+    if (!live?.canControl) return;
+    const timer = window.setInterval(() => live.heartbeat(), 1000);
+    return () => window.clearInterval(timer);
+  }, [live]);
   const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const adapterRef = useRef<PlayerAdapter | null>(null);
@@ -342,7 +350,31 @@ export function PlayerPanel({
         </button>
         <span className="tr-chip" data-testid="sync-indicator">
           {syncLabel}
+          {live?.heartbeatAt ? ` ${heartbeatLag(Date.now(), live.heartbeatAt)}` : ""}
         </span>
+        <label className="tr-check">
+          <input type="checkbox" onChange={(event) => {
+            if (shouldHoldForReady(event.target.checked, bufferingNames.length)) live?.setPlayback("pause", live.positionMs);
+          }} />
+          {t("player.buffering")}
+        </label>
+        <button type="button" className="tr-text-button" onClick={() => live?.heartbeat()}>{t("player.resync")}</button>
+        {nowPlaying ? (
+          <button type="button" className="tr-text-button" onClick={() => {
+            void fetch(`${apiUrl}/video/resolve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: nowPlaying.url }) });
+          }}>{t("player.quality")}</button>
+        ) : null}
+        <button type="button" className="tr-text-button" onClick={() => {
+          const next = window.prompt(t("queue.url"));
+          if (next) live?.addQueue(next);
+          if (live) {
+            void fetch(`${apiUrl}/rooms/${live.state.room.id}/sync-incident`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
+              body: JSON.stringify({ note: "player" }),
+            });
+          }
+        }}>{t("queue.add")}</button>
         {(["👍", "❤️", "😂", "🔥"] as const).map((emoji) => (
           <button key={emoji} type="button" className="tr-text-button" onClick={() => live?.sendFloat(emoji)}>
             {emoji}

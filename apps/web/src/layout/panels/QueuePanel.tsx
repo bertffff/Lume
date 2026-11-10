@@ -20,6 +20,9 @@ export function QueuePanel({
   const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
   const [tips, setTips] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
   const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
+  const [detected, setDetected] = useState<string | null>(null);
+  const [premium, setPremium] = useState(false);
+  const [services, setServices] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const roomId = live?.state.room.id;
   const token = live?.accessToken;
@@ -35,6 +38,7 @@ export function QueuePanel({
       .then((response) => response.json())
       .then((payload: { history?: Array<{ id: string; title: string | null; url: string }> }) => setHistory(payload.history ?? []))
       .catch(() => setHistory([]));
+    void fetch(`${apiUrl}/video/services`).then((response) => response.json()).then((payload: { services?: string[] }) => setServices(payload.services ?? [])).catch(() => setServices([]));
     void fetch(`${apiUrl}/me/discovery`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; reason: string }> }) => setTips(payload.items ?? []))
@@ -109,7 +113,17 @@ export function QueuePanel({
         <input
           data-testid="queue-input"
           value={url}
-          onChange={(event) => setUrl(event.target.value)}
+          onChange={(event) => {
+            setUrl(event.target.value);
+            const next = event.target.value.trim();
+            if (!next.startsWith("http")) return;
+            void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
+              .then((response) => response.json())
+              .then((payload: { source?: string | null; plan?: { type?: string; code?: string } }) => {
+                setDetected(payload.source ?? null);
+                setPremium(payload.plan?.code === "premium_required");
+              });
+          }}
           placeholder={t("queue.url")}
           aria-label={t("queue.url")}
         />
@@ -124,7 +138,10 @@ export function QueuePanel({
           ))}
         </ul>
       ) : null}
-      {tips.length > 0 ? <p className="tr-note">{t("queue.tips")} {tips[0]?.title ?? tips[0]?.url}</p> : null}
+      {detected ? <p className="tr-note">{detected}</p> : null}
+      {premium ? <p className="tr-note">premium_required</p> : null}
+      {services.length > 0 ? <p className="tr-note">{services.join(", ")}</p> : <p className="tr-note">cobalt</p>}
+      {tips.map((item) => <p key={item.url} className="tr-note">{t("queue.tips")} {item.title || item.url}</p>)}
       {live?.canControl ? (
         <footer className="tr-panel-bar">
           <button type="button" className="tr-text-button" data-testid="queue-next" onClick={live.playNext}>

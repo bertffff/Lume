@@ -110,13 +110,22 @@ export function isHlsUrl(url: string): boolean {
   }
 }
 
-export type PlayerKind = EmbedProvider | "hls" | "file";
+export function isDashUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith(".mpd");
+  } catch {
+    return url.toLowerCase().includes(".mpd");
+  }
+}
+
+export type PlayerKind = EmbedProvider | "hls" | "dash" | "file";
 
 /** Which adapter should mount. Direct URLs split into HLS and a plain file. */
 export function playerKind(item: { provider: EmbedProvider; url: string }): PlayerKind {
   if (item.provider !== "direct") {
     return item.provider;
   }
+  if (isDashUrl(item.url)) return "dash";
   return isHlsUrl(item.url) ? "hls" : "file";
 }
 

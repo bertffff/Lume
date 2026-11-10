@@ -1,4 +1,4 @@
-import { playerKind, type PlayerAdapter, type QueueItem } from "@lume/contracts";
+import { hlsProxyUrl, playerKind, type PlayerAdapter, type QueueItem } from "@lume/contracts";
 
 export async function createPlayerAdapter(
   item: Pick<QueueItem, "provider" | "externalId" | "url">,
@@ -22,6 +22,11 @@ export async function createPlayerAdapter(
     const { createLimitedEmbedAdapter } = await import("./limited.js");
     return createLimitedEmbedAdapter(kind, item.externalId, mount, parentHost);
   }
+  if (kind === "dash") {
+    const { createDashAdapter } = await import("./dash.js");
+    return createDashAdapter(item.url, mount);
+  }
   const { createHtml5Adapter } = await import("./html5.js");
-  return createHtml5Adapter(item.url, mount, kind === "hls");
+  const source = kind === "hls" ? hlsProxyUrl(import.meta.env.VITE_API_URL || "http://127.0.0.1:3001", item.url) : item.url;
+  return createHtml5Adapter(source, mount, kind === "hls");
 }
