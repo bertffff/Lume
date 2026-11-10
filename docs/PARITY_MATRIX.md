@@ -1,0 +1,158 @@
+# Parity matrix
+
+Baseline is commit `6d75dcb` (Phase 4, LiveKit voice), before this parity pass.
+Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-locales](./legacy-locales/).
+
+| Status | Count |
+| --- | ---: |
+| Done | 4 |
+| Partial | 39 |
+| Missing | 94 |
+
+Done means the behaviour is present. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
+
+Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked product decision. ICE and speaker detection go through LiveKit.
+
+| ID | Feature | Lume | What is true now |
+| --- | --- | --- | --- |
+| F001 | Email + password register | Missing | POST /auth/password returns 501. |
+| F002 | Email + password login | Missing | No login route or bcrypt check. |
+| F003 | JWT access + rotating refresh | Partial | Access JWT only. No refresh rotation or deletedAt check. |
+| F004 | Logout with server revocation | Partial | Client clears the session. The server does not revoke it. |
+| F005 | Magic-link login | Missing | No token, mail, or verify route. |
+| F006 | Telegram Mini App auth | Partial | HMAC initData works. Max age is 24h, not 300s. |
+| F007 | Telegram Login Widget | Missing | No widget hash verification. |
+| F008 | Link / unlink Telegram | Missing | No link routes. |
+| F009 | Linked accounts status | Missing | No endpoint. |
+| F010 | Dev auth bypass | Done | ALLOW_STUB_AUTH guest JWT. |
+| F011 | Post-auth pending room | Missing | No sessionStorage resume. |
+| F012 | Onboarding | Missing | No steps or flag. |
+| F013 | GDPR ZIP export | Missing | No export request. |
+| F014 | Account deletion + purge | Missing | No soft delete or cron. |
+| F015 | Create room wizard + presets | Partial | Title and public flag only. Codes are 6 chars. |
+| F016 | Join by code | Partial | Join works. No /join/:code route. |
+| F017 | Join bans, capacity, history | Partial | Cap and history exist. No ban check or system line. |
+| F018 | Permanent vs temporary host | Missing | One hostId. No reclaim. |
+| F019 | Host succession | Missing | Leave does not pass the host. |
+| F020 | Resume-last-room snapshot | Missing | No snapshot or continue card. |
+| F021 | Room settings | Missing | No description, max, defaults, hideReactions. |
+| F022 | Browse public rooms | Partial | Public list only. No search, filters, or sorts. |
+| F023 | Live carousel + global stats | Missing | No stats endpoint. |
+| F024 | Share links ?t= ?v= | Missing | No share modal. Query is ignored. |
+| F025 | Room invites | Missing | No invite event. |
+| F026 | Watch reminders | Missing | No persisted reminder. |
+| F027 | DB-backed queue reload | Partial | Queue is in Postgres. No room history table. |
+| F028 | Layout presets × aspect | Partial | Resizable panels and aspect reflow exist. No enlarged/immersive presets. |
+| F029 | Mobile room sheet | Partial | Reflow stacks panels. No chat/members/queue sheet. |
+| F030 | Session dock | Partial | Room bar exists. Voice is a side panel. |
+| F031 | Report user/room | Missing | No report model or form. |
+| F032 | Multi-source playback | Partial | YouTube, Vimeo, Twitch, HTML5/HLS adapters. No DASH or merged audio. |
+| F033 | VK + Rutube embeds | Partial | Best-effort adapters, not the postMessage APIs. |
+| F034 | Host playback control | Partial | Play, pause, seek. No playback rate. |
+| F035 | NTP clock sync | Partial | One clock ping. No 5-sample median window. |
+| F036 | Adaptive drift correction | Partial | Hard seek at 1.5s. No soft rate nudge or anti-loop. |
+| F037 | Host heartbeats | Missing | Viewers follow the anchor, not a 1s heartbeat. |
+| F038 | Sync indicator | Missing | No trust tiers or resync button. |
+| F039 | Buffering / ready | Partial | Viewer phase is reported. No ready gate. |
+| F040 | Vote-skip | Missing | No votes. |
+| F041 | Video URL refresh | Missing | No re-extract path. |
+| F042 | Player error recovery | Partial | Limited-source copy only. |
+| F043 | Tap gesture zones | Missing | No seek flash. |
+| F044 | Progress, fullscreen, speed | Partial | Native controls on HTML5. No custom speed menu. |
+| F045 | Quality selector | Missing | No quality preference. |
+| F046 | Low-bandwidth mode | Missing | No flag or toggle. |
+| F047 | Floating reactions | Missing | No float overlay. |
+| F048 | Chat timecode jump | Missing | No parser in the composer. |
+| F049 | Sync telemetry | Missing | No incident log. |
+| F050 | Source detection | Partial | Embed parser covers a subset, not 25 platforms. |
+| F051 | Extractor orchestrator | Partial | Empty registry behind FF_EXTRACTORS. |
+| F052 | YouTube InnerTube | Missing | Embed only. |
+| F053 | VK extractor | Missing | No cookie rotation. |
+| F054 | Rutube extractor | Missing | No play-options call. |
+| F055 | Twitch GQL | Missing | Embed only. |
+| F056 | Cobalt extractor | Missing | No client. |
+| F057 | yt-dlp extractor | Missing | Flag refuses extractors. |
+| F058 | Metadata resolver | Partial | oEmbed for YouTube and Vimeo. |
+| F059 | Premium extraction gate | Partial | Capability model exists. Playback does not consult it. |
+| F060 | Stream proxy | Missing | No Range proxy. |
+| F061 | HLS/DASH manifest rewrite | Missing | hls.js loads the source URL directly. |
+| F062 | CDN offload | Missing | Not implemented. Decision still open. |
+| F063 | SSRF protection | Missing | No safe fetch. |
+| F064 | SearXNG search | Missing | No search endpoint. |
+| F065 | Cobalt services list | Missing | No endpoint. |
+| F066 | Video detect endpoint | Missing | Detection is client-side only. |
+| F067 | Shared queue | Partial | Add and next. No reorder, duplicate guard, or optimistic metadata fill. |
+| F068 | Queue history | Missing | Played flag only. No history list. |
+| F069 | Queue recommendations | Missing | No discovery feed. |
+| F070 | Auto-advance | Missing | Ended does not play the next item. |
+| F071 | Chat text | Partial | Messages work. Limit is 2000, not 500. Enter sends. |
+| F072 | Replies | Done | replyToId is stored and shown. |
+| F073 | Image messages | Missing | No upload. |
+| F074 | Chat reactions max 3 | Partial | Toggle works. No per-user cap or +N compacting. |
+| F075 | Emoji picker | Missing | Three fixed emoji. |
+| F076 | Pinned message | Missing | Not stored. |
+| F077 | Typing indicator | Missing | No event. |
+| F078 | Mentions | Missing | No highlight. |
+| F079 | Unread anchor | Missing | No jump. |
+| F080 | System messages | Missing | Join and leave are silent. |
+| F081 | Slow mode | Missing | No interval. |
+| F082 | Six member permissions | Missing | Role checks only. |
+| F083 | Make host | Missing | Host can make a mod, not transfer host. |
+| F084 | Kick | Done | Persisted leftAt and socket removal. |
+| F085 | Session / permanent / global ban | Missing | No Ban rows. |
+| F086 | Mute and temp-mute | Partial | Boolean mute. No 30s–24h timer. |
+| F087 | Moderation log | Missing | Not persisted. |
+| F088 | Member action sheet | Partial | Kick, mute, promote. No ban or report. |
+| F089 | Blacklist management | Missing | No list or remove. |
+| F090 | Moderation presets | Missing | No create-wizard presets. |
+| F091 | Voice chat | Partial | LiveKit instead of mediasoup, by product decision. Join, mute, devices. |
+| F092 | Voice preflight | Partial | Mic picker after permission. No speaker test or network score. |
+| F093 | Voice mute broadcast | Partial | voice:state carries muted. No VoiceSession duration. |
+| F094 | Active speaker | Done | LiveKit active speakers drive the speaking dot. |
+| F095 | TURN/STUN endpoint | Partial | LiveKit Cloud owns ICE. No /ice-servers. |
+| F096 | Friends | Missing | Friendship table only. No routes. |
+| F097 | Friend presence | Missing | No friend:presence. |
+| F098 | Top friends | Missing | No WatchSession. |
+| F099 | Watch sessions | Missing | Not recorded. |
+| F100 | Watch history | Missing | No table. |
+| F101 | Favourite videos | Missing | No query. |
+| F102 | Discovery feed | Missing | No endpoint. |
+| F103 | Public profile + privacy | Missing | No profile page. |
+| F104 | Bio + current activity | Missing | No bio column. |
+| F105 | Avatar upload + crop | Missing | avatarUrl column unused. |
+| F106 | Profile share + user_ deep link | Missing | startapp is not routed. |
+| F107 | In-room profile modal | Missing | No modal. |
+| F108 | 10 achievements + XP + levels | Partial | Three unused catalog rows. Nothing is awarded. |
+| F109 | Achievement pin slots | Missing | No pinSlot. |
+| F110 | Activity heatmap | Missing | No aggregate. |
+| F111 | Platforms chart | Missing | No aggregate. |
+| F112 | Engagement widget | Missing | No voice-second total. |
+| F113 | Host stats | Missing | No widget. |
+| F114 | Leaderboards | Missing | No /stats. |
+| F115 | In-app notifications | Missing | No feed. |
+| F116 | Telegram bot notify | Missing | Bot process has no sendMessage path. |
+| F117 | Email notifications | Missing | No SMTP adapter. |
+| F118 | Web push + service worker | Missing | No SW registration. |
+| F119 | Per-channel × type prefs | Partial | Preference table exists. No grid or defaults. |
+| F120 | Digests + quiet hours | Missing | No queue or timezone window. |
+| F121 | Digest preview | Missing | No endpoint. |
+| F122 | Admin dashboard | Missing | No admin role or stats. |
+| F123 | Admin users | Missing | No search or ban. |
+| F124 | Admin rooms + force close | Missing | No route. Sockets would stay up. |
+| F125 | Admin reports | Missing | No reports. |
+| F126 | Audit log | Missing | No table. |
+| F127 | Admin deep links | Missing | No /admin route. |
+| F128 | Health / live / ready | Partial | /health only. It does not fail when Postgres is down. |
+| F129 | Prometheus metrics | Missing | No /metrics. |
+| F130 | Rate limiting | Missing | No sliding window. |
+| F131 | Feature flags | Partial | FF_EXTRACTORS only. |
+| F132 | Themes | Partial | Ember and Aurora, not dark/standard/light. Owner asked for original themes. |
+| F133 | i18n RU/EN | Partial | Flat dictionaries. Legacy namespaces are not loaded. |
+| F134 | Landing page | Partial | Lobby is the signed-out screen. No separate hero. |
+| F135 | Home session hub | Missing | No greeting, resume, or friends block. |
+| F136 | Telegram storage uploads | Missing | No storage adapter. |
+| F137 | P2P segment mesh | Missing | Dead in the old app. Not ported. Kept behind a flag decision. |
+
+## Checklist
+
+The twelve phases in PARITY.md stay open until the rows they cover are Done. This file is the tracker. Update a row in the same commit that changes the behaviour.

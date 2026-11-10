@@ -1,0 +1,532 @@
+
+{
+  "nav": {
+    "home": "Главная",
+    "browse": "Обзор",
+    "create": "Создать",
+    "profile": "Профиль",
+    "admin": "Админ",
+    "login": "Войти",
+    "logout": "Выйти"
+  },
+  "buttons": {
+    "retry": "Попробовать снова",
+    "refresh": "Обновить",
+    "join": "Войти",
+    "goHome": "На главную",
+    "reload": "Перезагрузить",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "back": "Назад",
+    "loading": "Загрузка..."
+  },
+  "status": {
+    "connecting": "Подключение...",
+    "reconnecting": "Переподключение...",
+    "disconnected": "Соединение потеряно",
+    "connected": "Подключено"
+  },
+  "errors": {
+    "appCrash": "Что-то пошло не так",
+    "pageCrash": "Ошибка на странице",
+    "appCrashDesc": "Произошла критическая ошибка. Попробуйте перезагрузить приложение.",
+    "pageCrashDesc": "Произошла ошибка при загрузке этой страницы.",
+    "notFound": "Страница не найдена. Возможно, она была удалена или вы перешли по неверной ссылке.",
+    "noConnection": "Нет подключения",
+    "noConnectionDesc": "Проверьте интернет-соединение и попробуйте снова.",
+    "checking": "Проверяем..."
+  },
+  "home": {
+    "subtitle": "Совместный просмотр видео в реальном времени",
+    "greeting": "Привет,",
+    "levelLabel": "Ур. {{level}}",
+    "quickJoin": {
+      "title": "Быстрый вход",
+      "placeholder": "Код комнаты или ссылка...",
+      "button": "Войти"
+    },
+    "sessionHub": {
+      "title": "Центр сессии",
+      "subtitle": "Продолжайте просмотр, создавайте комнату или ищите живую компанию.",
+      "continueLabel": "Продолжить",
+      "startLabel": "Начать",
+      "startTitle": "Новая watch party",
+      "startDesc": "Запустите комнату и сразу отправьте приглашение.",
+      "resumeMeta": "С {{time}} • в очереди {{count}}",
+      "roomCode": "Комната {{code}}",
+      "browseLabel": "Live комнаты",
+      "browseDesc": "Найдите активный просмотр",
+      "createLabel": "Свой эфир",
+      "createDesc": "Соберите друзей по ссылке",
+      "time": "Таймкод",
+      "queue": "Очередь",
+      "history": "История"
+    },
+    "stats": {
+      "title": "Ваша статистика",
+      "watched": "Просмотрено",
+      "parties": "Вечеринок",
+      "level": "Уровень"
+    },
+    "globalStats": {
+      "online": "Онлайн",
+      "activeRooms": "Активных комнат",
+      "videosWatched": "Видео просмотрено",
+      "hoursWatched": "Часов отсмотрено"
+    },
+    "features": {
+      "title": "Возможности",
+      "platforms": {
+        "title": "YouTube, Vimeo, Twitch и другие",
+        "desc": "Поддержка всех популярных платформ"
+      },
+      "sync": {
+        "title": "Синхронизация в реальном времени",
+        "desc": "Идеальное совпадение таймкодов"
+      },
+      "chat": {
+        "title": "Чат и голосовая связь",
+        "desc": "Общайтесь во время просмотра"
+      },
+      "achievements": {
+        "title": "Достижения и уровни",
+        "desc": "Получайте ачивки за просмотр"
+      }
+    },
+    "actions": {
+      "createRoom": "Создать комнату",
+      "createRoomDesc": "Начните вечеринку",
+      "browseRooms": "Обзор комнат",
+      "browseRoomsDesc": "Найдите компанию",
+      "resumeViewing": "Продолжить просмотр",
+      "resumeFromTime": "С {{time}}",
+      "resumeQueueCount": "В очереди: {{count}}",
+      "resumeHistoryCount": "В истории: {{count}}"
+    }
+  },
+  "profile": {
+    "settingsTitle": "Настройки профиля",
+    "privacySection": "Приватность",
+    "showUsername": "Показывать @username",
+    "showUsernameDesc": "Другие увидят ваш пользовательский тег",
+    "friendsList": "Список друзей",
+    "friendsListDesc": "Когда включено — другие пользователи видят ваших друзей",
+    "watchHistory": "История просмотра",
+    "watchHistoryDesc": "Видна другим пользователям",
+    "topFriends": "Топ со-зрителей",
+    "topFriendsDesc": "Кто видит, с кем вы смотрите",
+    "favoriteVideos": "Любимые видео",
+    "favoriteVideosDesc": "Показывать избранные видео",
+    "chatSection": "Чат и реакции",
+    "quickReaction": "Быстрая реакция",
+    "quickReactionDesc": "Двойное нажатие на сообщение",
+    "quickEmojis": "Быстрые смайлики",
+    "quickEmojisDesc": "Появляются при зажатии сообщения (3-10)",
+    "hideReactions": "Скрыть реакции на видео",
+    "hideReactionsDesc": "Не показывать летающие реакции от других",
+    "permissionsSection": "🛡️ Права зрителей по умолчанию",
+    "permissionsSubtitle": "Применяются при создании комнаты",
+    "permChat": "Писать в чат",
+    "permSpeak": "Говорить",
+    "permControlVideo": "Управлять видео",
+    "permAddToQueue": "Добавлять в очередь",
+    "permRemoveFromQueue": "Удалять из очереди",
+    "permReorderQueue": "Переставлять в очереди",
+    "roomDefaultsSection": "Настройки комнаты по умолчанию",
+    "roomTitle": "Название",
+    "roomTitleExample": "Моя крутая вечеринка",
+    "roomPublic": "Публичная комната",
+    "roomMaxMembers": "Макс. участников",
+    "saveRoomDefaults": "Сохранить настройки комнаты",
+    "levelProgress": "Прогресс уровня",
+    "xpProgress": "XP",
+    "saved": "✓ Сохранено!",
+    "languageLabel": "Язык",
+    "languageRu": "Русский",
+    "languageEn": "English",
+    "loginRequired": "Войдите через Telegram для просмотра профиля",
+    "raveLevel": "Rave Level {{level}}",
+    "tabInfo": "Инфо",
+    "tabOverview": "Обзор",
+    "tabHistory": "История",
+    "tabAchievements": "Ачивки",
+    "tabFriends": "Друзья",
+    "recentAchievements": "Последние достижения",
+    "noAchievements": "Пусто... пока что",
+    "emptyAchievementsTitle": "Достижения ещё впереди",
+    "emptyAchievementsDesc": "Зайдите в публичную комнату, посмотрите видео с друзьями и TeleRave начнёт собирать ваши первые ачивки.",
+    "emptyAchievementsCta": "Найти комнату",
+    "emptyHistoryTitle": "История просмотра пока пуста",
+    "emptyHistoryDesc": "После совместного просмотра здесь появятся видео, платформы и сессии, к которым можно вернуться.",
+    "emptyHistoryCta": "Начать просмотр",
+    "viewAll": "Посмотреть все",
+    "allAchievements": "Все достижения",
+    "remainingCount": "Осталось ещё {{count}}",
+    "remainingWord": "достижений",
+    "friendRequests": "Заявки в друзья ({{count}})",
+    "acceptTitle": "Принять",
+    "rejectTitle": "Отклонить",
+    "noFriends": "Список друзей пуст",
+    "editEmojis": "Изменить",
+    "manageBlacklist": "Управление чёрным списком",
+    "blacklist": "Чёрный список",
+    "blacklistEmpty": "Список пуст",
+    "unblock": "Разблокировать",
+    "themeSection": "Тема оформления",
+    "bio": {
+      "title": "О себе",
+      "description": "Краткое описание для вашего профиля",
+      "placeholder": "Расскажите о себе...",
+      "saveError": "Ошибка сохранения",
+      "saving": "Сохранение...",
+      "saved": "Сохранено!",
+      "save": "Сохранить"
+    },
+    "currentActivity": {
+      "label": "Сейчас смотрит:",
+      "inRoom": "в \"{{title}}\"",
+      "join": "Присоединиться",
+      "private": "В приватной комнате"
+    },
+    "avatar": {
+      "selectImage": "Выберите изображение",
+      "preview": "Предпросмотр",
+      "saving": "Сохранение...",
+      "save": "Сохранить аватар",
+      "cancel": "Отмена",
+      "uploadError": "Ошибка загрузки"
+    },
+    "pinnedAchievement": {
+      "chooseTitle": "Выберите достижение:",
+      "close": "Закрыть",
+      "pinToSlot": "Закрепить достижение в слот {{slot}}",
+      "xpReward": "+{{xp}} XP"
+    },
+    "heatmap": {
+      "title": "Активность за год",
+      "less": "Меньше",
+      "more": "Больше",
+      "tooltipMin_one": "{{count}}м просмотра",
+      "tooltipMin_few": "{{count}}м просмотра",
+      "tooltipMin_many": "{{count}}м просмотра",
+      "tooltipMin_other": "{{count}}м просмотра",
+      "tooltipMessages_one": "{{count}} сообщение",
+      "tooltipMessages_few": "{{count}} сообщения",
+      "tooltipMessages_many": "{{count}} сообщений",
+      "tooltipMessages_other": "{{count}} сообщений"
+    },
+    "platforms": {
+      "title": "Топ платформ",
+      "empty": "Нет данных о просмотрах",
+      "vkVideo": "VK Video",
+      "directLinks": "Прямые ссылки",
+      "other": "Другое"
+    },
+    "engagement": {
+      "voice": "Войс",
+      "messages": "Сообщений",
+      "reactions": "Реакций"
+    },
+    "shareWidget": {
+      "title": "Поделиться профилем",
+      "qrCode": "QR-код",
+      "copied": "Скопировано!",
+      "copyLink": "Копировать ссылку",
+      "share": "Поделиться"
+    },
+    "friendsEmpty": {
+      "title": "Пока нет друзей",
+      "description": "Пригласите друзей или найдите компанию в публичных комнатах.",
+      "shareInvite": "Поделиться приглашением",
+      "searchUsers": "Найти пользователей",
+      "inviteTelegram": "Пригласить через Telegram"
+    },
+    "activity": {
+      "title": "Лента профиля",
+      "now": "сейчас",
+      "latestAchievement": "Последняя ачивка",
+      "watchTime": "Время просмотра",
+      "parties": "Сессии",
+      "partiesCount": "{{count}} совместных просмотров",
+      "social": "Социальный слой",
+      "friendsCount": "{{count}} друзей",
+      "requestsCount": "{{count}} заявок ждут ответа",
+      "emptyTitle": "Профиль только начинает историю",
+      "emptyDesc": "После первых комнат здесь появятся ачивки, сессии, друзья и watch-time."
+    },
+    "completeness": {
+      "title": "Готовность профиля",
+      "description": "Короткий чеклист помогает быстрее находить компанию, приглашать друзей и выглядеть живым участником комнаты.",
+      "count": "{{completed}}/{{total}} готово",
+      "progressLabel": "профиль",
+      "avatarTitle": "Аватар",
+      "avatarDesc": "Легче узнавать вас в комнате и списке участников.",
+      "contactTitle": "Способ входа",
+      "contactDesc": "Telegram или email сохраняют доступ и магические ссылки.",
+      "sessionTitle": "Первая сессия",
+      "sessionDesc": "История начнёт собирать совместные просмотры.",
+      "achievementTitle": "Первая ачивка",
+      "achievementDesc": "Достижения показывают стиль просмотра и активность.",
+      "friendsTitle": "Друзья",
+      "friendsDesc": "Приглашения и быстрый вход работают лучше с компанией.",
+      "ctaSettings": "Открыть настройки",
+      "ctaBrowse": "Найти комнату",
+      "ctaInvite": "Пригласить друзей",
+      "reviewSettings": "Проверить настройки",
+      "done": "Профиль готов к совместному просмотру"
+    },
+    "hostStats": {
+      "title": "Статистика хоста",
+      "uniqueViewers": "Уникальных зрителей",
+      "topVideos": "Топ видео",
+      "sharedHours": "Совместных часов",
+      "topParticipants": "Топ участников",
+      "noData": "Пока нет данных хоста"
+    }
+  },
+  "user": {
+    "levelProgress": "Прогресс уровня",
+    "xpFormat": "XP",
+    "statOnAir": "В эфире",
+    "statParties": "Вечеринок",
+    "statAchievements": "Ачивок",
+    "statTotalXP": "Всего XP",
+    "achievements": "Достижения",
+    "infographics": "Инфографика",
+    "topCoViewers": "Топ со-зрителей",
+    "favoriteVideos": "Любимые видео",
+    "watchHistory": "История просмотра",
+    "tabStats": "Статистика",
+    "tabFriends": "Друзья",
+    "noSharedViewingData": "Нет данных о совместных просмотрах",
+    "noFavoriteVideos": "Нет избранных видео",
+    "watchHistoryEmpty": "История просмотра пуста",
+    "watchesAbbr": "просм.",
+    "alreadyFriends": "Уже в друзьях",
+    "requestSent": "Заявка отправлена",
+    "addFriend": "Добавить в друзья",
+    "sending": "Отправка...",
+    "noAchievements": "Нет достижений",
+    "friendsHidden": "Список друзей скрыт",
+    "friendsHiddenDesc": "Пользователь скрыл свой список друзей",
+    "friendsEmpty": "Список друзей пуст",
+    "timeJustNow": "только что",
+    "timeMinAgo": "{{count}} мин назад",
+    "timeHoursAgo": "{{count}}ч назад",
+    "timeDaysAgo": "{{count}}д назад",
+    "durationSec": "{{v}}с",
+    "durationMin": "{{v}}м",
+    "durationHr": "{{v}}ч",
+    "durationHrMin": "{{h}}ч {{m}}м"
+  },
+  "report": {
+    "title": "Пожаловаться",
+    "placeholder": "Опишите проблему...",
+    "submit": "Отправить жалобу",
+    "success": "Жалоба отправлена. Спасибо!",
+    "error": "Не удалось отправить жалобу. Попробуйте позже.",
+    "reasonRequired": "Пожалуйста, опишите причину жалобы"
+  },
+  "notifications": "Настройки уведомлений",
+  "notificationsPanel": {
+    "open": "Уведомления",
+    "title": "Уведомления",
+    "subtitle": "Сигналы комнат, друзей и модерации",
+    "markAllRead": "Отметить всё прочитанным",
+    "loading": "Загружаем уведомления...",
+    "empty": "Пока нет уведомлений",
+    "dismiss": "Скрыть уведомление"
+  },
+  "notificationsSettings": {
+    "enablePush": "Включить push-уведомления",
+    "eventColumn": "Событие",
+    "summaryTitle": "Каналы доставки",
+    "summaryDesc": "Сначала выберите, где получать сигналы, затем настройте конкретные события ниже.",
+    "enabledCount": "из {{total}} событий",
+    "channelToggleLabel": "Включить или выключить все события для {{channel}}",
+    "channelAllOn": "Все события включены",
+    "channelPartial": "Настроено частично",
+    "pushNeedsPermission": "Нужно разрешение браузера",
+    "rhythmTitle": "Ритм доставки",
+    "rhythmDesc": "Локальный выбор ритма для будущего server-side digest и quiet-hours.",
+    "quietHours": "Тихие часы",
+    "digest": {
+      "instant": "Сразу",
+      "hourly": "Раз в час",
+      "daily": "Дайджест"
+    },
+    "digestPreview": {
+      "title": "Превью дайджеста",
+      "next": "Следующая пачка: {{date}}",
+      "noSchedule": "нет запланированной пачки",
+      "empty": "Очередь уведомлений пуста. Новые сигналы комнат, друзей и прогресса появятся здесь до следующей отправки.",
+      "itemsCount": "{{count}} в очереди",
+      "history": "Недавно отправлено",
+      "unknownChannel": "Канал"
+    },
+    "deliveryHealth": {
+      "title": "Здоровье доставки",
+      "desc": "Последний статус каналов без показа сырых ошибок провайдера.",
+      "ok": "ОК",
+      "failed": "Ошибок: {{count}}",
+      "lastSent": "Последняя отправка: {{date}}",
+      "next": "Следующая: {{date}}",
+      "lastIssue": "Последняя проблема: {{error}}",
+      "never": "ещё не было",
+      "unknown": "неизвестно"
+    },
+    "pushPermission": {
+      "default": {
+        "title": "Push ждёт разрешения",
+        "desc": "Включите системное разрешение, чтобы TeleRave мог присылать сигналы комнат и друзей вне открытой вкладки."
+      },
+      "denied": {
+        "title": "Push заблокирован в браузере",
+        "desc": "Разрешите уведомления для этого сайта в настройках браузера, затем вернитесь сюда и настройте события."
+      },
+      "unsupported": {
+        "title": "Push недоступен в этом окружении",
+        "desc": "Этот браузер или контейнер не поддерживает web push. Используйте Telegram, email или уведомления в приложении."
+      }
+    },
+    "groups": {
+      "socialTitle": "Социальные сигналы",
+      "socialDesc": "Заявки, новые друзья и действия, которые помогают собрать компанию.",
+      "roomsTitle": "Комнаты и приглашения",
+      "roomsDesc": "События, которые зовут вас в совместный просмотр прямо сейчас.",
+      "progressTitle": "Прогресс профиля",
+      "progressDesc": "Ачивки и заметные моменты, которые стоит не пропустить.",
+      "systemTitle": "Система и безопасность",
+      "systemDesc": "Служебные, модерационные и важные аккаунтные уведомления."
+    },
+    "eventDescriptions": {
+      "friendRequest": "Кто-то хочет добавить вас и смотреть вместе.",
+      "friendAccepted": "Ваши заявки приняты или социальная связь обновилась.",
+      "roomInvite": "Вас пригласили в комнату или watch party.",
+      "achievementUnlocked": "Открылись ачивки, streak-и или прогресс профиля.",
+      "system": "Сервисные изменения, статус аккаунта и важные новости TeleRave.",
+      "moderation": "Решения модерации, ограничения и safety-сигналы."
+    },
+    "channels": {
+      "inApp": "В приложении",
+      "telegram": "Telegram",
+      "email": "Email",
+      "push": "Push"
+    },
+    "events": {
+      "friendRequest": "Заявки в друзья",
+      "friendAccepted": "Заявки приняты",
+      "roomInvite": "Приглашения в комнаты",
+      "achievementUnlocked": "Достижения",
+      "system": "Системные",
+      "moderation": "Модерация"
+    }
+  },
+  "design": {
+    "title": "Дизайн-система",
+    "colors": "Цвета",
+    "typography": "Типографика",
+    "shadows": "Тени",
+    "spacing": "Отступы",
+    "radius": "Скругления",
+    "components": "Компоненты"
+  },
+  "theme": {
+    "standard": "Стандартная",
+    "dark": "Тёмная",
+    "light": "Светлая"
+  },
+  "accessibility": {
+    "languageSwitcher": "Выбор языка",
+    "mobileMenu": "Дополнительные опции",
+    "openMenu": "Открыть меню",
+    "closeMenu": "Закрыть меню"
+  },
+  "settings": {
+    "privacyTitle": "Приватность",
+    "notificationsTitle": "Уведомления",
+    "appearanceTitle": "Внешний вид",
+    "accountTitle": "Аккаунт",
+    "hubPrivacyTitle": "Видимость",
+    "hubUsernameVisible": "@username показывается",
+    "hubUsernameHidden": "@username скрыт",
+    "hubNotificationsTitle": "События",
+    "hubNotificationsReady": "Нет новых уведомлений",
+    "hubUnread": "Новых: {{count}}",
+    "hubLinkedTitle": "Вход",
+    "hubLinkedMissing": "Способ входа не найден",
+    "hubDataTitle": "Данные",
+    "hubDataDesc": "Экспорт и удаление",
+    "logout": "Выйти",
+    "logoutConfirm": "Вы уверены, что хотите выйти?",
+    "logoutChip": "Сессия"
+  },
+  "account": {
+    "dataExport": {
+      "title": "Скачать мои данные",
+      "description": "ZIP-архив с профилем, историей просмотра, сообщениями, достижениями и комнатами. Ссылка действительна 24 часа.",
+      "statusIdle": "Готово к запросу",
+      "statusPreparing": "Готовим архив",
+      "statusReady": "Архив создан",
+      "statusExpired": "Ссылка устарела",
+      "statusError": "Ошибка",
+      "readyTitle": "Архив загружается",
+      "readyDescription": "Проверьте папку загрузок. При необходимости можно запросить новый архив позже.",
+      "expiredTitle": "Ссылка устарела",
+      "expiredDescription": "Экспорт создаётся заново, чтобы данные не оставались доступными слишком долго.",
+      "errorTitle": "Не удалось подготовить архив",
+      "downloadButton": "Скачать данные",
+      "preparingButton": "Подготовка..."
+    },
+    "telegramLink": {
+      "title": "Telegram аккаунт",
+      "linked": "Привязан: @{{username}}",
+      "linkedNoUsername": "Telegram аккаунт привязан",
+      "notLinked": "Telegram аккаунт не привязан",
+      "statusChecking": "Проверяем",
+      "statusLinked": "Привязан",
+      "statusNotLinked": "Не привязан",
+      "linkButton": "Привязать Telegram",
+      "unlinkButton": "Отвязать Telegram",
+      "unlinkConfirm": "Вы уверены, что хотите отвязать Telegram аккаунт?",
+      "unlinkConfirmButton": "Да, отвязать",
+      "unlinkDisabled": "Невозможно отвязать — Telegram единственный способ входа",
+      "requiresTelegramMiniApp": "Привязка доступна только внутри Telegram Mini App",
+      "linkSuccess": "Telegram аккаунт успешно привязан",
+      "linkError": "Не удалось привязать Telegram аккаунт",
+      "conflict": "Этот Telegram аккаунт уже привязан к другому пользователю"
+    },
+    "danger": {
+      "title": "Опасная зона",
+      "description": "Удаление запускается как отложенное действие: 30 дней на отмену, затем данные очищаются окончательно.",
+      "scheduledSummary": "Удаление уже запланировано. Повторный вход до даты удаления отменит процесс.",
+      "recoveryNote": "После подтверждения аккаунт будет помечен к удалению. До истечения срока можно вернуться и отменить удаление входом в аккаунт.",
+      "scheduledNotice": "Удаление аккаунта запланировано на {{date}}. Войдите повторно до этой даты, чтобы отменить удаление.",
+      "dangerChip": "Критично",
+      "scheduledChip": "Запланировано",
+      "deleteButton": "Удалить аккаунт"
+    },
+    "deleteModal": {
+      "title": "Удаление аккаунта",
+      "description": "Через 30 дней будут удалены профиль, история, сообщения и связи. После срока восстановление невозможно.",
+      "dangerChip": "30 дней на отмену",
+      "acknowledge": "Я понимаю, что аккаунт и данные будут удалены после периода ожидания.",
+      "confirmLabel": "Введите",
+      "passwordLabel": "Пароль аккаунта",
+      "passwordPlaceholder": "Ваш пароль",
+      "deleteButton": "Удалить аккаунт",
+      "deletingButton": "Удаление...",
+      "scheduledChip": "Удаление запланировано",
+      "scheduledTitle": "Аккаунт запланирован к удалению",
+      "scheduledDescription": "Окончательное удаление произойдёт {{date}}. До этого момента можно войти в аккаунт и отменить процесс."
+    },
+    "linkedAccounts": "Привязанные аккаунты",
+    "emailLinked": "Email",
+    "emailNotLinked": "Email не привязан",
+    "telegramLinked": "Telegram",
+    "telegramNotLinked": "Telegram не привязан"
+  }
+}
+
+

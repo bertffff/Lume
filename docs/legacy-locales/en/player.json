@@ -1,0 +1,109 @@
+
+{
+  "waitingForVideo": "Waiting for video...",
+  "insertVideoHint": "Paste a video link above",
+  "loadError": "Video loading error",
+  "tryAnotherLink": "Try pasting a different link",
+  "openOnPlatform": "Open on platform",
+  "error": {
+    "tryRefreshOrReplace": "Try refreshing the link or replacing the video",
+    "refreshLink": "Refresh link",
+    "replaceVideo": "Replace video",
+    "replacementUrlLabel": "New video link",
+    "replacementUrlPlaceholder": "https://youtube.com/watch?v=...",
+    "applyReplacement": "Replace",
+    "hostHint": "If the source blocks embedded playback, choose another video or a direct link.",
+    "viewerHint": "The host can refresh the link or replace the video for the room.",
+    "causes": {
+      "embedBlocked": {
+        "label": "Embed blocked",
+        "description": "The platform did not provide an embedded player or blocked playback inside TeleRave.",
+        "recovery": "Best path: open it on the platform or replace the video with a link that allows embedding."
+      },
+      "extractionFailed": {
+        "label": "Extraction failed",
+        "description": "The proxy or extractor could not get a playable stream. Common causes: age, region, privacy, or an expired link.",
+        "recovery": "Best path: refresh the link; if that fails, replace the video or use a direct stream."
+      },
+      "directSource": {
+        "label": "Stream cannot play",
+        "description": "The direct link, HLS/DASH stream, or proxy response is unavailable to the browser player.",
+        "recovery": "Best path: refresh the link or paste another URL with a supported format."
+      },
+      "network": {
+        "label": "Network error",
+        "description": "The player did not receive a response from the source or the connection dropped while loading.",
+        "recovery": "Best path: refresh the link and check whether the source opens in a separate tab."
+      },
+      "unknown": {
+        "label": "Cause unknown",
+        "description": "TeleRave did not receive enough detail from the source to classify the problem.",
+        "recovery": "Best path: refresh the link, open it on the platform, or replace the video."
+      }
+    }
+  },
+  "untitled": "Untitled",
+  "seekBack": "Seek backward",
+  "seekForward": "Seek forward",
+  "quality": {
+    "label": "Video quality",
+    "auto": "Auto",
+    "unavailable": "Quality control is not available for this platform"
+  },
+  "queue": {
+    "header": "Video queue",
+    "empty": "Queue is empty",
+    "emptyHint": "Add a video for sequential playback",
+    "addButton": "Add video to queue",
+    "urlPlaceholder": "Video link...",
+    "urlInputPlaceholder": "Paste a video link (YouTube, Twitch, VK, Rutube...)",
+    "dragHint": "Drag to reorder • Auto-play",
+    "videosInQueue": "videos in queue",
+    "history": "History",
+    "watchHistory": "Watch history",
+    "nothingWatched": "Nothing watched yet",
+    "recommendations": "Quick recommendations",
+    "fromFavorites": "From favorites",
+    "fromHistory": "From history"
+  },
+  "search": {
+    "addVideo": "Add video",
+    "pasteUrl": "Paste video link",
+    "findVideo": "Find video",
+    "whatAreYouLooking": "What are you looking for?",
+    "results": "Results",
+    "noResults": "Nothing found",
+    "tryDifferentSearch": "Try a different query or paste a link directly"
+  },
+  "sync": {
+    "label": "Sync:",
+    "good": "Good",
+    "syncing": "Syncing…",
+    "lagging": "Lagging",
+    "waiting": "Waiting",
+    "latency": "RTT",
+    "calibrating": "calibrating",
+    "hostHealth": "Host sync",
+    "waitingReady": "Waiting until everyone is ready",
+    "resync": "Resync",
+    "audioSynced": "\ud83d\udd0a Audio synced"
+  },
+  "playbackSpeed": "Playback speed",
+  "playbackMethod": "Playback method",
+  "play": "Play",
+  "pause": "Pause",
+  "openOnPlatformButton": "Open on platform",
+  "source": "Source: {{source}}",
+  "searchButton": "Search",
+  "loadMore": "Load more",
+  "selectQuality": "Select quality",
+  "embed": {
+    "notSupported": "Platform does not support embed",
+    "notSupportedDesc": "{{platform}} cannot be played via embedded player"
+  },
+  "hls": {
+    "notSupported": "HLS is not supported in this browser"
+  }
+}
+
+

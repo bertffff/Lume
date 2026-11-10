@@ -1,0 +1,46 @@
+
+{
+  "section": "Achievements",
+  "first_party": {
+    "title": "🎉 First Party",
+    "description": "Join your first watch party"
+  },
+  "party_animal": {
+    "title": "🦁 Party Animal",
+    "description": "Attend 10 watch parties"
+  },
+  "party_legend": {
+    "title": "Party Legend",
+    "description": "Attend 100 watch parties"
+  },
+  "night_watch": {
+    "title": "🌙 Night Watch",
+    "description": "Watch videos after midnight"
+  },
+  "marathon": {
+    "title": "🏃 Marathon Runner",
+    "description": "Spend 5 hours watching together"
+  },
+  "binge_watcher": {
+    "title": "Binge Watcher",
+    "description": "Spend 24 hours watching together"
+  },
+  "social_butterfly": {
+    "title": "Social Butterfly",
+    "description": "Send 100 messages in chats"
+  },
+  "host_master": {
+    "title": "Host Master",
+    "description": "Create 10 rooms"
+  },
+  "early_bird": {
+    "title": "Early Bird",
+    "description": "Start watching before 7 AM"
+  },
+  "reaction_king": {
+    "title": "😂 Reaction King",
+    "description": "Send 50 reactions"
+  }
+}
+
+
