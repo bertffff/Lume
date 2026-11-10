@@ -508,6 +508,27 @@ export function registerSocialRoutes(
     return reply.send({ resume: resumeCard(snapshot) });
   });
 
+  app.post("/rooms/resume-last", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma || !service) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { id: actor.userId } });
+    const snapshot = user?.lastRoomSnapshot as { title?: string; isPublic?: boolean; queue?: Array<{ url: string; title?: string }> } | null;
+    if (!snapshot?.title) return reply.code(404).send({ error: "not_found" });
+    const created = await service.createRoom(
+      { userId: actor.userId, displayName: actor.displayName },
+      { title: snapshot.title, isPublic: snapshot.isPublic === true },
+    );
+    for (const item of snapshot.queue ?? []) {
+      if (item.url) {
+        await service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, created.room.id, item.url);
+      }
+    }
+    return reply.send(created);
+  });
+
   app.post("/me/export", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {

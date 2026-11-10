@@ -169,7 +169,7 @@ export class RoomService {
         roomId: room.id,
         userId: actor.userId,
         displayName: actor.displayName,
-        body: `${actor.displayName} присоединился к комнате`,
+        body: reclaim ? `${actor.displayName} вернулся и забрал хост` : `${actor.displayName} присоединился к комнате`,
         replyToId: null,
         createdAt: this.now().toISOString(),
         reactions: [],
@@ -178,7 +178,7 @@ export class RoomService {
     return this.detailFor(actor.userId, room.id);
   }
 
-  async leave(actor: Actor, roomId: string): Promise<void> {
+  async leave(actor: Actor, roomId: string): Promise<{ hostLeft: boolean }> {
     const { member } = await this.requireActive(roomId, actor.userId);
     const members = await this.repo.listMembers(roomId);
     await this.repo.saveMember({ ...member, leftAt: this.now().toISOString() });
@@ -193,7 +193,7 @@ export class RoomService {
       reactions: [],
     });
     if (member.role !== "host") {
-      return;
+      return { hostLeft: false };
     }
     const rest = members.filter((item) => item.userId !== actor.userId && item.leftAt === null);
     const successorId = nextHost(
@@ -207,7 +207,18 @@ export class RoomService {
     const successor = rest.find((item) => item.userId === successorId);
     if (successor) {
       await this.repo.saveMember({ ...successor, role: "host" });
+      await this.repo.insertMessage({
+        id: this.ids(),
+        roomId,
+        userId: successor.userId,
+        displayName: successor.displayName,
+        body: `${successor.displayName} стал хостом`,
+        replyToId: null,
+        createdAt: this.now().toISOString(),
+        reactions: [],
+      });
     }
+    return { hostLeft: true };
   }
 
   async kick(actor: Actor, roomId: string, targetUserId: string): Promise<RoomDetail> {

@@ -50,11 +50,16 @@ export function registerRoomRoutes(
   service: RoomService | null,
   prisma: PrismaClient | null = null,
 ): void {
-  app.get("/rooms", async (_request, reply) => {
+  app.get("/rooms", async (request, reply) => {
     if (!service) {
       return reply.code(503).send({ error: "database_unconfigured" });
     }
-    return { rooms: await service.listPublic() };
+    const query = z.object({ q: z.string().optional(), sort: z.enum(["new", "title"]).optional() }).safeParse(request.query);
+    let rooms = await service.listPublic();
+    const q = query.success ? query.data.q?.trim().toLowerCase() : undefined;
+    if (q) rooms = rooms.filter((room) => room.title.toLowerCase().includes(q) || room.code.includes(q));
+    if (query.success && query.data.sort === "title") rooms = [...rooms].sort((left, right) => left.title.localeCompare(right.title, "ru"));
+    return { rooms };
   });
 
   app.post("/rooms", async (request, reply) => {
@@ -310,7 +315,15 @@ export function registerRoomRoutes(
     if (!params.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
-    return run(reply, () => service.playNext({ userId: actor.userId, displayName: actor.displayName }, params.data.id));
+    return run(reply, async () => {
+      const detail = await service.playNext({ userId: actor.userId, displayName: actor.displayName }, params.data.id);
+      if (prisma && detail.room.nowPlaying) {
+        await prisma.roomHistoryItem.create({
+          data: { roomId: params.data.id, url: detail.room.nowPlaying.url, title: detail.room.nowPlaying.title, source: detail.room.nowPlaying.provider },
+        });
+      }
+      return detail;
+    });
   });
 
   app.patch("/rooms/:id/permissions", async (request, reply) => {

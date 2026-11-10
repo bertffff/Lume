@@ -5,7 +5,7 @@ import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
 import { AdminScreen } from "./AdminScreen.js";
 
-export function PeopleScreen({ session }: { session: ClientSession }) {
+export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOpen?: (roomId: string) => void }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Array<{ id: string; displayName: string }>>([]);
@@ -78,7 +78,19 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
   return (
     <section className="tr-lobby" data-testid="people">
       <h2>{t("people.title")}</h2>
-      {resume ? <p data-testid="resume-card">{t("people.resume")} {resume}</p> : <p className="tr-empty">{t("people.noResume")}</p>}
+      {resume ? (
+        <p data-testid="resume-card">
+          {t("people.resume")} {resume}{" "}
+          <button type="button" className="tr-text-button" onClick={() => {
+            void fetch(`${apiUrl}/rooms/resume-last`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })
+              .then((response) => response.json())
+              .then((payload: { room?: { id: string } }) => { if (payload.room && onOpen) onOpen(payload.room.id); });
+          }}>{t("people.resume")}</button>
+        </p>
+      ) : <p className="tr-empty">{t("people.noResume")}</p>}
+      <button type="button" className="tr-text-button" onClick={() => void fetch(`${apiUrl}/me/restore`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })}>
+        {t("people.restore")}
+      </button>
       {studio ? <p data-testid="studio">{studio}</p> : null}
       {admin ? <AdminScreen token={session.accessToken} /> : null}
       <div data-testid="heatmap" aria-label={t("studio.heat")}>

@@ -106,6 +106,7 @@ describe("room service", () => {
     expect(after.members.find((member) => member.userId === "mod")?.role).toBe("host");
     const reclaimed = await service.joinByCode({ userId: "host", displayName: "Хост" }, created.room.code);
     expect(reclaimed.self.role).toBe("host");
+    expect(reclaimed.messages.some((message) => message.body.includes("забрал хост"))).toBe(true);
     expect(reclaimed.members.find((member) => member.userId === "mod")?.role).toBe("viewer");
   });
 

@@ -117,7 +117,13 @@ export function QueuePanel({
           {t("queue.add")}
         </button>
       </form>
-      {history.length > 0 ? <p className="tr-note">{t("queue.history")} {history.length}</p> : null}
+      {history.length > 0 ? (
+        <ul>
+          {history.map((item) => (
+            <li key={item.id}>{item.title || item.url}</li>
+          ))}
+        </ul>
+      ) : null}
       {tips.length > 0 ? <p className="tr-note">{t("queue.tips")} {tips[0]?.title ?? tips[0]?.url}</p> : null}
       {live?.canControl ? (
         <footer className="tr-panel-bar">

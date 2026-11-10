@@ -488,7 +488,14 @@ async function onLeave(
     return;
   }
   try {
+    const role = await roleOf(redis, parsed.data.roomId, actor.userId);
     await api.leave(actor.token, parsed.data.roomId);
+    if (role === "host") {
+      const paused = await commitPlayback(redis.pub, parsed.data.roomId, { type: "pause", actorId: actor.userId });
+      if (paused !== "version_conflict") {
+        io.to(parsed.data.roomId).emit("playback:state", paused);
+      }
+    }
   } catch {
     // Presence still drops if the membership row was already gone.
   }

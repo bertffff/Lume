@@ -109,6 +109,7 @@ export const en: Record<MessageKey, string> = {
   "people.inbox": "Notifications",
   "people.none": "Nothing yet",
   "people.resume": "Continue watching",
+  "people.restore": "Restore account",
   "people.noResume": "No saved session",
   "player.skip": "Skip",
   "player.resync": "Resync",

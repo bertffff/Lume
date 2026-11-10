@@ -107,6 +107,7 @@ export const ru = {
   "people.inbox": "Уведомления",
   "people.none": "Пока пусто",
   "people.resume": "Продолжить просмотр",
+  "people.restore": "Восстановить аккаунт",
   "people.noResume": "Нет сохранённого сеанса",
   "player.skip": "Пропуск",
   "player.resync": "Синхронизировать",

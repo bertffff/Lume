@@ -22,6 +22,8 @@ export function Lobby({
   const [isPublic, setIsPublic] = useState(true);
   const [code, setCode] = useState("");
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  const [browseQuery, setBrowseQuery] = useState("");
+  const [browseSort, setBrowseSort] = useState<"new" | "title">("new");
   const [error, setError] = useState<string | null>(null);
   const [people, setPeople] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
@@ -194,7 +196,7 @@ export function Lobby({
           </button>
         </div>
       ) : null}
-      {session && people ? <PeopleScreen session={session} /> : null}
+      {session && people ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
       {session ? (
         <div className="tr-lobby-grid">
           <form onSubmit={(event) => void create(event)}>
@@ -233,9 +235,11 @@ export function Lobby({
       ) : null}
       <div>
         <p className="tr-kicker">{t("lobby.browse")}</p>
+        <input value={browseQuery} onChange={(event) => setBrowseQuery(event.target.value)} placeholder={t("lobby.browse")} />
+        <button type="button" className="tr-text-button" onClick={() => setBrowseSort((value) => value === "new" ? "title" : "new")}>{browseSort}</button>
         {rooms.length === 0 ? <p className="tr-empty">{t("lobby.emptyRooms")}</p> : null}
         <div className="tr-public-list">
-          {rooms.map((room) => (
+          {rooms.filter((room) => room.title.toLowerCase().includes(browseQuery.toLowerCase()) || room.code.includes(browseQuery.toLowerCase())).sort((left, right) => browseSort === "title" ? left.title.localeCompare(right.title) : 0).map((room) => (
             <button
               key={room.id}
               type="button"
