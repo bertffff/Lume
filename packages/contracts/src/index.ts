@@ -144,15 +144,21 @@ export {
 export { detectSource, planPlayback, sourceRules, type PlaybackPlan, type SourceRule } from "./parity/sources.js";
 export { dnsPinned, hostnameBlocked, ipBlocked, urlBlocked } from "./parity/ssrf.js";
 export {
+  autoQuality,
   consumeMagic,
   dayScore,
+  gestureDelta,
   imageKind,
   innertubeFromFixture,
   moveQueueItem,
+  onboardingSteps,
+  pageSlice,
+  playerShortcut,
   rotateRefresh,
   runExtractorChain,
   shouldRefreshLink,
   slowRemainingMs,
+  yearHeatmap,
   type ExtractHit,
   type MagicRow,
   type RefreshRow,

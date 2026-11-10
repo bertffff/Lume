@@ -84,7 +84,7 @@ export function Lobby({
   }
 
   return (
-    <section className="tr-lobby">
+    <section className="tr-lobby" data-testid={session ? "home" : "landing"}>
       <p className="tr-kicker">{t("lobby.kicker")}</p>
       <h1>{t("lobby.title")}</h1>
       <p className="tr-lead">{t("lobby.body")}</p>
@@ -113,6 +113,27 @@ export function Lobby({
           </button>
         </form>
       )}
+      {session && !window.localStorage.getItem("lume-onboarded") ? (
+        <div data-testid="onboarding">
+          <p>{t("onboard.1")}</p>
+          <p>{t("onboard.2")}</p>
+          <p>{t("onboard.3")}</p>
+          <button
+            type="button"
+            className="tr-text-button"
+            onClick={() => {
+              window.localStorage.setItem("lume-onboarded", "1");
+              void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/me`, {
+                method: "PATCH",
+                headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+                body: JSON.stringify({ onboardingComplete: true }),
+              });
+            }}
+          >
+            {t("onboard.done")}
+          </button>
+        </div>
+      ) : null}
       {session && people ? <PeopleScreen session={session} /> : null}
       {session ? (
         <div className="tr-lobby-grid">

@@ -128,6 +128,7 @@ export function registerSocialRoutes(
       displayName: z.string().trim().min(1).max(100).optional(),
       timezone: z.string().min(1).max(80).optional(),
       hideOtherReactions: z.boolean().optional(),
+      onboardingComplete: z.boolean().optional(),
       isFriendsPublic: z.boolean().optional(),
       isWatchHistoryPublic: z.boolean().optional(),
     }).safeParse(request.body);
@@ -174,6 +175,26 @@ export function registerSocialRoutes(
     });
   });
 
+  app.get("/users/:id", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const user = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
+    if (!user) return reply.code(404).send({ error: "not_found" });
+    const seat = await prisma.roomMember.findFirst({
+      where: { userId: user.id, leftAt: null },
+      include: { room: true },
+      orderBy: { joinedAt: "desc" },
+    });
+    return reply.send({
+      id: user.id,
+      displayName: user.displayName,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      roomId: seat && seat.room.status !== "ended" ? seat.roomId : null,
+      roomTitle: seat && seat.room.status !== "ended" ? seat.room.title : null,
+    });
+  });
+
   app.get("/friends", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {
@@ -184,15 +205,27 @@ export function registerSocialRoutes(
       where: { OR: [{ requesterId: actor.userId }, { addresseeId: actor.userId }] },
       include: { requester: true, addressee: true },
     });
-    const mapRow = (row: (typeof rows)[number]) => {
+    const mapRow = async (row: (typeof rows)[number]) => {
       const other = row.requesterId === actor.userId ? row.addressee : row.requester;
-      return { id: row.id, status: row.status, userId: other.id, displayName: other.displayName };
+      const seat = await prisma.roomMember.findFirst({
+        where: { userId: other.id, leftAt: null },
+        include: { room: true },
+        orderBy: { joinedAt: "desc" },
+      });
+      return {
+        id: row.id,
+        status: row.status,
+        userId: other.id,
+        displayName: other.displayName,
+        roomId: seat && seat.room.status !== "ended" ? seat.roomId : null,
+        roomTitle: seat && seat.room.status !== "ended" ? seat.room.title : null,
+      };
     };
     return reply.send({
-      friends: rows.filter((row) => row.status === "accepted").map(mapRow),
-      incoming: rows.filter((row) => row.status === "pending" && row.addresseeId === actor.userId).map(mapRow),
-      outgoing: rows.filter((row) => row.status === "pending" && row.requesterId === actor.userId).map(mapRow),
-      blocked: rows.filter((row) => row.status === "blocked" && row.requesterId === actor.userId).map(mapRow),
+      friends: await Promise.all(rows.filter((row) => row.status === "accepted").map(mapRow)),
+      incoming: await Promise.all(rows.filter((row) => row.status === "pending" && row.addresseeId === actor.userId).map(mapRow)),
+      outgoing: await Promise.all(rows.filter((row) => row.status === "pending" && row.requesterId === actor.userId).map(mapRow)),
+      blocked: await Promise.all(rows.filter((row) => row.status === "blocked" && row.requesterId === actor.userId).map(mapRow)),
     });
   });
 
@@ -535,21 +568,39 @@ export function registerSocialRoutes(
   app.get("/admin/users", async (request, reply) => {
     const actor = await requireAdmin(request, reply, env, prisma);
     if (!actor || !prisma) return;
-    const query = z.object({ q: z.string().optional() }).parse(request.query);
-    const users = await prisma.user.findMany({
-      where: query.q ? { displayName: { contains: query.q, mode: "insensitive" } } : {},
-      take: 50,
-      orderBy: { createdAt: "desc" },
-      select: { id: true, displayName: true, email: true, role: true, deletedAt: true, isPremium: true },
-    });
-    return reply.send({ users });
+    const query = z.object({ q: z.string().optional(), page: z.coerce.number().int().min(0).default(0), role: z.string().optional() }).parse(request.query);
+    const where = {
+      ...(query.q ? { displayName: { contains: query.q, mode: "insensitive" as const } } : {}),
+      ...(query.role ? { role: query.role as "USER" | "ADMIN" | "SUPERADMIN" } : {}),
+    };
+    const take = 20;
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip: query.page * take,
+        take,
+        orderBy: { createdAt: "desc" },
+        select: { id: true, displayName: true, email: true, role: true, deletedAt: true, isPremium: true },
+      }),
+    ]);
+    return reply.send({ users, page: query.page, pages: Math.max(1, Math.ceil(total / take)) });
   });
 
   app.get("/admin/rooms", async (request, reply) => {
     const actor = await requireAdmin(request, reply, env, prisma);
     if (!actor || !prisma) return;
-    const rooms = await prisma.room.findMany({ take: 50, orderBy: { createdAt: "desc" }, select: { id: true, slug: true, title: true, status: true, hostId: true } });
-    return reply.send({ rooms });
+    const query = z.object({ q: z.string().optional(), page: z.coerce.number().int().min(0).default(0), status: z.string().optional() }).parse(request.query);
+    const where = {
+      ...(query.q ? { title: { contains: query.q, mode: "insensitive" as const } } : {}),
+      ...(query.status ? { status: query.status as "open" | "live" | "ended" } : {}),
+    };
+    const take = 20;
+    const [total, rooms] = await Promise.all([
+      prisma.room.count({ where }),
+      prisma.room.findMany({ where, skip: query.page * take, take, orderBy: { createdAt: "desc" }, select: { id: true, slug: true, title: true, status: true, hostId: true } }),
+    ]);
+    return reply.send({ rooms, page: query.page, pages: Math.max(1, Math.ceil(total / take)) });
   });
 
   app.post("/admin/rooms/:id/close", async (request, reply) => {
@@ -569,8 +620,14 @@ export function registerSocialRoutes(
   app.get("/admin/reports", async (request, reply) => {
     const actor = await requireAdmin(request, reply, env, prisma);
     if (!actor || !prisma) return;
-    const items = await prisma.report.findMany({ where: { status: "open" }, orderBy: { createdAt: "desc" }, take: 50 });
-    return reply.send({ reports: items });
+    const query = z.object({ status: z.string().default("open"), page: z.coerce.number().int().min(0).default(0) }).parse(request.query);
+    const where = { status: query.status };
+    const take = 20;
+    const [total, items] = await Promise.all([
+      prisma.report.count({ where }),
+      prisma.report.findMany({ where, skip: query.page * take, take, orderBy: { createdAt: "desc" } }),
+    ]);
+    return reply.send({ reports: items, page: query.page, pages: Math.max(1, Math.ceil(total / take)) });
   });
 
   app.post("/admin/reports/:id", async (request, reply) => {
@@ -603,8 +660,14 @@ export function registerSocialRoutes(
   app.get("/admin/audit", async (request, reply) => {
     const actor = await requireAdmin(request, reply, env, prisma);
     if (!actor || !prisma) return;
-    const rows = await prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
-    return reply.send({ audit: rows });
+    const query = z.object({ q: z.string().optional(), page: z.coerce.number().int().min(0).default(0) }).parse(request.query);
+    const where = query.q ? { action: { contains: query.q } } : {};
+    const take = 20;
+    const [total, rows] = await Promise.all([
+      prisma.auditLog.count({ where }),
+      prisma.auditLog.findMany({ where, skip: query.page * take, take, orderBy: { createdAt: "desc" } }),
+    ]);
+    return reply.send({ audit: rows, page: query.page, pages: Math.max(1, Math.ceil(total / take)) });
   });
 }
 

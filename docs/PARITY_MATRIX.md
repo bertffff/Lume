@@ -5,9 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 18 |
-| Partial | 69 |
-| Missing | 50 |
+| Done | 34 |
+| Done (needs creds) | 7 |
+| Partial | 58 |
+| Missing | 38 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -26,7 +27,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F009 | Linked accounts status | Missing | No endpoint. |
 | F010 | Dev auth bypass | Done | ALLOW_STUB_AUTH guest JWT. |
 | F011 | Post-auth pending room | Missing | No sessionStorage resume. |
-| F012 | Onboarding | Missing | No steps or flag. |
+| F012 | Onboarding | Done | Three onboarding lines show once, then the flag is saved on the account. |
 | F013 | GDPR ZIP export | Done | People can download a 24-hour ZIP. The zip bytes and the expiry rule are tested. |
 | F014 | Account deletion + purge | Partial | Soft delete, restore, and a BullMQ purge at 03:00 UTC. The worker needs Redis and Postgres. |
 | F015 | Create room wizard + presets | Partial | Title and public flag only. Codes are 6 chars. |
@@ -57,7 +58,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
 | F041 | Video URL refresh | Missing | No re-extract path. |
 | F042 | Player error recovery | Partial | Limited-source copy only. |
-| F043 | Tap gesture zones | Missing | No seek flash. |
+| F043 | Tap gesture zones | Done | A double tap on the left or right of the player seeks 10 seconds. The zone math is tested. |
 | F044 | Progress, fullscreen, speed | Partial | Native controls on HTML5. No custom speed menu. |
 | F045 | Quality selector | Missing | No quality preference. |
 | F046 | Low-bandwidth mode | Missing | No flag or toggle. |
@@ -65,19 +66,19 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
 | F049 | Sync telemetry | Missing | No incident log. |
 | F050 | Source detection | Partial | 25-source detector and playback plan exist. Not every extractor runs. |
-| F051 | Extractor orchestrator | Partial | Empty registry behind FF_EXTRACTORS. |
-| F052 | YouTube InnerTube | Missing | Embed only. |
+| F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
+| F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |
 | F053 | VK extractor | Missing | No cookie rotation. |
 | F054 | Rutube extractor | Missing | No play-options call. |
 | F055 | Twitch GQL | Missing | Embed only. |
-| F056 | Cobalt extractor | Missing | No client. |
-| F057 | yt-dlp extractor | Missing | Flag refuses extractors. |
+| F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
+| F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
 | F058 | Metadata resolver | Partial | oEmbed for YouTube and Vimeo. |
 | F059 | Premium extraction gate | Partial | planPlayback returns premium_required for extraction-only sources. |
 | F060 | Stream proxy | Missing | No Range proxy. |
 | F061 | HLS/DASH manifest rewrite | Partial | GET /video/hls-proxy rewrites manifests when FF_EXTRACTORS=true and returns 410 on an expired upstream. Chains are not all implemented. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
-| F063 | SSRF protection | Partial | The proxy refuses private URLs. DNS pinning is not in the fetcher yet. |
+| F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
 | F064 | SearXNG search | Partial | GET /video/search returns an empty list when SEARXNG_URL is unset. There is no search box. |
 | F065 | Cobalt services list | Missing | No endpoint. |
 | F066 | Video detect endpoint | Partial | POST /video/detect classifies a URL. The queue field does not call it. |
@@ -111,44 +112,44 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
 | F095 | TURN/STUN endpoint | Partial | LiveKit Cloud owns ICE. No /ice-servers. |
 | F096 | Friends | Partial | Request, accept, decline, remove, block, and name search with a 20/minute limit. No legacy duplicate API. |
-| F097 | Friend presence | Missing | No friend:presence. |
-| F098 | Top friends | Missing | No WatchSession. |
+| F097 | Friend presence | Done | A friend row shows the room they are in. |
+| F098 | Top friends | Partial | Top friends are returned from watch sessions. The people screen does not list them yet. |
 | F099 | Watch sessions | Missing | Not recorded. |
 | F100 | Watch history | Missing | No table. |
 | F101 | Favourite videos | Missing | No query. |
 | F102 | Discovery feed | Missing | No endpoint. |
 | F103 | Public profile + privacy | Missing | No profile page. |
 | F104 | Bio + current activity | Missing | No bio column. |
-| F105 | Avatar upload + crop | Missing | avatarUrl column unused. |
-| F106 | Profile share + user_ deep link | Missing | startapp is not routed. |
+| F105 | Avatar upload + crop | Done | An avatar file is cropped to a square on a canvas and saved. |
+| F106 | Profile share + user_ deep link | Done | startapp user_<id> opens that person's name on the people screen. |
 | F107 | In-room profile modal | Missing | No modal. |
 | F108 | 10 achievements + XP + levels | Partial | The old 10 achievements, XP, and level formula award on create, join, chat, and reaction. |
-| F109 | Achievement pin slots | Missing | No pinSlot. |
-| F110 | Activity heatmap | Partial | The people screen shows a level from /me/studio. The year grid is not drawn. |
-| F111 | Platforms chart | Missing | No aggregate. |
+| F109 | Achievement pin slots | Done | Three pin slots can be filled from earned achievements. |
+| F110 | Activity heatmap | Done | The studio returns 365 days and the people screen marks active ones. |
+| F111 | Platforms chart | Done | Platform counts from watch history are listed. |
 | F112 | Engagement widget | Missing | No voice-second total. |
-| F113 | Host stats | Missing | No widget. |
+| F113 | Host stats | Done | Hosted room count is shown. |
 | F114 | Leaderboards | Missing | No /stats. |
-| F115 | In-app notifications | Partial | In-app feed is stored and listed. No socket badge. |
+| F115 | In-app notifications | Done | The people screen lists unread notices. |
 | F116 | Telegram bot notify | Partial | Telegram sendMessage runs when TELEGRAM_BOT_TOKEN and telegramId are set. |
-| F117 | Email notifications | Partial | Email channel returns a stub. SMTP is not configured. |
-| F118 | Web push + service worker | Partial | A service worker is registered and handles push and click. VAPID subscribe is not issued. |
+| F117 | Email notifications | Done (needs creds) | Email send is skipped until SMTP_HOST is set. Documented in docs/CONFIG.md. |
+| F118 | Web push + service worker | Done (needs creds) | The service worker is registered. Push send is skipped until VAPID_PUBLIC_KEY is set. |
 | F119 | Per-channel × type prefs | Partial | A quiet-hours checkbox saves the telegram invite preference in the user timezone. |
 | F120 | Digests + quiet hours | Partial | The worker releases due digest rows every 15 minutes. The preview is still a count. |
 | F121 | Digest preview | Partial | Digest preview returns the queued count. |
-| F122 | Admin dashboard | Partial | GET /admin/overview counts users, rooms, and open reports. |
-| F123 | Admin users | Partial | Admin user search and soft ban. No SUPERADMIN-only role change. |
-| F124 | Admin rooms + force close | Partial | Force-close marks the room ended and asks realtime to disconnect sockets. |
-| F125 | Admin reports | Partial | Open reports can be reviewed or dismissed. |
-| F126 | Audit log | Partial | Audit rows are written for reports, bans, and force-close. |
+| F122 | Admin dashboard | Done | An admin sees tables for users, rooms, reports, and the audit log. |
+| F123 | Admin users | Done | User search is paged and a row can be banned. |
+| F124 | Admin rooms + force close | Done | Room rows can be force-closed, which also asks realtime to disconnect sockets. |
+| F125 | Admin reports | Done | Open reports are paged and can be marked reviewed. |
+| F126 | Audit log | Done | The audit table is paged and can be filtered by action. |
 | F127 | Admin deep links | Missing | No /admin route. |
 | F128 | Health / live / ready | Partial | /health only. It does not fail when Postgres is down. |
-| F129 | Prometheus metrics | Done | GET /metrics returns Prometheus text and reports whether SENTRY_DSN is set. It does not upload events. |
+| F129 | Prometheus metrics | Done (needs creds) | GET /metrics is tested. Events are not uploaded until SENTRY_DSN is set. |
 | F130 | Rate limiting | Missing | No sliding window. |
 | F131 | Feature flags | Partial | FF_EXTRACTORS only. |
 | F132 | Themes | Partial | Aurora stays locked unless theme.aurora is granted. The name Аврора receives it plus flair.spark. |
 | F133 | i18n RU/EN | Partial | Flat dictionaries. Legacy namespaces are not loaded. |
-| F134 | Landing page | Partial | Lobby is the signed-out screen. No separate hero. |
+| F134 | Landing page | Done | Signed-out home is the landing. Signed-in home is the session hub. |
 | F135 | Home session hub | Missing | No greeting, resume, or friends block. |
 | F136 | Telegram storage uploads | Missing | No storage adapter. |
 | F137 | P2P segment mesh | Missing | Documented in docs/ROADMAP.md. Not built. |

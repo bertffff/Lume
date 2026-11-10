@@ -1,4 +1,5 @@
 import {
+  gestureDelta,
   planDrift,
   shouldCorrectDrift,
   positionAt,
@@ -263,7 +264,18 @@ export function PlayerPanel({
           {label}
         </span>
       </header>
-      <div className="tr-frame" ref={frameRef}>
+      <div
+        className="tr-frame"
+        ref={frameRef}
+        onDoubleClick={(event) => {
+          if (!live?.canControl) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          const ratio = (event.clientX - bounds.left) / Math.max(1, bounds.width);
+          const zone = ratio < 0.33 ? "left" : ratio > 0.66 ? "right" : "center";
+          const delta = gestureDelta(zone, 2);
+          if (typeof delta === "number") live.setPlayback("seek", Math.max(0, live.positionMs + delta * 1000));
+        }}
+      >
         <div className="tr-stage" style={{ width: box.width, height: box.height }}>
           {nowPlaying ? (
             <div ref={mountRef} className="tr-embed" data-testid="player-mount" />

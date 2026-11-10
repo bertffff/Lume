@@ -90,6 +90,50 @@ export interface MagicRow {
   used: boolean;
 }
 
+export function yearHeatmap(now: Date, scores: Readonly<Record<string, number>>): Array<{ day: string; score: number }> {
+  const days: Array<{ day: string; score: number }> = [];
+  for (let index = 364; index >= 0; index -= 1) {
+    const date = new Date(now);
+    date.setUTCDate(date.getUTCDate() - index);
+    const day = date.toISOString().slice(0, 10);
+    days.push({ day, score: scores[day] ?? 0 });
+  }
+  return days;
+}
+
+export function pageSlice<T>(items: readonly T[], page: number, size: number): { page: number; pages: number; items: T[] } {
+  const safeSize = Math.max(1, size);
+  const pages = Math.max(1, Math.ceil(items.length / safeSize));
+  const safePage = Math.min(Math.max(0, page), pages - 1);
+  const start = safePage * safeSize;
+  return { page: safePage, pages, items: items.slice(start, start + safeSize) };
+}
+
+export function gestureDelta(zone: "left" | "center" | "right", taps: number): number | "toggle" | null {
+  if (zone === "center" && taps === 1) return "toggle";
+  if (taps >= 2 && zone === "left") return -10;
+  if (taps >= 2 && zone === "right") return 10;
+  return null;
+}
+
+export function autoQuality(downlinkMbps: number | null): "low" | "auto" | "high" {
+  if (downlinkMbps === null) return "auto";
+  if (downlinkMbps <= 0.5) return "low";
+  if (downlinkMbps >= 5) return "high";
+  return "auto";
+}
+
+export function playerShortcut(key: string, host: boolean): "play" | "back" | "forward" | "help" | null {
+  if (key === "?") return "help";
+  if (!host) return null;
+  if (key === " " || key === "k") return "play";
+  if (key === "j" || key === "ArrowLeft") return "back";
+  if (key === "l" || key === "ArrowRight") return "forward";
+  return null;
+}
+
+export const onboardingSteps = ["зал", "чат", "голос"] as const;
+
 export function consumeMagic(store: Map<string, MagicRow>, token: string, nowMs: number): string | null {
   const row = store.get(token);
   if (!row || row.used || row.expiresAt <= nowMs) {

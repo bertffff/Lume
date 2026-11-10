@@ -1,4 +1,4 @@
-import { canControlPlayback, positionAt, sessionSoftWarn, type RoomLayout as RoomLayoutModel } from "@lume/contracts";
+import { canControlPlayback, playerShortcut, positionAt, sessionSoftWarn, type RoomLayout as RoomLayoutModel } from "@lume/contracts";
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/context.js";
 import { RoomLayoutView } from "../layout/RoomLayout.js";
@@ -23,6 +23,24 @@ export function RoomScreen({
   const [offset, setOffset] = useState(0);
   const clock = live.clockOffset || offset;
   const playback = live.state?.playback;
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      const action = playerShortcut(event.key, canControlPlayback(live.state?.self.role ?? "viewer"));
+      const anchor = live.state?.playback;
+      const position = anchor
+        ? Math.max(0, Math.round(positionAt(anchor, Date.now() + (live.clockOffset || 0))))
+        : 0;
+      if (action === "play") live.setPlayback(anchor?.status === "playing" ? "pause" : "play", position);
+      if (action === "back") live.setPlayback("seek", Math.max(0, position - 10_000));
+      if (action === "forward") live.setPlayback("seek", position + 10_000);
+      if (action === "help") window.alert("J / L · 10с, K · пауза, ? · справка");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [live]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setTick(Date.now()), 250);

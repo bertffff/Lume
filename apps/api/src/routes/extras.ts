@@ -5,6 +5,7 @@ import {
   innertubeFromFixture,
   levelFromXp,
   planPlayback,
+  yearHeatmap,
   rotateRefresh,
   runExtractorChain,
   type MagicRow,
@@ -225,7 +226,9 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     const sessions = await prisma.watchSession.groupBy({ by: ["partnerId"], where: { userId: user.id }, _sum: { watchDuration: true }, orderBy: { _sum: { watchDuration: "desc" } }, take: 5 });
     return reply.send({
       level: levelFromXp(user.xp),
-      heatmap: [{ day: new Date().toISOString().slice(0, 10), score: dayScore(user.totalWatchTime, messages, user.totalReactions) }],
+      heatmap: yearHeatmap(new Date(), {
+        [new Date().toISOString().slice(0, 10)]: dayScore(user.totalWatchTime, messages, user.totalReactions),
+      }),
       platforms: [...bySource.entries()].map(([source, count]) => ({ source, count })).slice(0, 8),
       host: { roomsHosted: user.hostedRooms.length, messages },
       pins: user.achievements.filter((row) => row.pinSlot !== null).map((row) => ({ key: row.achievement.key, slot: row.pinSlot, title: row.achievement.titleRu })),

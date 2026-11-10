@@ -72,7 +72,7 @@ export const api = {
   },
   friends(token: string) {
     return request<{
-      friends: Array<{ id: string; userId: string; displayName: string }>;
+      friends: Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>;
       incoming: Array<{ id: string; userId: string; displayName: string }>;
       outgoing: Array<{ id: string; displayName: string }>;
       blocked: Array<{ id: string; displayName: string }>;

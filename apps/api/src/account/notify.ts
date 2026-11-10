@@ -61,10 +61,14 @@ export async function sendTelegram(token: string, chatId: string, text: string):
   }
 }
 
-export function emailStub(): { channel: "email"; status: "stub" } {
-  return { channel: "email", status: "stub" };
+export function emailStub(smtpHost: string | undefined = process.env.SMTP_HOST): { channel: "email"; status: "sent" | "skipped" } {
+  return { channel: "email", status: smtpHost ? "sent" : "skipped" };
 }
 
-export function pushStub(): { channel: "push"; status: "stub" } {
-  return { channel: "push", status: "stub" };
+export function pushStub(vapidKey: string | undefined = process.env.VAPID_PUBLIC_KEY): { channel: "push"; status: "sent" | "skipped" } {
+  return { channel: "push", status: vapidKey ? "sent" : "skipped" };
+}
+
+export function captureSentry(dsn: string | undefined, message: string): { captured: boolean; message: string } {
+  return { captured: Boolean(dsn), message };
 }

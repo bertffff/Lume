@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { describe, expect, it } from "vitest";
 import { banBlocksJoin } from "../access/gates.js";
+import { captureSentry, emailStub, pushStub } from "./notify.js";
 import { exportZip, isDueForPurge, purgeRepeat } from "./archive.js";
 import { hashPassword, verifyPassword } from "./passwords.js";
 
@@ -23,6 +24,10 @@ describe("account decisions", () => {
     expect(isDueForPurge({ deletedAt: now, scheduledDeletionAt: new Date("2026-11-01T00:00:00.000Z") }, now)).toBe(true);
     expect(isDueForPurge({ deletedAt: now, scheduledDeletionAt: new Date("2027-01-01T00:00:00.000Z") }, now)).toBe(false);
     expect(purgeRepeat.pattern).toBe("0 3 * * *");
+    expect(emailStub(undefined).status).toBe("skipped");
+    expect(emailStub("smtp.example").status).toBe("sent");
+    expect(pushStub(undefined).status).toBe("skipped");
+    expect(captureSentry(undefined, "boom").captured).toBe(false);
   });
 
   it("blocks a join for a room ban and for the owner's blacklist", () => {

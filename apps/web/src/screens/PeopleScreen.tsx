@@ -1,14 +1,21 @@
+import { imageKind } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
+import { AdminScreen } from "./AdminScreen.js";
 
 export function PeopleScreen({ session }: { session: ClientSession }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Array<{ id: string; displayName: string }>>([]);
   const [incoming, setIncoming] = useState<Array<{ id: string; displayName: string }>>([]);
-  const [friends, setFriends] = useState<Array<{ id: string; displayName: string }>>([]);
+  const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
+  const [heatmap, setHeatmap] = useState<Array<{ day: string; score: number }>>([]);
+  const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
+  const [hostRooms, setHostRooms] = useState(0);
+  const [achievements, setAchievements] = useState<Array<{ key: string; title: string; pinSlot: number | null }>>([]);
+  const [profileName, setProfileName] = useState<string | null>(null);
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [resume, setResume] = useState<string | null>(null);
   const [studio, setStudio] = useState<string | null>(null);
@@ -23,6 +30,10 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
       fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()),
     ]);
     setStudio(typeof profile.level === "number" ? `${t("studio.title")} ${profile.level}` : null);
+    setHeatmap(Array.isArray(profile.heatmap) ? profile.heatmap : []);
+    setPlatforms(Array.isArray(profile.platforms) ? profile.platforms : []);
+    setHostRooms(profile.host?.roomsHosted ?? 0);
+    setAchievements(Array.isArray(profile.achievements) ? profile.achievements : []);
     if (profile.role === "ADMIN" || profile.role === "SUPERADMIN") {
       const overview = await fetch(`${apiUrl}/admin/overview`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json());
       setAdmin(`${t("admin.title")} ${overview.users ?? 0}`);
@@ -35,6 +46,12 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
 
   useEffect(() => {
     void reload().catch(() => setError("request_failed"));
+    const pending = sessionStorage.getItem("lume-pending-user");
+    if (!pending) return;
+    sessionStorage.removeItem("lume-pending-user");
+    void fetch(`${apiUrl}/users/${pending}`).then((response) => response.json()).then((payload: { displayName?: string }) => {
+      setProfileName(payload.displayName ?? null);
+    });
   }, [session.accessToken]);
 
   async function search(event: FormEvent) {
@@ -53,7 +70,52 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
       <h2>{t("people.title")}</h2>
       {resume ? <p data-testid="resume-card">{t("people.resume")} {resume}</p> : <p className="tr-empty">{t("people.noResume")}</p>}
       {studio ? <p data-testid="studio">{studio}</p> : null}
-      {admin ? <p data-testid="admin-overview">{admin}</p> : null}
+      {admin ? <AdminScreen token={session.accessToken} /> : null}
+      <div data-testid="heatmap" aria-label={t("studio.heat")}>
+        {heatmap.filter((day) => day.score > 0).slice(0, 12).map((day) => (
+          <i key={day.day} title={`${day.day} ${day.score}`} />
+        ))}
+      </div>
+      <ul data-testid="platforms">
+        {platforms.map((item) => <li key={item.source}>{item.source} {item.count}</li>)}
+      </ul>
+      <p data-testid="host-stats">{t("studio.hosted")} {hostRooms}</p>
+      <div data-testid="pin-slots">
+        {[0, 1, 2].map((slot) => {
+          const pinned = achievements.find((item) => item.pinSlot === slot);
+          const next = achievements.find((item) => item.pinSlot === null);
+          return (
+            <button
+              key={slot}
+              type="button"
+              className="tr-text-button"
+              onClick={() => {
+                if (!next) return;
+                void fetch(`${apiUrl}/me/achievements/${next.key}/pin`, {
+                  method: "PATCH",
+                  headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` },
+                  body: JSON.stringify({ slot }),
+                }).then(() => reload());
+              }}
+            >
+              {pinned?.title ?? `${t("studio.pin")} ${slot + 1}`}
+            </button>
+          );
+        })}
+      </div>
+      <label>
+        {t("studio.avatar")}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            void cropAndUpload(file, session.accessToken).then(() => reload());
+          }}
+        />
+      </label>
+      {profileName ? <p data-testid="public-profile">{profileName}</p> : null}
       <button
         type="button"
         className="tr-text-button"
@@ -123,7 +185,13 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
       {friends.length === 0 ? <p className="tr-empty">{t("people.none")}</p> : null}
       <ul data-testid="friend-list">
         {friends.map((row) => (
-          <li key={row.id}>{row.displayName}</li>
+          <li key={row.id}>
+            {row.displayName}
+            {row.roomTitle ? <span> {t("people.inRoom")} {row.roomTitle}</span> : null}
+            <button type="button" className="tr-text-button" onClick={() => void fetch(`${apiUrl}/rooms/${row.roomId ?? "none"}/invite`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${session.accessToken}` }, body: JSON.stringify({ userId: row.userId }) })}>
+              {t("people.invite")}
+            </button>
+          </li>
         ))}
       </ul>
       <h3>{t("people.inbox")}</h3>
@@ -135,4 +203,34 @@ export function PeopleScreen({ session }: { session: ClientSession }) {
       </ul>
     </section>
   );
+}
+
+async function cropAndUpload(file: File, token: string) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!imageKind(bytes)) return;
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, 256, 256);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+  if (!blob) return;
+  const raw = new Uint8Array(await blob.arrayBuffer());
+  let dataBase64 = "";
+  for (const byte of raw) dataBase64 += String.fromCharCode(byte);
+  const uploaded = await fetch(`${apiUrl}/uploads`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ dataBase64: btoa(dataBase64) }),
+  });
+  const payload = (await uploaded.json()) as { url?: string };
+  if (!payload.url) return;
+  await fetch(`${apiUrl}/me`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ avatarUrl: `${apiUrl}${payload.url}` }),
+  });
 }

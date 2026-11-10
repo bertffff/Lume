@@ -11,15 +11,20 @@ import { decideFriendRequest, canToggleReaction, extractTimecodeSeconds, mention
 import { detectSource, planPlayback } from "./sources.js";
 import { hostnameBlocked, ipBlocked, urlBlocked, dnsPinned } from "./ssrf.js";
 import {
+  autoQuality,
   consumeMagic,
   dayScore,
+  gestureDelta,
   imageKind,
   innertubeFromFixture,
   moveQueueItem,
+  pageSlice,
+  playerShortcut,
   rotateRefresh,
   runExtractorChain,
   shouldRefreshLink,
   slowRemainingMs,
+  yearHeatmap,
 } from "./flow.js";
 import { castSkipVote, withdrawSkipVote } from "./vote.js";
 
@@ -191,5 +196,13 @@ describe("parity rules", () => {
     expect(consumeMagic(magic, "tok", 50)).toBeNull();
     await expect(dnsPinned("cdn.example", async () => ["8.8.8.8"])).resolves.toBe(true);
     await expect(dnsPinned("cdn.example", async () => ["127.0.0.1"])).resolves.toBe(false);
+    expect(yearHeatmap(new Date("2026-01-10T00:00:00.000Z"), { "2026-01-10": 4 })).toHaveLength(365);
+    expect(yearHeatmap(new Date("2026-01-10T00:00:00.000Z"), { "2026-01-10": 4 }).at(-1)?.score).toBe(4);
+    expect(pageSlice(["a", "b", "c"], 1, 2).items).toEqual(["c"]);
+    expect(gestureDelta("right", 2)).toBe(10);
+    expect(gestureDelta("center", 1)).toBe("toggle");
+    expect(autoQuality(0.2)).toBe("low");
+    expect(playerShortcut("j", true)).toBe("back");
+    expect(playerShortcut("j", false)).toBeNull();
   });
 });
