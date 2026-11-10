@@ -30,6 +30,7 @@ export {
   heavyCapabilities,
   isEntitlementActive,
   premiumEntitlementSchema,
+  flairAccess,
   themeAccess,
   type EntitlementKind,
   type HeavyCapability,
@@ -100,6 +101,49 @@ export {
   type MemberRole,
 } from "./roles.js";
 export { FREE_ROOM_MEMBER_CAP, SESSION_SOFT_WARN_MS, roomOverMemberCap, sessionSoftWarn } from "./limits.js";
+export {
+  earnedAchievementKeys,
+  levelFromXp,
+  nextLevelXp,
+  partyAchievements,
+  xpForKeys,
+  type AchievementProgress,
+  type PartyAchievementKey,
+} from "./parity/achievements.js";
+export {
+  allowHit,
+  passwordIssue,
+  resumeCard,
+  slowModeAllows,
+  tempMuteExpiry,
+  type RateBucket,
+  type ResumeSnapshot,
+} from "./parity/account.js";
+export { clockSample, median, pushWindow, smoothRtt, type ClockSample } from "./parity/clock.js";
+export { planDrift, type DriftPlan, type DriftSeek, type DriftStatus } from "./parity/drift.js";
+export { nextHost, reclaimHost, type HostCandidate } from "./parity/host.js";
+export { rewriteHlsManifest } from "./parity/manifest.js";
+export {
+  allowsAction,
+  allowsModeration,
+  defaultViewerPermissions,
+  type ModerationActionName,
+  type RoomAction,
+  type ViewerPermissions,
+} from "./parity/permissions.js";
+export { buildDigest, inQuietHours, nextDigestAt, type DigestMode } from "./parity/quiet.js";
+export {
+  canToggleReaction,
+  decideFriendRequest,
+  extractTimecodeSeconds,
+  mentionsUser,
+  type FriendDecision,
+  type FriendshipEdge,
+  type FriendshipState,
+} from "./parity/social.js";
+export { detectSource, planPlayback, sourceRules, type PlaybackPlan, type SourceRule } from "./parity/sources.js";
+export { hostnameBlocked, ipBlocked, urlBlocked } from "./parity/ssrf.js";
+export { castSkipVote, votesNeeded, withdrawSkipVote } from "./parity/vote.js";
 export { foreignOwnerIndex, replicaForRoom, roomHash } from "./routing.js";
 export {
   clientEventSchema,

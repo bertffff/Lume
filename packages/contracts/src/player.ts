@@ -34,6 +34,7 @@ export interface PlayerAdapter {
   play(): Promise<void>;
   pause(): Promise<void>;
   seek(positionMs: number): Promise<void>;
+  setPlaybackRate?(rate: number): void;
   getCurrentTime(): number;
   getDuration(): number | null;
   getBuffered(): number | null;

@@ -49,21 +49,55 @@ enum EntitlementSource {
 enum NotificationChannel {
   web
   telegram
+  email
+  push
+}
+
+enum PlatformRole {
+  USER
+  ADMIN
+  SUPERADMIN
 }
 
 model User {
-  id          String   @id @default(cuid())
-  telegramId  BigInt?  @unique
-  username    String?  @unique
-  displayName String
-  locale      Locale   @default(ru)
-  themeId     String   @default("ember")
-  avatarUrl   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    String       @id @default(cuid())
+  telegramId            BigInt?      @unique
+  username              String?      @unique
+  email                 String?      @unique
+  passwordHash          String?
+  displayName           String
+  locale                Locale       @default(ru)
+  themeId               String       @default("ember")
+  avatarUrl             String?
+  bio                   String?      @db.VarChar(100)
+  role                  PlatformRole @default(USER)
+  deletedAt             DateTime?
+  scheduledDeletionAt   DateTime?
+  xp                    Int          @default(0)
+  totalParties          Int          @default(0)
+  totalWatchTime        Int          @default(0)
+  totalMessages         Int          @default(0)
+  totalReactions        Int          @default(0)
+  roomsCreated          Int          @default(0)
+  onboardingComplete    Boolean      @default(false)
+  lastRoomSnapshot      Json?
+  lastRoomSnapshotAt    DateTime?
+  isFriendsPublic       Boolean      @default(true)
+  isFavoriteVideosPublic Boolean     @default(true)
+  isTopFriendsPublic    Boolean      @default(true)
+  isWatchHistoryPublic  Boolean      @default(true)
+  showUsername          Boolean      @default(true)
+  hideOtherReactions    Boolean      @default(false)
+  quickEmojis           Json?
+  quickReaction         String       @default("❤️")
+  timezone              String       @default("UTC")
+  isPremium             Boolean      @default(false)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
   sessions                  Session[]
   hostedRooms               Room[]                   @relation("RoomHost")
+  ownedRooms                Room[]                   @relation("RoomOwner")
   memberships               RoomMember[]
   messages                  Message[]
   reactions                 Reaction[]
@@ -72,7 +106,23 @@ model User {
   entitlements              Entitlement[]
   achievements              UserAchievement[]
   notificationPreferences   NotificationPreference[]
+  notifications             Notification[]
+  deliveryPreference        NotificationDeliveryPreference?
+  deliveryQueue             NotificationDeliveryQueue[]
+  pushSubscriptions         PushSubscription[]
   queueItems                QueueItem[]
+  bansReceived              Ban[]                    @relation("BanSubject")
+  bansOwned                 Ban[]                    @relation("BanOwner")
+  reports                   Report[]                 @relation("ReportReporter")
+  reportsResolved           Report[]                 @relation("ReportResolver")
+  reportsTargeted           Report[]                 @relation("ReportTarget")
+  audits                    AuditLog[]
+  exports                   DataExportRequest[]
+  watchHistory              WatchHistory[]
+  watchSessions             WatchSession[]           @relation("WatchUser")
+  partnerSessions           WatchSession[]           @relation("WatchPartner")
+  floatReactions            FloatReaction[]
+  moderationActions         ModerationAction[]       @relation("ModActor")
 }
 
 model Session {
@@ -93,10 +143,19 @@ model Room {
   title       String
   hostId      String
   host        User       @relation("RoomHost", fields: [hostId], references: [id])
+  ownerId     String
+  owner       User       @relation("RoomOwner", fields: [ownerId], references: [id])
+  description String?
   status      RoomStatus @default(open)
   layout      Json
   videoAspect  Float      @default(1.777777)
   isPublic     Boolean    @default(false)
+  maxMembers   Int        @default(25)
+  hideReactions Boolean   @default(false)
+  defaultPermissions Json?
+  pinnedMessageId String?
+  slowModeSeconds Int     @default(0)
+  emptySince   DateTime?
   nowPlayingId String?    @unique
   nowPlaying   QueueItem? @relation("NowPlaying", fields: [nowPlayingId], references: [id])
   createdAt    DateTime   @default(now())
@@ -105,6 +164,10 @@ model Room {
   members  RoomMember[]
   messages Message[]
   queue    QueueItem[]   @relation("RoomQueue")
+  bans     Ban[]
+  history  RoomHistoryItem[]
+  reports  Report[]              @relation("ReportRoom")
+  moderation ModerationAction[]
 
   @@index([hostId])
   @@index([isPublic, createdAt])
@@ -116,6 +179,14 @@ model RoomMember {
   userId   String
   role     MemberRole @default(viewer)
   muted    Boolean    @default(false)
+  mutedUntil DateTime?
+  canChat  Boolean    @default(true)
+  canSpeak Boolean    @default(true)
+  canControlVideo Boolean @default(false)
+  canAddToQueue Boolean @default(true)
+  canRemoveFromQueue Boolean @default(false)
+  canReorderQueue Boolean @default(false)
+  permissionsOverridden Boolean @default(false)
   joinedAt DateTime   @default(now())
   leftAt   DateTime?
   room     Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -144,6 +215,8 @@ model Message {
   roomId    String
   userId    String
   body      String
+  type      String     @default("text")
+  imageUrl  String?
   replyToId String?
   createdAt DateTime   @default(now())
   room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -195,6 +268,9 @@ model Achievement {
   descriptionRu String
   descriptionEn String
   points        Int               @default(0)
+  icon          String            @default("✨")
+  xpReward      Int               @default(50)
+  condition     String            @default("")
   users         UserAchievement[]
 }
 
@@ -203,6 +279,7 @@ model UserAchievement {
   userId        String
   achievementId String
   awardedAt     DateTime    @default(now())
+  pinSlot       Int?
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
 
@@ -234,4 +311,189 @@ model Entitlement {
 
   @@unique([userId, sku])
   @@index([userId, active])
+}
+
+model Ban {
+  id        String    @id @default(cuid())
+  type      String    @default("permanent")
+  reason    String?
+  roomId    String?
+  userId    String
+  ownerId   String
+  expiresAt DateTime?
+  liftedAt  DateTime?
+  createdAt DateTime  @default(now())
+  room      Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User      @relation("BanSubject", fields: [userId], references: [id], onDelete: Cascade)
+  owner     User      @relation("BanOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([userId, liftedAt])
+  @@index([roomId])
+}
+
+model Report {
+  id           String    @id @default(cuid())
+  reporterId   String
+  targetKind   String
+  targetId     String
+  roomId       String?
+  targetUserId String?
+  reason       String
+  details      String?
+  status       String    @default("open")
+  resolution   String?
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime  @default(now())
+  reporter     User      @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy   User?     @relation("ReportResolver", fields: [resolvedById], references: [id])
+  room         Room?     @relation("ReportRoom", fields: [roomId], references: [id], onDelete: SetNull)
+  targetUser   User?     @relation("ReportTarget", fields: [targetUserId], references: [id])
+
+  @@index([status, createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  action      String
+  subjectKind String
+  subjectId   String
+  detail      String?
+  createdAt   DateTime @default(now())
+  actor       User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model NotificationDeliveryPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  digest            String   @default("INSTANT")
+  quietHoursEnabled Boolean  @default(false)
+  quietStart        String   @default("22:00")
+  quietEnd          String   @default("08:00")
+  timezone          String   @default("UTC")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationDeliveryQueue {
+  id             String   @id @default(cuid())
+  userId         String
+  notificationId String
+  channel        String
+  kind           String
+  status         String   @default("pending")
+  scheduledFor   DateTime
+  lastError      String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledFor])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  keys      Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+}
+
+model DataExportRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  status        String    @default("pending")
+  downloadToken String    @unique @default(cuid())
+  result        Json?
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+model WatchHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  roomId        String?
+  videoUrl      String
+  title         String?
+  thumbnail     String?
+  source        String?
+  watchCount    Int      @default(1)
+  lastWatchedAt DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoUrl])
+  @@index([userId, lastWatchedAt])
+}
+
+model WatchSession {
+  id            String   @id @default(cuid())
+  userId        String
+  partnerId     String
+  roomId        String?
+  watchDuration Int      @default(0)
+  sessionDate   DateTime @default(now())
+  user          User     @relation("WatchUser", fields: [userId], references: [id], onDelete: Cascade)
+  partner       User     @relation("WatchPartner", fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([userId, partnerId])
+}
+
+model RoomHistoryItem {
+  id        String   @id @default(cuid())
+  roomId    String
+  url       String
+  title     String?
+  source    String
+  watchedAt DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, watchedAt])
+}
+
+model ModerationAction {
+  id        String   @id @default(cuid())
+  roomId    String
+  actorId   String
+  targetId  String?
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  actor     User     @relation("ModActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+}
+
+model FloatReaction {
+  id        String   @id @default(cuid())
+  userId    String
+  roomId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
 }

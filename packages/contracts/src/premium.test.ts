@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capabilityAllowed, themeAccess, type PremiumEntitlement } from "./premium.js";
+import { capabilityAllowed, flairAccess, themeAccess, type PremiumEntitlement } from "./premium.js";
 
 const now = Date.parse("2026-11-04T00:00:00.000Z");
 
@@ -40,6 +40,11 @@ describe("premium gate", () => {
         now,
       ),
     ).toBe("locked");
+  });
+
+  it("locks chat flair until the spark entitlement is active", () => {
+    expect(flairAccess("flair.spark", [], now)).toBe("locked");
+    expect(flairAccess("flair.spark", [entitlement({ sku: "flair.spark", kind: "flair" })], now)).toBe("allowed");
   });
 
   it("gates only the heavy capability list", () => {

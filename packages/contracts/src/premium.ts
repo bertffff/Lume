@@ -66,6 +66,17 @@ export function themeAccess(
 /**
  * Core product features stay allowed. Only the explicit heavy list is gated.
  */
+export function flairAccess(
+  sku: string,
+  entitlements: readonly PremiumEntitlement[],
+  nowMs: number,
+): "allowed" | "locked" {
+  const hit = entitlements.find(
+    (item) => item.kind === "flair" && item.sku === sku && isEntitlementActive(item, nowMs),
+  );
+  return hit ? "allowed" : "locked";
+}
+
 export function capabilityAllowed(
   capability: string,
   entitlements: readonly PremiumEntitlement[],
