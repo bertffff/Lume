@@ -8,6 +8,7 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 | Done | 62 |
 | Done (needs creds) | 12 |
 | Partial | 37 |
+| Redesign | 7 |
 | Missing | 19 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
