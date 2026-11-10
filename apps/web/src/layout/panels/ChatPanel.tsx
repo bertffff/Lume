@@ -19,6 +19,9 @@ export function ChatPanel({
   const live = useRoomActions();
   const [draft, setDraft] = useState("");
   const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [seen, setSeen] = useState(0);
+  const [emojiQuery, setEmojiQuery] = useState("");
+  const [quick, setQuick] = useState(() => window.localStorage.getItem("lume-quick-emoji") ?? "👍,❤️,😂,🔥");
   const [pin, setPin] = useState<string | null>(null);
   const [waitMs, setWaitMs] = useState(0);
 
@@ -97,6 +100,24 @@ export function ChatPanel({
         </p>
       ) : null}
       {waitMs > 0 ? <p className="tr-note" data-testid="slow-countdown">{t("chat.slow")} {Math.ceil(waitMs / 1000)}</p> : null}
+      {messages.length > seen ? (
+        <button type="button" className="tr-text-button" onClick={() => setSeen(messages.length)}>
+          {messages.length - seen}
+        </button>
+      ) : null}
+      <input
+        value={quick}
+        onChange={(event) => {
+          setQuick(event.target.value);
+          window.localStorage.setItem("lume-quick-emoji", event.target.value);
+        }}
+      />
+      <input value={emojiQuery} onChange={(event) => setEmojiQuery(event.target.value)} placeholder="emoji" />
+      {(["😀", "😂", "❤️", "🔥", "👍", "🎉"] as const)
+        .filter((emoji) => emoji.includes(emojiQuery) || emojiQuery === "")
+        .map((emoji) => (
+          <button key={emoji} type="button" className="tr-text-button" onClick={() => live?.sendFloat(emoji)}>{emoji}</button>
+        ))}
       <div className="tr-chat-log" data-testid="chat-log">
         {messages.length === 0 ? <p className="tr-empty">{t("chat.empty")}</p> : null}
         {live && live.typingNames.length > 0 ? <p className="tr-note">{typingLine(live.typingNames)}</p> : null}
