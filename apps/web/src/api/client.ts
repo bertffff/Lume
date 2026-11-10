@@ -61,4 +61,42 @@ export const api = {
       body: { roomId },
     });
   },
+  me(token: string) {
+    return request<Record<string, unknown>>("/me", { token });
+  },
+  searchUsers(token: string, q: string) {
+    return request<{ users: Array<{ id: string; displayName: string; username: string | null }> }>(
+      `/users/search?q=${encodeURIComponent(q)}`,
+      { token },
+    );
+  },
+  friends(token: string) {
+    return request<{
+      friends: Array<{ id: string; userId: string; displayName: string }>;
+      incoming: Array<{ id: string; userId: string; displayName: string }>;
+      outgoing: Array<{ id: string; displayName: string }>;
+      blocked: Array<{ id: string; displayName: string }>;
+    }>("/friends", { token });
+  },
+  requestFriend(token: string, userId: string) {
+    return request<{ status: string }>("/friends/request", { method: "POST", token, body: { userId } });
+  },
+  acceptFriend(token: string, id: string) {
+    return request<{ status: string }>(`/friends/${id}/accept`, { method: "POST", token, body: {} });
+  },
+  declineFriend(token: string, id: string) {
+    return request<{ ok: boolean }>(`/friends/${id}/decline`, { method: "POST", token, body: {} });
+  },
+  notifications(token: string) {
+    return request<{ unread: number; notifications: Array<{ id: string; title: string; body: string; read: boolean }> }>(
+      "/notifications",
+      { token },
+    );
+  },
+  resume(token: string) {
+    return request<{ resume: { title: string; positionMs: number; queueCount: number; historyCount: number } | null }>(
+      "/me/resume",
+      { token },
+    );
+  },
 };

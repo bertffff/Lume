@@ -48,6 +48,9 @@ export function App() {
     document.documentElement.lang = locale;
     webApp?.ready?.();
     webApp?.expand?.();
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
   }, [locale, webApp]);
 
   useEffect(() => {

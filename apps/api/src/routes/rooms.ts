@@ -1,6 +1,8 @@
 import { createRoomSchema, joinRoomSchema } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import type { PrismaClient } from "@lume/db";
+import { trackStat } from "../account/awards.js";
 import { requireUser } from "../auth/guard.js";
 import type { ApiEnv } from "../env.js";
 import { RoomService } from "../rooms/service.js";
@@ -44,6 +46,7 @@ export function registerRoomRoutes(
   app: FastifyInstance,
   env: ApiEnv,
   service: RoomService | null,
+  prisma: PrismaClient | null = null,
 ): void {
   app.get("/rooms", async (_request, reply) => {
     if (!service) {
@@ -64,12 +67,17 @@ export function registerRoomRoutes(
     if (!body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
-    return run(reply, () =>
-      service.createRoom(
+    return run(reply, async () => {
+      const created = await service.createRoom(
         { userId: actor.userId, displayName: actor.displayName },
         { title: body.data.title, ...(body.data.isPublic === undefined ? {} : { isPublic: body.data.isPublic }) },
-      ),
-    );
+      );
+      if (prisma) {
+        await trackStat(prisma, actor.userId, "roomsCreated", 1, env.TELEGRAM_BOT_TOKEN);
+        await trackStat(prisma, actor.userId, "totalParties", 1, env.TELEGRAM_BOT_TOKEN);
+      }
+      return created;
+    });
   });
 
   app.post("/rooms/join", async (request, reply) => {
@@ -84,7 +92,13 @@ export function registerRoomRoutes(
     if (!body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
-    return run(reply, () => service.joinByCode({ userId: actor.userId, displayName: actor.displayName }, body.data.code));
+    return run(reply, async () => {
+      const joined = await service.joinByCode({ userId: actor.userId, displayName: actor.displayName }, body.data.code);
+      if (prisma && joined.self.role !== "host") {
+        await trackStat(prisma, actor.userId, "totalParties", 1, env.TELEGRAM_BOT_TOKEN);
+      }
+      return joined;
+    });
   });
 
   app.get("/rooms/:id", async (request, reply) => {
@@ -116,6 +130,35 @@ export function registerRoomRoutes(
     }
     await run(reply, async () => {
       await service.leave({ userId: actor.userId, displayName: actor.displayName }, params.data.id);
+      if (prisma) {
+        const active = await prisma.roomMember.count({ where: { roomId: params.data.id, leftAt: null } });
+        if (active === 0) {
+          const room = await prisma.room.findUnique({
+            where: { id: params.data.id },
+            include: { queue: { orderBy: { position: "asc" } }, nowPlaying: true },
+          });
+          if (room) {
+            const historyCount = await prisma.roomHistoryItem.count({ where: { roomId: room.id } });
+            await prisma.user.update({
+              where: { id: room.ownerId },
+              data: {
+                lastRoomSnapshot: {
+                  title: room.title,
+                  description: room.description ?? "",
+                  isPublic: room.isPublic,
+                  maxMembers: room.maxMembers,
+                  videoUrl: room.nowPlaying?.url ?? null,
+                  positionMs: 0,
+                  queue: room.queue.map((item) => ({ url: item.url, title: item.title })),
+                  historyCount,
+                },
+                lastRoomSnapshotAt: new Date(),
+              },
+            });
+            await prisma.room.update({ where: { id: room.id }, data: { emptySince: new Date() } });
+          }
+        }
+      }
       return { ok: true };
     });
   });
@@ -153,14 +196,18 @@ export function registerRoomRoutes(
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
-    return run(reply, () =>
-      service.sendMessage(
+    return run(reply, async () => {
+      const message = await service.sendMessage(
         { userId: actor.userId, displayName: actor.displayName },
         params.data.id,
         body.data.body,
         body.data.replyToId,
-      ),
-    );
+      );
+      if (prisma) {
+        await trackStat(prisma, actor.userId, "totalMessages", 1, env.TELEGRAM_BOT_TOKEN);
+      }
+      return message;
+    });
   });
 
   app.post("/rooms/:id/reactions", async (request, reply) => {
@@ -178,14 +225,18 @@ export function registerRoomRoutes(
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
-    return run(reply, () =>
-      service.react(
+    return run(reply, async () => {
+      const message = await service.react(
         { userId: actor.userId, displayName: actor.displayName },
         params.data.id,
         body.data.messageId,
         body.data.emoji,
-      ),
-    );
+      );
+      if (prisma) {
+        await trackStat(prisma, actor.userId, "totalReactions", 1, env.TELEGRAM_BOT_TOKEN);
+      }
+      return message;
+    });
   });
 
   app.post("/rooms/:id/queue", async (request, reply) => {

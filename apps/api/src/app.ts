@@ -8,6 +8,7 @@ import { RoomService } from "./rooms/service.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerRoomRoutes } from "./routes/rooms.js";
+import { registerSocialRoutes } from "./routes/social.js";
 import { registerVoiceRoutes } from "./routes/voice.js";
 
 export async function buildApp(
@@ -24,8 +25,9 @@ export async function buildApp(
   await app.register(cors, { origin: env.WEB_ORIGIN });
   registerHealthRoutes(app, env);
   registerAuthRoutes(app, env, options?.prisma);
-  registerRoomRoutes(app, env, service);
+  registerRoomRoutes(app, env, service, options?.prisma ?? null);
   registerVoiceRoutes(app, env, service);
+  registerSocialRoutes(app, env, options?.prisma ?? null, service);
 
   app.setErrorHandler((error, _request, reply) => {
     app.log.error(error);

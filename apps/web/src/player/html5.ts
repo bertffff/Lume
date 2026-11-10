@@ -63,6 +63,9 @@ export function createHtml5Adapter(url: string, mount: HTMLElement, hls: boolean
     async seek(positionMs: number) {
       video.currentTime = positionMs / 1000;
     },
+    setPlaybackRate(rate: number) {
+      video.playbackRate = rate;
+    },
     getCurrentTime() {
       return Math.round(video.currentTime * 1000);
     },

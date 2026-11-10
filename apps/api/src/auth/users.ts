@@ -28,11 +28,24 @@ export async function upsertDevUser(prisma: PrismaClient, displayName: string) {
     .replace(/[^\p{L}\p{N}_-]/gu, "")
     .slice(0, 32);
   const username = `dev:${key || "guest"}`;
-  return prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { username },
     create: { username, displayName: trimmed, locale: "ru" },
     update: { displayName: trimmed },
   });
+  if (trimmed === "Аврора") {
+    await prisma.entitlement.upsert({
+      where: { userId_sku: { userId: user.id, sku: "theme.aurora" } },
+      update: { active: true },
+      create: { userId: user.id, sku: "theme.aurora", kind: "theme", source: "grant" },
+    });
+    await prisma.entitlement.upsert({
+      where: { userId_sku: { userId: user.id, sku: "flair.spark" } },
+      update: { active: true },
+      create: { userId: user.id, sku: "flair.spark", kind: "flair", source: "grant" },
+    });
+  }
+  return user;
 }
 
 export async function upsertTelegramUser(prisma: PrismaClient, telegramUser: TelegramWebAppUser) {

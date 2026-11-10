@@ -5,6 +5,7 @@ export interface RoomRecord {
   code: string;
   title: string;
   hostId: string;
+  ownerId?: string;
   status: "open" | "live" | "ended";
   isPublic: boolean;
   createdAt: string;
@@ -18,6 +19,7 @@ export interface MemberRecord {
   role: MemberRole;
   muted: boolean;
   leftAt: string | null;
+  joinedAt?: string;
 }
 
 export interface MessageRecord {

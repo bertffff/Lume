@@ -1,11 +1,13 @@
 import {
+  planDrift,
   planFollowerSync,
   positionAt,
   type AdapterPhase,
+  type DriftSeek,
   type PlaybackSnapshot,
   type PlayerAdapter,
 } from "@lume/contracts";
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 export function useFollowSync(input: {
   enabled: boolean;
@@ -16,6 +18,12 @@ export function useFollowSync(input: {
   onBlocked: () => void;
 }) {
   const { enabled, playback, offsetMs, adapterRef, phaseRef, onBlocked } = input;
+  const seeks = useRef<DriftSeek[]>([]);
+  const loadedAt = useRef(Date.now());
+  useEffect(() => {
+    loadedAt.current = Date.now();
+    seeks.current = [];
+  }, [playback?.version]);
   useEffect(() => {
     if (!enabled || !playback) {
       return;
@@ -39,14 +47,30 @@ export function useFollowSync(input: {
               },
               Date.now() + offsetMs,
             );
+      const phase = phaseRef.current ?? "loading";
+      const drift = planDrift({
+        localMs: adapter.getCurrentTime(),
+        expectedMs: authority,
+        embed: adapter.limited,
+        loadedAgoMs: Date.now() - loadedAt.current,
+        bufferedToMs: adapter.getBuffered(),
+        recentSeeks: seeks.current,
+        nowMs: Date.now(),
+        buffering: phase === "buffering",
+        bufferEndedAtMs: null,
+      });
       const plan = planFollowerSync({
         playback: playback.status,
-        adapterPhase: phaseRef.current ?? "loading",
+        adapterPhase: phase,
         localMs: adapter.getCurrentTime(),
         authorityMs: authority,
+        thresholdMs: drift.status === "hard-seeking" ? 0 : 1_000_000,
       });
-      if (plan.seekToMs !== null) {
-        await adapter.seek(Math.max(0, Math.round(plan.seekToMs)));
+      if (drift.seekToMs !== null) {
+        seeks.current = [...seeks.current, { atMs: Date.now(), targetMs: drift.seekToMs }].slice(-6);
+        await adapter.seek(Math.max(0, Math.round(drift.seekToMs)));
+      } else {
+        adapter.setPlaybackRate?.(drift.playbackRate ?? 1);
       }
       if (plan.pause) {
         await adapter.pause();

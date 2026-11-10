@@ -12,6 +12,7 @@ function mapRoom(room: {
   slug: string;
   title: string;
   hostId: string;
+  ownerId: string;
   status: "open" | "live" | "ended";
   isPublic: boolean;
   createdAt: Date;
@@ -22,6 +23,7 @@ function mapRoom(room: {
     code: room.slug,
     title: room.title,
     hostId: room.hostId,
+    ownerId: room.ownerId,
     status: room.status,
     isPublic: room.isPublic,
     createdAt: room.createdAt.toISOString(),
@@ -38,6 +40,7 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
           slug: room.code,
           title: room.title,
           hostId: room.hostId,
+          ownerId: room.hostId,
           status: room.status,
           isPublic: room.isPublic,
           layout: defaultRoomLayout,
@@ -84,6 +87,7 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
         role: row.role,
         muted: row.muted,
         leftAt: row.leftAt ? row.leftAt.toISOString() : null,
+        joinedAt: row.joinedAt.toISOString(),
       }));
     },
     async findMember(roomId, userId) {

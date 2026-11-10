@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
+import { PeopleScreen } from "./PeopleScreen.js";
 
 export function Lobby({
   session,
@@ -22,6 +23,7 @@ export function Lobby({
   const [code, setCode] = useState("");
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [people, setPeople] = useState(false);
 
   useEffect(() => {
     let stopped = false;
@@ -89,6 +91,9 @@ export function Lobby({
       {session ? (
         <p>
           {session.user.displayName}{" "}
+          <button type="button" className="tr-text-button" data-testid="open-people" onClick={() => setPeople((value) => !value)}>
+            {t("people.title")}
+          </button>{" "}
           <button type="button" className="tr-text-button" onClick={onSignOut}>
             {t("lobby.signOut")}
           </button>
@@ -108,6 +113,7 @@ export function Lobby({
           </button>
         </form>
       )}
+      {session && people ? <PeopleScreen session={session} /> : null}
       {session ? (
         <div className="tr-lobby-grid">
           <form onSubmit={(event) => void create(event)}>

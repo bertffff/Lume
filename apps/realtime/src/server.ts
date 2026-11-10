@@ -19,6 +19,29 @@ export async function startRealtime(env: RealtimeEnv): Promise<RealtimeServer> {
       response.end(JSON.stringify({ status: "ok" }));
       return;
     }
+    if (request.url === "/internal/close" && request.method === "POST") {
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => chunks.push(chunk));
+      request.on("end", () => {
+        let roomId = "";
+        try {
+          roomId = String((JSON.parse(Buffer.concat(chunks).toString() || "{}") as { roomId?: string }).roomId ?? "");
+        } catch {
+          roomId = "";
+        }
+        if (roomId) {
+          io.to(roomId).emit("room:error", { code: "closed", message: "Комната закрыта" });
+          void io.in(roomId).fetchSockets().then((sockets) => {
+            for (const socket of sockets) {
+              socket.disconnect(true);
+            }
+          });
+        }
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify({ ok: true }));
+      });
+      return;
+    }
     if (request.url === "/ready") {
       const ready = redis !== null;
       response.writeHead(ready ? 200 : 503, { "content-type": "application/json" });

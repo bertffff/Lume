@@ -34,6 +34,8 @@ export const apiEnvSchema = z.object({
   LIVEKIT_API_KEY: optionalString,
   LIVEKIT_API_SECRET: optionalString,
   LIVEKIT_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60),
+  DEV_ADMIN_NAMES: optionalString,
+  REALTIME_URL: z.string().min(1).default("http://127.0.0.1:3002"),
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

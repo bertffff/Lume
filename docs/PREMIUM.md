@@ -34,6 +34,8 @@
 
 Просроченное право не считается активным. `expiresAt = null` значит без срока.
 
+Гостевой вход с именем «Аврора» получает два косметических права: `theme.aurora` и `flair.spark`. Без них тема «Аврора» отвечает `theme_locked`. Оплата Telegram Stars — фаза 7: источник `stars` уже есть в enum, касса не подключена.
+
 ## English
 
 Free TeleRave is the whole session. Payment, later, is Telegram Stars first and web checkout second. The entitlement enum already has `stars` and `web`, and nothing writes them yet. A free room holds 25 members. After four hours the UI warns and keeps going. Aurora is the sample premium theme. Heavy capabilities stay denied.

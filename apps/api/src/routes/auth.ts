@@ -118,6 +118,10 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: P
       return reply.code(503).send({ error: "jwt_unconfigured" });
     }
     const stored = await upsertDevUser(prisma, body.data.displayName);
+    const admins = new Set((env.DEV_ADMIN_NAMES ?? "").split(",").map((name) => name.trim()).filter(Boolean));
+    if (admins.has(stored.displayName)) {
+      await prisma.user.update({ where: { id: stored.id }, data: { role: "ADMIN" } });
+    }
     const user = toPublicUser(stored);
     return reply.send({
       authMode: "stub",

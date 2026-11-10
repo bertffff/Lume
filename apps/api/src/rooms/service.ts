@@ -2,6 +2,8 @@ import {
   canActOnMember,
   canAssignRole,
   canControlPlayback,
+  canToggleReaction,
+  nextHost,
   mediaFallbackTitle,
   parseEmbedInput,
   roomOverMemberCap,
@@ -104,6 +106,7 @@ export class RoomService {
       code,
       title: input.title.trim(),
       hostId: actor.userId,
+      ownerId: actor.userId,
       status: "open",
       isPublic: input.isPublic ?? false,
       createdAt,
@@ -144,20 +147,56 @@ export class RoomService {
     if (roomOverMemberCap(active(members).length)) {
       throw new RoomFailure("room_full");
     }
+    const reclaim = room.ownerId === actor.userId;
+    if (reclaim) {
+      const currentHost = members.find((item) => item.role === "host" && item.leftAt === null && item.userId !== actor.userId);
+      if (currentHost) {
+        await this.repo.saveMember({ ...currentHost, role: "viewer" });
+      }
+    }
     await this.repo.saveMember({
       roomId: room.id,
       userId: actor.userId,
       displayName: actor.displayName,
-      role: existing?.role ?? "viewer",
+      role: reclaim ? "host" : (existing?.role === "host" ? "viewer" : existing?.role ?? "viewer"),
       muted: existing?.muted ?? false,
       leftAt: null,
     });
+    if (!existing || existing.leftAt !== null) {
+      await this.repo.insertMessage({
+        id: this.ids(),
+        roomId: room.id,
+        userId: actor.userId,
+        displayName: actor.displayName,
+        body: `${actor.displayName} присоединился к комнате`,
+        replyToId: null,
+        createdAt: this.now().toISOString(),
+        reactions: [],
+      });
+    }
     return this.detailFor(actor.userId, room.id);
   }
 
   async leave(actor: Actor, roomId: string): Promise<void> {
     const { member } = await this.requireActive(roomId, actor.userId);
+    const members = await this.repo.listMembers(roomId);
     await this.repo.saveMember({ ...member, leftAt: this.now().toISOString() });
+    if (member.role !== "host") {
+      return;
+    }
+    const rest = members.filter((item) => item.userId !== actor.userId && item.leftAt === null);
+    const successorId = nextHost(
+      rest.map((item) => ({
+        userId: item.userId,
+        role: item.role,
+        joinedAtMs: item.joinedAt ? Date.parse(item.joinedAt) : 0,
+      })),
+      actor.userId,
+    );
+    const successor = rest.find((item) => item.userId === successorId);
+    if (successor) {
+      await this.repo.saveMember({ ...successor, role: "host" });
+    }
   }
 
   async kick(actor: Actor, roomId: string, targetUserId: string): Promise<RoomDetail> {
@@ -230,6 +269,14 @@ export class RoomService {
 
   async react(actor: Actor, roomId: string, messageId: string, emoji: string): Promise<ChatMessage> {
     await this.requireActive(roomId, actor.userId);
+    const existing = (await this.repo.listMessages(roomId, 200)).find((item) => item.id === messageId);
+    if (!existing) {
+      throw new RoomFailure("not_found");
+    }
+    const mine = existing.reactions.filter((reaction) => reaction.userId === actor.userId).map((reaction) => reaction.emoji);
+    if (!canToggleReaction(mine, emoji)) {
+      throw new RoomFailure("conflict");
+    }
     const message = await this.repo.toggleReaction({
       roomId,
       messageId,

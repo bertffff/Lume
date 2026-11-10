@@ -94,4 +94,29 @@ describe("room service", () => {
     expect(playing.room.nowPlaying?.provider).toBe("youtube");
     expect(playing.room.status).toBe("live");
   });
+
+  it("hands the host to a mod when the host leaves, and the owner takes it back", async () => {
+    const service = harness();
+    const created = await service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Смена" });
+    await service.joinByCode({ userId: "mod", displayName: "Мод" }, created.room.code);
+    await service.setRole({ userId: "host", displayName: "Хост" }, created.room.id, "mod", "mod");
+    await service.leave({ userId: "host", displayName: "Хост" }, created.room.id);
+    const after = await service.joinByCode({ userId: "guest", displayName: "Гость" }, created.room.code);
+    expect(after.members.find((member) => member.userId === "mod")?.role).toBe("host");
+    const reclaimed = await service.joinByCode({ userId: "host", displayName: "Хост" }, created.room.code);
+    expect(reclaimed.self.role).toBe("host");
+    expect(reclaimed.members.find((member) => member.userId === "mod")?.role).toBe("viewer");
+  });
+
+  it("stops a fourth distinct reaction from the same person", async () => {
+    const service = harness();
+    const created = await service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Чат" });
+    const message = await service.sendMessage({ userId: "host", displayName: "Хост" }, created.room.id, "раз");
+    for (const emoji of ["👍", "🔥", "😂"]) {
+      await service.react({ userId: "host", displayName: "Хост" }, created.room.id, message.id, emoji);
+    }
+    await expect(
+      service.react({ userId: "host", displayName: "Хост" }, created.room.id, message.id, "❤️"),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
 });

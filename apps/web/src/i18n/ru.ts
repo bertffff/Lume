@@ -96,6 +96,18 @@ export const ru = {
   "theme.premium": "premium",
   "theme.ember": "Уголь",
   "theme.aurora": "Аврора",
+  "people.title": "Люди",
+  "people.search": "Найти по имени",
+  "people.find": "Искать",
+  "people.request": "Добавить",
+  "people.accept": "Принять",
+  "people.decline": "Отклонить",
+  "people.incoming": "Заявки",
+  "people.friends": "Друзья",
+  "people.inbox": "Уведомления",
+  "people.none": "Пока пусто",
+  "people.resume": "Продолжить просмотр",
+  "people.noResume": "Нет сохранённого сеанса",
 } as const;
 
 export type MessageKey = keyof typeof ru;
