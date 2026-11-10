@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lume/contracts": "workspace:*",
+    "@lume/db": "workspace:*",
     "bullmq": "6.7.0",
     "ioredis": "5.11.1",
     "zod": "catalog:"

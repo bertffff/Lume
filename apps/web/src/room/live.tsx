@@ -24,6 +24,13 @@ export interface RoomActions {
   kick: (userId: string) => void;
   mute: (userId: string, muted: boolean) => void;
   promote: (userId: string) => void;
+  clockOffset: number;
+  skip: { votes: number; needed: number };
+  typingName: string | null;
+  floats: Array<{ id: string; emoji: string; x: number; y: number; userId: string }>;
+  voteSkip: (withdraw?: boolean) => void;
+  sendTyping: () => void;
+  sendFloat: (emoji: string) => void;
 }
 
 const RoomContext = createContext<RoomActions | null>(null);

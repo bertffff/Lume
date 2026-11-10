@@ -1,5 +1,6 @@
 import {
   canControlPlayback,
+  castSkipVote,
   chatReactSchema,
   chatSendSchema,
   clockPingSchema,
@@ -15,10 +16,12 @@ import {
   queueAddSchema,
   roomJoinSchema,
   roomLeaveSchema,
+  withdrawSkipVote,
   type MemberRole,
   type RoomError,
 } from "@lume/contracts";
 import { verifyAccessToken } from "@lume/contracts/node";
+import { z } from "zod";
 import type { Server, Socket } from "socket.io";
 import type { RealtimeEnv } from "../env.js";
 import type { RedisPair } from "../redis.js";
@@ -164,7 +167,67 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
       void moderate(io, redis, api, socket, payload, "role");
     });
     registerVoiceEvents(io, redis, api, socket);
+    socket.on("playback:vote-skip", (payload: unknown) => {
+      void voteSkip(io, redis, api, socket, payload);
+    });
+    socket.on("chat:typing", (payload: unknown) => {
+      const parsed = z.object({ roomId: z.string().min(1) }).safeParse(payload);
+      const actor = actorOf(socket);
+      if (!parsed.success || !actor) return;
+      socket.to(parsed.data.roomId).emit("chat:typing", { userId: actor.userId, displayName: actor.displayName });
+    });
+    socket.on("reaction:send", (payload: unknown) => {
+      const parsed = z.object({ roomId: z.string().min(1), emoji: z.string().min(1).max(8) }).safeParse(payload);
+      const actor = actorOf(socket);
+      if (!parsed.success || !actor) return;
+      io.to(parsed.data.roomId).emit("reaction:float", {
+        id: `${actor.userId}-${Date.now()}`,
+        emoji: parsed.data.emoji,
+        userId: actor.userId,
+        x: 10 + Math.random() * 80,
+        y: 30 + Math.random() * 40,
+      });
+    });
   });
+}
+
+async function voteSkip(io: Server, redis: RedisPair | null, api: RoomApi, socket: Socket, payload: unknown): Promise<void> {
+  const parsed = z.object({ roomId: z.string().min(1), withdraw: z.boolean().optional() }).safeParse(payload);
+  const actor = actorOf(socket);
+  if (!parsed.success || !actor || !redis) {
+    return;
+  }
+  const key = `lume:room:${parsed.data.roomId}:skip`;
+  if (parsed.data.withdraw) {
+    await redis.pub.srem(key, actor.userId);
+  } else {
+    await redis.pub.sadd(key, actor.userId);
+  }
+  const members = await listMembers(redis.pub, parsed.data.roomId);
+  const self = members.find((member) => member.userId === actor.userId);
+  const votes = parsed.data.withdraw
+    ? withdrawSkipVote(await redis.pub.smembers(key), actor.userId)
+    : await redis.pub.smembers(key);
+  const result = castSkipVote({
+    memberCount: Math.max(1, members.length),
+    votes,
+    voterId: actor.userId,
+    isHost: self?.role === "host",
+  });
+  io.to(parsed.data.roomId).emit("playback:skip-votes", {
+    roomId: parsed.data.roomId,
+    votes: result.votes.length,
+    needed: result.needed,
+  });
+  if (result.skipped) {
+    await redis.pub.del(key);
+    try {
+      const session = await api.playNext(actor.token, parsed.data.roomId);
+      io.to(parsed.data.roomId).emit("room:state", session);
+    } catch (error) {
+      fail(socket, { code: mapFailure(error), message: "playback:vote-skip" });
+    }
+  }
 }
 
 async function join(

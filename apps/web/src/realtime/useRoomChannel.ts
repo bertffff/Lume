@@ -13,6 +13,7 @@ import {
 } from "@lume/contracts";
 import { useEffect, useState } from "react";
 import type { Socket } from "socket.io-client";
+import { clockSample, median } from "@lume/contracts";
 import { z } from "zod";
 import { connectRealtime, realtimeUrl } from "./client.js";
 
@@ -42,6 +43,10 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
   const [state, setState] = useState<LiveRoom | null>(null);
   const [status, setStatus] = useState<ChannelStatus>(input ? "connecting" : "off");
   const [error, setError] = useState<string | null>(null);
+  const [clockOffset, setClockOffset] = useState(0);
+  const [skip, setSkip] = useState({ votes: 0, needed: 1 });
+  const [typingName, setTypingName] = useState<string | null>(null);
+  const [floats, setFloats] = useState<Array<{ id: string; emoji: string; x: number; y: number; userId: string }>>([]);
   const [voiceForce, setVoiceForce] = useState<{
     id: number;
     userId: string;
@@ -184,6 +189,22 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
           }
           setVoiceForce({ id: Date.now(), ...parsed.data });
         });
+        client.on("playback:skip-votes", (payload: unknown) => {
+          const parsed = z.object({ votes: z.number(), needed: z.number() }).safeParse(payload);
+          if (parsed.success) setSkip(parsed.data);
+        });
+        client.on("chat:typing", (payload: unknown) => {
+          const parsed = z.object({ displayName: z.string() }).safeParse(payload);
+          if (!parsed.success) return;
+          setTypingName(parsed.data.displayName);
+          window.setTimeout(() => setTypingName(null), 3000);
+        });
+        client.on("reaction:float", (payload: unknown) => {
+          const parsed = z.object({ id: z.string(), emoji: z.string(), x: z.number(), y: z.number(), userId: z.string() }).safeParse(payload);
+          if (!parsed.success) return;
+          setFloats((current) => [...current.slice(-12), parsed.data]);
+          window.setTimeout(() => setFloats((current) => current.filter((item) => item.id !== parsed.data.id)), 2400);
+        });
         client.on("room:error", (payload: unknown) => {
           const parsed = z.object({ code: z.string() }).safeParse(payload);
           if (parsed.success) {
@@ -202,6 +223,37 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       setSocket(null);
     };
   }, [input?.roomId, input?.token, input?.selfId]);
+
+  useEffect(() => {
+    if (!socket || !input?.roomId) return;
+    let stopped = false;
+    const room = input.roomId;
+    const sampleRound = async () => {
+      const samples: number[] = [];
+      for (let index = 0; index < 5 && !stopped; index += 1) {
+        const t0 = Date.now();
+        const offset = await new Promise<number>((resolve) => {
+          const timer = window.setTimeout(() => resolve(0), 3000);
+          const onPong = (payload: unknown) => {
+            window.clearTimeout(timer);
+            const parsed = z.object({ t0: z.number(), t1: z.number() }).safeParse(payload);
+            resolve(parsed.success ? clockSample(parsed.data.t0, parsed.data.t1, Date.now()).offsetMs : 0);
+          };
+          socket.once("clock:pong", onPong);
+          socket.emit("clock:ping", { roomId: room, t0 });
+        });
+        samples.push(offset);
+        await new Promise((resolve) => window.setTimeout(resolve, 200));
+      }
+      if (!stopped && samples.length > 0) setClockOffset(median(samples));
+    };
+    void sampleRound();
+    const again = window.setInterval(() => void sampleRound(), 60_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(again);
+    };
+  }, [input?.roomId, socket]);
 
   function emit(event: string, payload: unknown) {
     socket?.emit(event, payload);
@@ -298,6 +350,22 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
         return;
       }
       emit("mod:role", { roomId, userId, role: "mod" });
+    },
+    clockOffset,
+    skip,
+    typingName,
+    floats,
+    voteSkip(withdraw = false) {
+      if (!roomId) return;
+      emit("playback:vote-skip", { roomId, withdraw });
+    },
+    sendTyping() {
+      if (!roomId) return;
+      emit("chat:typing", { roomId });
+    },
+    sendFloat(emoji: string) {
+      if (!roomId) return;
+      emit("reaction:send", { roomId, emoji });
     },
   };
 }

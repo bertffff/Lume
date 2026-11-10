@@ -3,6 +3,7 @@ import { useI18n } from "../../i18n/context.js";
 import { roleLabel, useRoomActions } from "../../room/live.js";
 import { readTelegramWebApp } from "../../telegram/types.js";
 import { useVoiceChannel } from "../../voice/useVoiceChannel.js";
+import { MemberSheet } from "./MemberSheet.js";
 
 export function VoicePanel({
   collapsed,
@@ -93,6 +94,7 @@ export function VoicePanel({
           ) : null}
         </div>
       ) : null}
+      <MemberSheet />
       <ul className="tr-voice-list" data-testid="member-list">
         {members.length === 0 ? <li className="tr-empty">{t("voice.empty")}</li> : null}
         {members.map((member) => {

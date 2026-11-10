@@ -36,6 +36,14 @@ export const apiEnvSchema = z.object({
   LIVEKIT_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60),
   DEV_ADMIN_NAMES: optionalString,
   REALTIME_URL: z.string().min(1).default("http://127.0.0.1:3002"),
+  SEARXNG_URL: optionalString,
+  COBALT_API_URL: optionalString,
+  YTDLP_PATH: optionalString,
+  FF_EXTRACTORS: optionalString,
+  SMTP_HOST: optionalString,
+  VAPID_PUBLIC_KEY: optionalString,
+  SENTRY_DSN: optionalString,
+  METRICS_TOKEN: optionalString,
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

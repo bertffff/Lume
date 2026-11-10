@@ -12,14 +12,18 @@
   },
   "dependencies": {
     "@fastify/cors": "11.4.0",
+    "@fastify/multipart": "^10.1.8",
     "@lume/contracts": "workspace:*",
     "@lume/db": "workspace:*",
+    "bcryptjs": "^3.0.3",
     "fastify": "5.12.8",
+    "fflate": "^0.8.3",
     "jose": "6.2.15",
     "livekit-server-sdk": "2.19.2",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsx": "catalog:",

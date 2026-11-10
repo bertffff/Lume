@@ -1,15 +1,15 @@
 # Parity matrix
 
-Baseline was commit `6d75dcb`. Rows below were updated after the parity pass on this branch. Counts at the top are the baseline; the notes say what moved.
+Counts below are the current branch, not the Phase 4 baseline. A feature is Done only when the API or socket, the UI, and a test are all present.
 Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-locales](./legacy-locales/).
 
 | Status | Count |
 | --- | ---: |
-| Done | 5 |
-| Partial | 65 |
-| Missing | 67 |
+| Done | 13 |
+| Partial | 62 |
+| Missing | 62 |
 
-Done means the behaviour is present. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
+A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
 Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked product decision. ICE and speaker detection go through LiveKit.
 
@@ -27,18 +27,18 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F010 | Dev auth bypass | Done | ALLOW_STUB_AUTH guest JWT. |
 | F011 | Post-auth pending room | Missing | No sessionStorage resume. |
 | F012 | Onboarding | Missing | No steps or flag. |
-| F013 | GDPR ZIP export | Partial | Export is JSON for 24h and then 410. Not a ZIP yet. |
-| F014 | Account deletion + purge | Partial | Soft delete for 30 days and restore. No daily hard purge. |
+| F013 | GDPR ZIP export | Partial | GET /me/export/:token returns a ZIP for 24h, then 410. The lobby has no download button yet. |
+| F014 | Account deletion + purge | Partial | Soft delete, restore, and a BullMQ purge at 03:00 UTC. The worker needs Redis and Postgres. |
 | F015 | Create room wizard + presets | Partial | Title and public flag only. Codes are 6 chars. |
 | F016 | Join by code | Partial | Join works. No /join/:code route. |
-| F017 | Join bans, capacity, history | Partial | Cap and history exist. No ban check or system line. |
+| F017 | Join bans, capacity, history | Partial | Join refuses a room ban, a session ban, and the owner's blacklist. System lines are still thin. |
 | F018 | Permanent vs temporary host | Partial | Owner reclaim and temporary host on leave. System line for reclaim is not separate. |
 | F019 | Host succession | Partial | Leave promotes a mod, otherwise the earliest member. Playback is not paused. |
 | F020 | Resume-last-room snapshot | Partial | Empty room writes lastRoomSnapshot. People screen shows Продолжить просмотр. Recreate route is not wired. |
 | F021 | Room settings | Missing | No description, max, defaults, hideReactions. |
 | F022 | Browse public rooms | Partial | Public list only. No search, filters, or sorts. |
 | F023 | Live carousel + global stats | Missing | No stats endpoint. |
-| F024 | Share links ?t= ?v= | Missing | No share modal. Query is ignored. |
+| F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Missing | No invite event. |
 | F026 | Watch reminders | Missing | No persisted reminder. |
 | F027 | DB-backed queue reload | Partial | Queue is in Postgres. No room history table. |
@@ -49,20 +49,20 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F032 | Multi-source playback | Partial | YouTube, Vimeo, Twitch, HTML5/HLS adapters. No DASH or merged audio. |
 | F033 | VK + Rutube embeds | Partial | Best-effort adapters, not the postMessage APIs. |
 | F034 | Host playback control | Partial | Play, pause, seek. No playback rate. |
-| F035 | NTP clock sync | Partial | Median NTP helper is tested. The client still uses one server timestamp. |
-| F036 | Adaptive drift correction | Partial | planDrift does soft rate and hard-seek anti-loop. HTML5 applies the rate. Embeds still hard-seek only. |
+| F035 | NTP clock sync | Done | The room client takes five clock samples, keeps the median offset, and repeats every minute. |
+| F036 | Adaptive drift correction | Done | Followers use the drift plan: soft rate on HTML5, hard seek, anti-loop, and buffer grace. |
 | F037 | Host heartbeats | Missing | Viewers follow the anchor, not a 1s heartbeat. |
-| F038 | Sync indicator | Missing | No trust tiers or resync button. |
+| F038 | Sync indicator | Done | The player shows synced, syncing, lagging, or waiting, and a resync button seeks to the server clock. |
 | F039 | Buffering / ready | Partial | Viewer phase is reported. No ready gate. |
-| F040 | Vote-skip | Partial | Vote math is tested. The socket event is not wired. |
+| F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
 | F041 | Video URL refresh | Missing | No re-extract path. |
 | F042 | Player error recovery | Partial | Limited-source copy only. |
 | F043 | Tap gesture zones | Missing | No seek flash. |
 | F044 | Progress, fullscreen, speed | Partial | Native controls on HTML5. No custom speed menu. |
 | F045 | Quality selector | Missing | No quality preference. |
 | F046 | Low-bandwidth mode | Missing | No flag or toggle. |
-| F047 | Floating reactions | Missing | No float overlay. |
-| F048 | Chat timecode jump | Missing | No parser in the composer. |
+| F047 | Floating reactions | Partial | Quick emojis float over the player. Room-wide and personal hide switches are not in the UI. |
+| F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
 | F049 | Sync telemetry | Missing | No incident log. |
 | F050 | Source detection | Partial | 25-source detector and playback plan exist. Not every extractor runs. |
 | F051 | Extractor orchestrator | Partial | Empty registry behind FF_EXTRACTORS. |
@@ -75,9 +75,9 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F058 | Metadata resolver | Partial | oEmbed for YouTube and Vimeo. |
 | F059 | Premium extraction gate | Partial | planPlayback returns premium_required for extraction-only sources. |
 | F060 | Stream proxy | Missing | No Range proxy. |
-| F061 | HLS/DASH manifest rewrite | Partial | HLS rewrite, including the Rutube VOD markers, is tested. The HTTP proxy is not mounted. |
+| F061 | HLS/DASH manifest rewrite | Partial | GET /video/hls-proxy rewrites manifests when FF_EXTRACTORS=true and returns 410 on an expired upstream. Chains are not all implemented. |
 | F062 | CDN offload | Missing | Not implemented. Decision still open. |
-| F063 | SSRF protection | Partial | Hostname and IP checks are tested. DNS pinning is not in the fetcher. |
+| F063 | SSRF protection | Partial | The proxy refuses private URLs. DNS pinning is not in the fetcher yet. |
 | F064 | SearXNG search | Missing | No search endpoint. |
 | F065 | Cobalt services list | Missing | No endpoint. |
 | F066 | Video detect endpoint | Missing | Detection is client-side only. |
@@ -95,13 +95,13 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F078 | Mentions | Missing | No highlight. |
 | F079 | Unread anchor | Missing | No jump. |
 | F080 | System messages | Partial | Join writes «присоединился к комнате». Leave and host-change lines are not written. |
-| F081 | Slow mode | Partial | Host or mod can set slowModeSeconds. The chat send path does not enforce it yet. |
-| F082 | Six member permissions | Partial | The six flags and the host/mod matrix are tested. Member rows are not edited from the UI. |
+| F081 | Slow mode | Partial | Chat send returns 429 slow_mode for non-hosts. The composer has no countdown. |
+| F082 | Six member permissions | Partial | A host sees six permission toggles and an override flag. Room defaults are not edited from settings. |
 | F083 | Make host | Missing | Host can make a mod, not transfer host. |
 | F084 | Kick | Done | Kick still persists leftAt. |
 | F085 | Session / permanent / global ban | Partial | Session, permanent, and blacklist bans are stored and the target is kicked. Join does not consult them yet. |
-| F086 | Mute and temp-mute | Partial | Boolean mute. No 30s–24h timer. |
-| F087 | Moderation log | Missing | Not persisted. |
+| F086 | Mute and temp-mute | Done | Temp mute is 30s–24h, stored on the member, and blocks join and chat until it expires. |
+| F087 | Moderation log | Done | The voice panel lists the persisted moderation log for a host or mod. |
 | F088 | Member action sheet | Partial | Kick, mute, promote. No ban or report. |
 | F089 | Blacklist management | Missing | No list or remove. |
 | F090 | Moderation presets | Missing | No create-wizard presets. |

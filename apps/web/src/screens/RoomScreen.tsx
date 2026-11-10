@@ -21,6 +21,7 @@ export function RoomScreen({
   const { t } = useI18n();
   const [tick, setTick] = useState(() => Date.now());
   const [offset, setOffset] = useState(0);
+  const clock = live.clockOffset || offset;
   const playback = live.state?.playback;
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export function RoomScreen({
       value={{
         state: live.state,
         positionMs,
-        offsetMs: offset,
+        offsetMs: clock,
         canControl: canControlPlayback(live.state.self.role),
         selfId,
         sendChat: live.sendChat,
@@ -77,6 +78,13 @@ export function RoomScreen({
         kick: live.kick,
         mute: live.mute,
         promote: live.promote,
+        clockOffset: live.clockOffset,
+        skip: live.skip,
+        typingName: live.typingName,
+        floats: live.floats,
+        voteSkip: live.voteSkip,
+        sendTyping: live.sendTyping,
+        sendFloat: live.sendFloat,
       }}
     >
       <section className="tr-room">

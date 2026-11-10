@@ -1,4 +1,5 @@
 import {
+  planDrift,
   shouldCorrectDrift,
   positionAt,
   type AdapterPhase,
@@ -41,6 +42,7 @@ export function PlayerPanel({
   onAspect: (aspect: number) => void;
 }) {
   const { t } = useI18n();
+  const handed = useRef(false);
   const live = useRoomActions();
   const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,16 @@ export function PlayerPanel({
   const reportedAspect = useRef(aspect);
   const reportViewerRef = useRef(live?.reportViewer);
   const canControlRef = useRef(live?.canControl);
+  useEffect(() => {
+    if (handed.current || !live) return;
+    const params = new URLSearchParams(window.location.search);
+    const video = params.get("v");
+    const at = params.get("t");
+    if (!video && !at) return;
+    handed.current = true;
+    if (video) live.addQueue(video);
+    if (at && Number.isFinite(Number(at))) live.setPlayback("seek", Number(at) * 1000);
+  }, [live]);
   const setPlaybackRef = useRef(live?.setPlayback);
   reportViewerRef.current = live?.reportViewer;
   canControlRef.current = live?.canControl;
@@ -216,6 +228,25 @@ export function PlayerPanel({
 
   const playing = playback?.status === "playing";
   const label = `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock((live?.positionMs ?? 0) / 1000)}`;
+  const syncLabel = (() => {
+    const adapter = adapterRef.current;
+    if (!adapter || !playback || live?.canControl) return t("player.synced");
+    const plan = planDrift({
+      localMs: adapter.getCurrentTime(),
+      expectedMs: live?.positionMs ?? 0,
+      embed: adapter.limited,
+      loadedAgoMs: 20_000,
+      bufferedToMs: adapter.getBuffered(),
+      recentSeeks: [],
+      nowMs: Date.now(),
+      buffering: phaseRef.current === "buffering",
+      bufferEndedAtMs: null,
+    });
+    if (plan.status === "waiting") return t("player.waiting");
+    if (plan.status === "hard-seeking") return t("player.lagging");
+    if (plan.status === "soft-correcting") return t("player.syncing");
+    return t("player.synced");
+  })();
   const bufferingNames =
     live?.state.viewers
       .filter((viewer) => viewer.phase === "buffering")
@@ -271,7 +302,49 @@ export function PlayerPanel({
             {t("player.buffering")}: {bufferingNames.join(", ")}
           </span>
         ) : null}
+        <button type="button" className="tr-text-button" data-testid="vote-skip" onClick={() => live?.voteSkip(false)}>
+          {t("player.skip")} {live?.skip.votes ?? 0}/{live?.skip.needed ?? 1}
+        </button>
+        <button
+          type="button"
+          className="tr-text-button"
+          data-testid="resync"
+          onClick={() => {
+            const adapter = adapterRef.current;
+            if (!adapter || !live) return;
+            void adapter.seek(Math.max(0, Math.round(live.positionMs)));
+          }}
+        >
+          {t("player.resync")}
+        </button>
+        <span className="tr-chip" data-testid="sync-indicator">
+          {syncLabel}
+        </span>
+        {(["👍", "❤️", "😂", "🔥"] as const).map((emoji) => (
+          <button key={emoji} type="button" className="tr-text-button" onClick={() => live?.sendFloat(emoji)}>
+            {emoji}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="tr-text-button"
+          onClick={() => {
+            const seconds = Math.round((live?.positionMs ?? 0) / 1000);
+            const url = nowPlaying?.url ?? "";
+            const link = `${window.location.origin}${window.location.pathname}?t=${seconds}&v=${encodeURIComponent(url)}`;
+            void navigator.clipboard?.writeText(link);
+          }}
+        >
+          {t("player.share")}
+        </button>
       </footer>
+      <div className="tr-floats" aria-hidden="true">
+        {(live?.floats ?? []).map((item) => (
+          <span key={item.id} style={{ left: `${item.x}%`, top: `${item.y}%` }}>
+            {item.emoji}
+          </span>
+        ))}
+      </div>
     </section>
   );
 }

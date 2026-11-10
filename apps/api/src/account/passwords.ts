@@ -1,5 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import bcrypt from "bcryptjs";
 
 const scryptAsync = promisify(scrypt);
 
@@ -9,7 +10,14 @@ export async function hashPassword(password: string): Promise<string> {
   return `scrypt$${salt}$${hash.toString("hex")}`;
 }
 
+export function isLegacyBcrypt(stored: string): boolean {
+  return /^\$2[aby]\$/.test(stored);
+}
+
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  if (isLegacyBcrypt(stored)) {
+    return bcrypt.compare(password, stored);
+  }
   const [kind, salt, digest] = stored.split("$");
   if (kind !== "scrypt" || !salt || !digest) {
     return false;

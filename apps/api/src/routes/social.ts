@@ -11,6 +11,7 @@ import {
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { exportZip } from "../account/archive.js";
 import { awardNew, seedPartyAchievements } from "../account/awards.js";
 import { emailStub, notifyUser, pushStub } from "../account/notify.js";
 import { hashPassword, verifyPassword } from "../account/passwords.js";
@@ -483,7 +484,11 @@ export function registerSocialRoutes(
     const row = await prisma.dataExportRequest.findUnique({ where: { downloadToken: params.token } });
     if (!row) return reply.code(404).send({ error: "not_found" });
     if (row.expiresAt.getTime() < Date.now()) return reply.code(410).send({ error: "expired" });
-    return reply.send({ exportedAt: row.createdAt.toISOString(), data: row.result });
+    const zip = exportZip({
+      "README.txt": "TeleRave export. The link expires 24 hours after it was created.\n",
+      "profile.json": JSON.stringify({ exportedAt: row.createdAt.toISOString(), data: row.result }, null, 2),
+    });
+    return reply.type("application/zip").header("content-disposition", "attachment; filename=lume-export.zip").send(Buffer.from(zip));
   });
 
   app.post("/me/delete", async (request, reply) => {

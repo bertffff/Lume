@@ -491,6 +491,21 @@ button {
   padding: 0 12px 8px;
 }
 
+.tr-floats {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tr-floats span {
+  position: absolute;
+  font-size: 1.6rem;
+}
+
+.is-mentioned {
+  background: color-mix(in srgb, var(--lume-accent) 16%, transparent);
+}
+
 .tr-voice-controls select {
   background: transparent;
   border: 1px solid var(--lume-line);

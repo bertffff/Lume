@@ -36,7 +36,7 @@ export const ru = {
   "player.pause": "Пауза",
   "player.aspect": "Соотношение",
   "player.local": "Локальные часы",
-  "player.synced": "Якорь сервера",
+  "player.synced": "синхронно",
   "player.empty": "Очередь пуста. Вставьте ссылку на ролик.",
   "player.seek": "+15 с",
   "player.limited": "Плеер площадки может не слушаться пульта",
@@ -108,6 +108,19 @@ export const ru = {
   "people.none": "Пока пусто",
   "people.resume": "Продолжить просмотр",
   "people.noResume": "Нет сохранённого сеанса",
+  "player.skip": "Пропуск",
+  "player.resync": "Синхронизировать",
+  "player.share": "Ссылка",
+  "player.syncing": "подстройка",
+  "player.lagging": "отстаём",
+  "player.waiting": "ждём буфер",
+  "chat.typing": "печатает…",
+  "chat.timecode": "К таймкоду",
+  "chat.pin": "Закрепить",
+  "mod.sheet": "Права и журнал",
+  "mod.tempMute": "Временный мут",
+  "mod.seconds": "Секунды, от 30 до суток",
+  "mod.empty": "Журнал пуст",
 } as const;
 
 export type MessageKey = keyof typeof ru;
