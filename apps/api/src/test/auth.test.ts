@@ -56,6 +56,12 @@ describe("telegram auth", () => {
       maxAgeSeconds: 60 * 60 * 24,
     });
     expect(expired).toEqual({ ok: false, reason: "expired" });
+    const future = verifyTelegramInitData(signedInitData(FROZEN_HASH), {
+      botToken: BOT,
+      nowMs: 1_700_000_000_000 - 31_000,
+      maxAgeSeconds: 300,
+    });
+    expect(future).toEqual({ ok: false, reason: "expired" });
   });
 
   it("refuses telegram login until a bot token or the stub flag is set", async () => {

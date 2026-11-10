@@ -1,7 +1,9 @@
 import cors from "@fastify/cors";
+import { Redis } from "ioredis";
 import type { PrismaClient } from "@lume/db";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiEnv } from "./env.js";
+import { limitFor, takeMemoryLimit, takeRedisLimit } from "./http/limit.js";
 import { fetchOEmbedTitle } from "./media/oembed.js";
 import { createPrismaRepository } from "./rooms/prisma-repo.js";
 import { RoomService } from "./rooms/service.js";
@@ -25,6 +27,21 @@ export async function buildApp(
     : null;
 
   await app.register(cors, { origin: env.WEB_ORIGIN });
+  const limiter = env.REDIS_URL ? new Redis(env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false }) : null;
+  app.addHook("onRequest", async (request, reply) => {
+    const path = request.url.split("?")[0] ?? request.url;
+    const rule = limitFor(request.method, path);
+    if (!rule) return;
+    const key = `${request.method}:${path}:${request.ip}`;
+    const ok = limiter
+      ? await takeRedisLimit(limiter, `lume:rl:${key}`, rule.limit, rule.windowMs).catch(() =>
+          takeMemoryLimit(key, rule.limit, rule.windowMs, Date.now()),
+        )
+      : takeMemoryLimit(key, rule.limit, rule.windowMs, Date.now());
+    if (!ok) {
+      await reply.code(429).send({ error: "rate_limited" });
+    }
+  });
   registerHealthRoutes(app, env);
   registerAuthRoutes(app, env, options?.prisma);
   registerRoomRoutes(app, env, service, options?.prisma ?? null);

@@ -68,6 +68,9 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      ioredis:
+        specifier: 5.11.1
+        version: 5.11.1
       jose:
         specifier: 6.2.15
         version: 6.2.15

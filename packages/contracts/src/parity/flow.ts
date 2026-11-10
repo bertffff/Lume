@@ -44,6 +44,21 @@ export function runExtractorChain(
   return { error: "unconfigured" };
 }
 
+export function vkFromFixture(fixture: { hls?: string; title?: string; expiresAtMs?: number } | null): ExtractHit | null {
+  if (!fixture?.hls) return null;
+  return { url: fixture.hls, title: fixture.title ?? "VK", expiresAtMs: fixture.expiresAtMs ?? 0 };
+}
+
+export function rutubeFromFixture(fixture: { m3u8?: string; title?: string; expiresAtMs?: number } | null): ExtractHit | null {
+  if (!fixture?.m3u8) return null;
+  return { url: fixture.m3u8, title: fixture.title ?? "Rutube", expiresAtMs: fixture.expiresAtMs ?? 0 };
+}
+
+export function twitchFromFixture(fixture: { url?: string; title?: string; expiresAtMs?: number } | null): ExtractHit | null {
+  if (!fixture?.url) return null;
+  return { url: fixture.url, title: fixture.title ?? "Twitch", expiresAtMs: fixture.expiresAtMs ?? 0 };
+}
+
 export function innertubeFromFixture(fixture: { playability?: string; url?: string; title?: string; expiresAtMs?: number } | null): ExtractHit | null {
   if (!fixture || fixture.playability !== "OK" || !fixture.url) {
     return null;

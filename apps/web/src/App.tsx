@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "./api/client.js";
 import { detectLocale, I18nProvider, useI18n } from "./i18n/context.js";
 import { useRoomChannel, type ChannelStatus } from "./realtime/useRoomChannel.js";
+import { AdminScreen } from "./screens/AdminScreen.js";
 import { Lobby } from "./screens/Lobby.js";
 import { RoomScreen } from "./screens/RoomScreen.js";
 import { clearSession, loadSession, saveSession, type ClientSession } from "./session.js";
@@ -26,12 +27,13 @@ export function App() {
   const [preview, setPreview] = useState(false);
   const [session, setSession] = useState<ClientSession | null>(() => loadSession());
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [adminPath, setAdminPath] = useState(() => window.location.pathname.startsWith("/admin"));
   const [layout, setLayout] = useState<RoomLayout>(defaultRoomLayout);
   const [haptic, setHaptic] = useState<string | null>(null);
   const live = useRoomChannel(
     session && roomId ? { token: session.accessToken, roomId, selfId: session.user.id } : null,
   );
-  const screen = roomId ? "room" : "lobby";
+  const screen = roomId ? "room" : adminPath ? "admin" : "lobby";
   const realtime: ChannelStatus = roomId ? live.status : "off";
   const theme = themeById(themeId);
   const overrides = useMemo(() => {
@@ -78,6 +80,16 @@ export function App() {
   }, [inTelegram, screen, webApp]);
 
   useEffect(() => {
+    if (window.location.pathname.startsWith("/join/")) {
+      const code = window.location.pathname.split("/")[2] ?? "";
+      if (code) sessionStorage.setItem("lume-pending-room", decodeURIComponent(code));
+    }
+    const onPop = () => setAdminPath(window.location.pathname.startsWith("/admin"));
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
     if (live.error === "kicked") {
       setRoomId(null);
     }
@@ -113,7 +125,9 @@ export function App() {
           onBack={() => setRoomId(null)}
           screen={screen}
         >
-          {screen === "lobby" || !session || !roomId ? (
+          {adminPath && session ? (
+            <AdminScreen token={session.accessToken} />
+          ) : screen === "lobby" || !session || !roomId ? (
             <Lobby
               session={session}
               onSession={(next) => {
@@ -169,7 +183,7 @@ function Shell({
   inTelegram: boolean;
   preview: boolean;
   haptic: string | null;
-  screen: "lobby" | "room";
+  screen: "lobby" | "room" | "admin";
   onLocale: () => void;
   onTheme: (id: string) => void;
   onPreview: () => void;

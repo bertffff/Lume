@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 55 |
-| Done (needs creds) | 8 |
-| Partial | 48 |
-| Missing | 26 |
+| Done | 62 |
+| Done (needs creds) | 12 |
+| Partial | 37 |
+| Missing | 19 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -21,7 +21,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F003 | JWT access + rotating refresh | Partial | POST /auth/refresh rotates a token. The web client does not call it yet. |
 | F004 | Logout with server revocation | Partial | Client clears the session. The server does not revoke it. |
 | F005 | Magic-link login | Partial | The landing page can request a link. It does not sign the browser in when the link returns. |
-| F006 | Telegram Mini App auth | Partial | HMAC initData works. Max age is 24h, not 300s. |
+| F006 | Telegram Mini App auth | Done | initData expires after 300 seconds by default, and a clock more than 30 seconds ahead is rejected. |
 | F007 | Telegram Login Widget | Missing | No widget hash verification. |
 | F008 | Link / unlink Telegram | Missing | No link routes. |
 | F009 | Linked accounts status | Missing | No endpoint. |
@@ -30,26 +30,26 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F012 | Onboarding | Done | Three onboarding lines show once, then the flag is saved on the account. |
 | F013 | GDPR ZIP export | Done | People can download a 24-hour ZIP. The zip bytes and the expiry rule are tested. |
 | F014 | Account deletion + purge | Partial | Soft delete, restore, and a BullMQ purge at 03:00 UTC. The worker needs Redis and Postgres. |
-| F015 | Create room wizard + presets | Partial | Title and public flag only. Codes are 6 chars. |
+| F015 | Create room wizard + presets | Done | Room codes are 8 characters. Create offers Киноночь, Вечеринка, Закрытый, and С модерацией. |
 | F016 | Join by code | Done | Join by code works, including a code carried in the page query. |
 | F017 | Join bans, capacity, history | Partial | Join refuses a room ban, a session ban, and the owner's blacklist. System lines are still thin. |
 | F018 | Permanent vs temporary host | Partial | Owner reclaim and temporary host on leave. System line for reclaim is not separate. |
 | F019 | Host succession | Partial | Leave promotes a mod, otherwise the earliest member. Playback is not paused. |
 | F020 | Resume-last-room snapshot | Partial | Empty room writes lastRoomSnapshot. People screen shows Продолжить просмотр. Recreate route is not wired. |
-| F021 | Room settings | Partial | The host can hide room reactions and set a description or member cap. There is no full settings sheet. |
+| F021 | Room settings | Redesign | Description, member cap, and hide-reactions already save. The full settings sheet waits for the design pack. |
 | F022 | Browse public rooms | Partial | Public list only. No search, filters, or sorts. |
-| F023 | Live carousel + global stats | Missing | No stats endpoint. |
+| F023 | Live carousel + global stats | Redesign | Global counters and the live carousel wait for the design pack. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
 | F027 | DB-backed queue reload | Partial | Queue is in Postgres. No room history table. |
-| F028 | Layout presets × aspect | Partial | Resizable panels and aspect reflow exist. No enlarged/immersive presets. |
-| F029 | Mobile room sheet | Partial | Reflow stacks panels. No chat/members/queue sheet. |
-| F030 | Session dock | Partial | Room bar exists. Voice is a side panel. |
+| F028 | Layout presets × aspect | Redesign | Resizable panels stay. Enlarged and immersive presets wait for the design pack. |
+| F029 | Mobile room sheet | Redesign | The mobile sheet waits for the design pack. Panels already reflow. |
+| F030 | Session dock | Redesign | The session dock waits for the design pack. The room bar and voice panel stay. |
 | F031 | Report user/room | Partial | POST /reports, 5/hour. No in-room form yet. |
 | F032 | Multi-source playback | Partial | YouTube, Vimeo, Twitch, HTML5/HLS adapters. No DASH or merged audio. |
 | F033 | VK + Rutube embeds | Partial | Best-effort adapters, not the postMessage APIs. |
-| F034 | Host playback control | Partial | Play, pause, seek. No playback rate. |
+| F034 | Host playback control | Done | Play, pause, seek, and a speed menu from 0.5 to 2. |
 | F035 | NTP clock sync | Done | The room client takes five clock samples, keeps the median offset, and repeats every minute. |
 | F036 | Adaptive drift correction | Done | Followers use the drift plan: soft rate on HTML5, hard seek, anti-loop, and buffer grace. |
 | F037 | Host heartbeats | Missing | Viewers follow the anchor, not a 1s heartbeat. |
@@ -68,9 +68,9 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F050 | Source detection | Partial | 25-source detector and playback plan exist. Not every extractor runs. |
 | F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
 | F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |
-| F053 | VK extractor | Missing | No cookie rotation. |
-| F054 | Rutube extractor | Missing | No play-options call. |
-| F055 | Twitch GQL | Missing | Embed only. |
+| F053 | VK extractor | Done (needs creds) | VK HLS is parsed from a fixture. Live cookies stay off until VK_COOKIES is set. |
+| F054 | Rutube extractor | Done (needs creds) | Rutube m3u8 is parsed from a fixture. Live play-options stay off without network credentials. |
+| F055 | Twitch GQL | Done (needs creds) | Twitch playback URLs are parsed from a fixture. Live GQL stays off without credentials. |
 | F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
 | F058 | Metadata resolver | Partial | oEmbed for YouTube and Vimeo. |
@@ -86,7 +86,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F068 | Queue history | Partial | The queue panel shows how many history rows the room has. |
 | F069 | Queue recommendations | Partial | The queue panel shows the first discovery suggestion from watch history. |
 | F070 | Auto-advance | Done | When the host's player ends, the next queue item starts. |
-| F071 | Chat text | Partial | Messages work. Limit is 2000, not 500. Enter sends. |
+| F071 | Chat text | Done | Chat messages are limited to 500 characters. |
 | F072 | Replies | Done | replyToId is stored and shown. |
 | F073 | Image messages | Done | A chat photo is checked for jpeg, png, gif, or webp and for a 10 MB cap, then stored and posted as an image message. |
 | F074 | Chat reactions max 3 | Done | A fourth distinct emoji from the same person is rejected. |
@@ -95,7 +95,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F077 | Typing indicator | Partial | Typing is broadcast and shown for about three seconds. |
 | F078 | Mentions | Done | A message that mentions your display name is highlighted. There is no autocomplete. |
 | F079 | Unread anchor | Missing | No jump. |
-| F080 | System messages | Partial | Join writes «присоединился к комнате». Leave and host-change lines are not written. |
+| F080 | System messages | Done | Join, leave, and host-change lines are written into the chat. |
 | F081 | Slow mode | Done | The composer counts down while slow mode blocks the next message. Hosts are exempt. |
 | F082 | Six member permissions | Partial | A host sees six permission toggles and an override flag. Room defaults are not edited from settings. |
 | F083 | Make host | Done | The host can hand the room to another member. The handoff is tested. |
@@ -142,16 +142,16 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F124 | Admin rooms + force close | Done | Room rows can be force-closed, which also asks realtime to disconnect sockets. |
 | F125 | Admin reports | Done | Open reports are paged and can be marked reviewed. |
 | F126 | Audit log | Done | The audit table is paged and can be filtered by action. |
-| F127 | Admin deep links | Missing | No /admin route. |
+| F127 | Admin deep links | Done | /admin is a real path and opens the admin tables. |
 | F128 | Health / live / ready | Partial | /health only. It does not fail when Postgres is down. |
 | F129 | Prometheus metrics | Done (needs creds) | GET /metrics is tested. Events are not uploaded until SENTRY_DSN is set. |
-| F130 | Rate limiting | Partial | Login, search, and reports use an in-memory window. It is not Redis-backed for every route. |
+| F130 | Rate limiting | Done | Every mutating route is limited. Redis is used when REDIS_URL is set, otherwise the same window stays in memory. |
 | F131 | Feature flags | Done | GET /flags lists the product flags, including whether extractors are on. |
-| F132 | Themes | Partial | Aurora stays locked unless theme.aurora is granted. The name Аврора receives it plus flair.spark. |
+| F132 | Themes | Redesign | Жар and Мел wait for the design pack. Ember and Aurora stay. |
 | F133 | i18n RU/EN | Partial | Flat dictionaries. Legacy namespaces are not loaded. |
 | F134 | Landing page | Done | Signed-out home is the landing. Signed-in home is the session hub. |
-| F135 | Home session hub | Missing | No greeting, resume, or friends block. |
-| F136 | Telegram storage uploads | Missing | No storage adapter. |
+| F135 | Home session hub | Redesign | The session-hub layout waits for the design pack. Resume and friends already exist as sections. |
+| F136 | Telegram storage uploads | Done (needs creds) | Uploads stay on local disk. S3 and a Telegram storage chat are used when CDN_ENDPOINT or TELEGRAM_STORAGE_CHAT is set. |
 | F137 | P2P segment mesh | Missing | Documented in docs/ROADMAP.md. Not built. |
 
 ## Checklist

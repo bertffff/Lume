@@ -47,6 +47,9 @@ export function registerSocialRoutes(
     if (!prisma || !env.JWT_SECRET) {
       return reply.code(503).send({ error: "database_unconfigured" });
     }
+    if (env.NODE_ENV === "production" && !env.REDIS_URL) {
+      return reply.code(503).send({ error: "redis_unconfigured" });
+    }
     const body = z.object({
       email: z.string().email(),
       password: z.string(),

@@ -18,6 +18,9 @@ import {
   gestureDelta,
   imageKind,
   innertubeFromFixture,
+  rutubeFromFixture,
+  twitchFromFixture,
+  vkFromFixture,
   moveQueueItem,
   notificationChannels,
   notificationKinds,
@@ -211,5 +214,8 @@ describe("parity rules", () => {
     expect(notificationChannels.length * notificationKinds.length).toBe(24);
     expect(playbackRates).toContain(1);
     expect(duplicateQueue(["https://youtu.be/a"], "https://youtu.be/a")).toBe(true);
+    expect(vkFromFixture({ hls: "https://vk.cdn/a.m3u8", title: "VK" })?.title).toBe("VK");
+    expect(rutubeFromFixture({ m3u8: "https://rutube/a.m3u8" })?.url).toContain("rutube");
+    expect(twitchFromFixture(null)).toBeNull();
   });
 });

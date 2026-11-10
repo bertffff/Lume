@@ -21,7 +21,7 @@ const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
 
 export function createRoomCode(random: () => number = Math.random): string {
   let code = "";
-  for (let index = 0; index < 6; index += 1) {
+  for (let index = 0; index < 8; index += 1) {
     code += alphabet[Math.floor(random() * alphabet.length)] ?? "a";
   }
   return code;
@@ -182,6 +182,16 @@ export class RoomService {
     const { member } = await this.requireActive(roomId, actor.userId);
     const members = await this.repo.listMembers(roomId);
     await this.repo.saveMember({ ...member, leftAt: this.now().toISOString() });
+    await this.repo.insertMessage({
+      id: this.ids(),
+      roomId,
+      userId: actor.userId,
+      displayName: actor.displayName,
+      body: `${actor.displayName} покинул комнату`,
+      replyToId: null,
+      createdAt: this.now().toISOString(),
+      reactions: [],
+    });
     if (member.role !== "host") {
       return;
     }

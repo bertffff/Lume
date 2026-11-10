@@ -22,6 +22,7 @@ describe("room service", () => {
       { title: "Вечерний зал", isPublic: true },
     );
     expect(created.self.role).toBe("host");
+    expect(created.room.code).toHaveLength(8);
     expect(created.room.memberCount).toBe(1);
 
     const joined = await service.joinByCode(

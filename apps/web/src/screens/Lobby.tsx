@@ -102,6 +102,9 @@ export function Lobby({
           <button type="button" className="tr-text-button" data-testid="open-people" onClick={() => setPeople((value) => !value)}>
             {t("people.title")}
           </button>{" "}
+          <button type="button" className="tr-text-button" onClick={() => { window.history.pushState({}, "", "/admin"); window.dispatchEvent(new PopStateEvent("popstate")); }}>
+            {t("admin.title")}
+          </button>{" "}
           <button type="button" className="tr-text-button" onClick={onSignOut}>
             {t("lobby.signOut")}
           </button>
@@ -164,6 +167,12 @@ export function Lobby({
             <label>
               {t("lobby.roomTitle")}
               <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} />
+              <span className="tr-inline-actions">
+                <button type="button" className="tr-text-button" onClick={() => { setTitle("Киноночь"); setIsPublic(true); }}>Киноночь</button>
+                <button type="button" className="tr-text-button" onClick={() => { setTitle("Вечеринка"); setIsPublic(true); }}>Вечеринка</button>
+                <button type="button" className="tr-text-button" onClick={() => { setTitle("Закрытый"); setIsPublic(false); }}>Закрытый</button>
+                <button type="button" className="tr-text-button" onClick={() => { setTitle("С модерацией"); setIsPublic(true); }}>С модерацией</button>
+              </span>
             </label>
             <label className="tr-check">
               <input

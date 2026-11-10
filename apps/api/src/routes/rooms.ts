@@ -214,7 +214,7 @@ export function registerRoomRoutes(
     }
     const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
     const body = z
-      .object({ body: z.string().trim().min(1).max(2000), replyToId: z.string().min(1).nullable().optional() })
+      .object({ body: z.string().trim().min(1).max(500), replyToId: z.string().min(1).nullable().optional() })
       .safeParse(request.body);
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });

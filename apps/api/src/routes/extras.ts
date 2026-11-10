@@ -7,7 +7,10 @@ import {
   planPlayback,
   yearHeatmap,
   rotateRefresh,
+  rutubeFromFixture,
   runExtractorChain,
+  twitchFromFixture,
+  vkFromFixture,
   type MagicRow,
   type RefreshRow,
 } from "@lume/contracts";
@@ -16,6 +19,7 @@ import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireUser } from "../auth/guard.js";
+import { storeObject } from "../media/storage.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import type { ApiEnv } from "../env.js";
 import { notifyUser } from "../account/notify.js";
@@ -75,6 +79,9 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     if (env.FF_EXTRACTORS !== "true") return reply.send({ ...plan, extraction: "disabled" });
     const extracted = runExtractorChain([
       () => innertubeFromFixture(null),
+      () => vkFromFixture(null),
+      () => rutubeFromFixture(null),
+      () => twitchFromFixture(null),
       () => (env.COBALT_API_URL ? null : null),
       () => (env.YTDLP_PATH ? null : null),
     ]);
@@ -92,7 +99,13 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     if (!kind) return reply.code(400).send({ error: "not_image" });
     const id = randomBytes(8).toString("hex");
     uploads.set(id, { bytes, type: kind === "jpeg" ? "image/jpeg" : `image/${kind}` });
-    return reply.send({ url: `/uploads/${id}` });
+    const stored = await storeObject({
+      id,
+      bytes,
+      telegram: { token: env.TELEGRAM_BOT_TOKEN, chatId: env.TELEGRAM_STORAGE_CHAT },
+      s3: { endpoint: env.CDN_ENDPOINT },
+    });
+    return reply.send({ url: stored.backend === "local" ? stored.url : stored.url, backend: stored.backend });
   });
 
   app.get("/uploads/:id", async (request, reply) => {

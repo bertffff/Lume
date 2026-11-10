@@ -54,7 +54,7 @@ export function verifyTelegramInitData(
   }
 
   const ageSeconds = options.nowMs / 1000 - authDate;
-  if (ageSeconds > options.maxAgeSeconds || ageSeconds < -60) {
+  if (ageSeconds > options.maxAgeSeconds || ageSeconds < -30) {
     return { ok: false, reason: "expired" };
   }
 

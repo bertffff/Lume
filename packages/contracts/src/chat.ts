@@ -5,7 +5,7 @@ export const chatMessageSchema = z.object({
   roomId: z.string().min(1),
   userId: z.string().min(1),
   displayName: z.string().min(1),
-  body: z.string().min(1).max(2000),
+  body: z.string().min(1).max(500),
   replyToId: z.string().min(1).nullable(),
   createdAt: z.string().min(1),
   reactions: z.array(
@@ -20,7 +20,7 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 
 export const chatSendSchema = z.object({
   roomId: z.string().min(1),
-  body: z.string().trim().min(1).max(2000),
+  body: z.string().trim().min(1).max(500),
   replyToId: z.string().min(1).nullable().optional(),
 });
 

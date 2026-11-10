@@ -17,6 +17,7 @@
     "@lume/db": "workspace:*",
     "bcryptjs": "^3.0.3",
     "fastify": "5.12.8",
+    "ioredis": "5.11.1",
     "fflate": "^0.8.3",
     "jose": "6.2.15",
     "livekit-server-sdk": "2.19.2",

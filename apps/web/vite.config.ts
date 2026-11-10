@@ -4,6 +4,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   envDir: "../..",
+  appType: "spa",
   plugins: [react(), tailwindcss()],
   server: {
     host: true,
