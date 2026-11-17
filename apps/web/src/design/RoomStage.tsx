@@ -1,5 +1,6 @@
 import type { RoomLayout } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
+import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
 import { useRoomActions } from "../room/live.js";
@@ -168,6 +169,18 @@ export function RoomStage({
                 </form>
               </div>
               {live.canControl ? <button type="button" data-testid="queue-next" onClick={live.playNext}>{t("queue.next")}</button> : null}
+              <form onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const reason = String(data.get("reason") ?? "").trim();
+                const target = members[0]?.userId;
+                if (!reason || !target) return;
+                void fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) });
+                event.currentTarget.reset();
+              }}>
+                <input name="reason" placeholder="Жалоба" aria-label="report" />
+                <button type="submit">Пожаловаться</button>
+              </form>
             </div>
           </div>
         </section>

@@ -541,6 +541,16 @@ function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "
               <div className="row"><span className="av p-me">АВ</span><div><b className="n p-me">Альберт</b><small>вы · в голосе</small></div></div>
               <div className="row"><span className="av p-artem">АТ</span><div><b className="n p-artem">Артём</b><small>в голосе</small></div></div>
               <div className="row"><span className="av p-mark">МК</span><div><b className="n p-mark">Марк</b><small>микрофон выкл</small></div></div>
+              <form className="row" onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const reason = String(data.get("reason") ?? "");
+                if (!reason.trim()) return;
+                void fetch(`${apiUrl}/reports`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: "mark", reason }) });
+              }}>
+                <input name="reason" placeholder="Жалоба, до 500 знаков" aria-label="report" />
+                <button type="submit">Пожаловаться</button>
+              </form>
             </div>
           ) : null}
           {rail === "queue" ? (

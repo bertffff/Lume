@@ -1,3 +1,10 @@
+export function reportIssue(reason: string, targetId: string): "reason" | "target" | null {
+  if (!targetId.trim()) return "target";
+  const text = reason.trim();
+  if (text.length < 1 || text.length > 500) return "reason";
+  return null;
+}
+
 export function matchesBrowse(title: string, code: string, query: string): boolean {
   const needle = query.trim().toLowerCase();
   return needle.length === 0 || title.toLowerCase().includes(needle) || code.toLowerCase().includes(needle);

@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 80 |
+| Done | 81 |
 | Done (needs creds) | 12 |
-| Partial | 23 |
+| Partial | 22 |
 | Redesign | 7 |
 | Missing | 15 |
 
@@ -47,7 +47,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F028 | Layout presets × aspect | Redesign | Resizable panels stay. Enlarged and immersive presets wait for the design pack. |
 | F029 | Mobile room sheet | Redesign | The mobile sheet waits for the design pack. Panels already reflow. |
 | F030 | Session dock | Redesign | The session dock waits for the design pack. The room bar and voice panel stay. |
-| F031 | Report user/room | Partial | POST /reports, 5/hour. No in-room form yet. |
+| F031 | Report user/room | Done | POST /reports accepts a reason up to 500 characters and optional details. The people column has a report form. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
 | F033 | VK + Rutube embeds | Partial | Best-effort adapters, not the postMessage APIs. |
 | F034 | Host playback control | Done | Play, pause, seek, and a speed menu from 0.5 to 2. |

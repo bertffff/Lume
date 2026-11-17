@@ -120,6 +120,7 @@ export {
   scheduledDeletion,
   clampResumePosition,
   matchesBrowse,
+  reportIssue,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,
