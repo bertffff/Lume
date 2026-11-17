@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 101 |
+| Done | 102 |
 | Done (needs creds) | 12 |
 | Partial | 12 |
 | Redesign | 7 |
-| Missing | 5 |
+| Missing | 4 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -119,7 +119,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F100 | Watch history | Done | Watch history is stored per video and the profile lists it by source. |
 | F101 | Favourite videos | Done | GET /me/favourites returns videos watched more than once. The profile lists them. |
 | F102 | Discovery feed | Done | Discovery suggestions from watch history show on the queue. |
-| F103 | Public profile + privacy | Missing | No profile page. |
+| F103 | Public profile + privacy | Done | The profile page is in the cinema layout. Settings can hide friends and watch history. |
 | F104 | Bio + current activity | Done | Bio can be edited from the people screen and is stored on the user. |
 | F105 | Avatar upload + crop | Done | An avatar file is cropped to a square on a canvas and saved. |
 | F106 | Profile share + user_ deep link | Done | startapp user_<id> opens that person's name on the people screen. |

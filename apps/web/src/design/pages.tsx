@@ -92,6 +92,10 @@ export function SettingsScreen({
         </div>
         <div className="set-row"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
         <div className="set-row">
+          <div><b>Приватность</b><small>Друзья и история видны другим, пока вы не скроете их.</small></div>
+          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isFriendsPublic: false, isWatchHistoryPublic: false }) }); }}>Скрыть</button>
+        </div>
+        <div className="set-row">
           <div><b>Чёрный список</b>{blocked.map((row) => <small key={row.id}>{row.displayName} <button type="button" onClick={() => onUnblock?.(row.id)}>убрать</button></small>)}{blocked.length === 0 ? <small>Пусто</small> : null}</div>
         </div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
