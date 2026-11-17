@@ -25,19 +25,19 @@ function mismatch(leftPath: string, rightPath: string, diffPath: string): number
 const cases = [
   ["E/home-desktop.html", "/?shot=home&demo=1&style=cinema&mode=dark", "compare-home-cinema-dark.png", 1440, 900],
   ["E/home-desktop.html", "/?shot=home&demo=1&style=cinema&mode=light", "compare-home-cinema-light.png", 1440, 900],
-  ["G/home-desktop.html", "/?shot=home&demo=1&style=gruvbox&mode=light", "compare-home-gruvbox-light.png", 1440, 900],
+  ["E/premium-desktop.html", "/?shot=premium&style=cinema&mode=dark", "compare-premium-cinema-dark.png", 1440, 900],
   ["E/home-mobile.html", "/?shot=home&demo=1&style=cinema&mode=dark", "compare-home-cinema-mobile.png", 390, 844],
   ["E/room-desktop.html", "/?shot=room&style=cinema&mode=dark", "compare-room-cinema-dark.png", 1440, 900],
   ["E/room-desktop.html", "/?shot=room&style=cinema&mode=light", "compare-room-cinema-light.png", 1440, 900],
-  ["E/room-mobile.html", "/?shot=room&style=cinema&mode=dark", "compare-room-cinema-mobile.png", 390, 844],
+  ["E/create-desktop.html", "/?shot=create&demo=1&style=cinema&mode=dark", "compare-create-cinema-dark.png", 1440, 900],
   ["G/home-desktop.html", "/?shot=home&demo=1&style=gruvbox&mode=dark", "compare-home-gruvbox-dark.png", 1440, 900],
   ["G/room-desktop.html", "/?shot=room&style=gruvbox&mode=dark", "compare-room-gruvbox-dark.png", 1440, 900],
   ["E/settings-desktop.html", "/?shot=settings&style=cinema&mode=dark", "compare-settings-cinema-dark.png", 1440, 900],
-  ["E/settings-desktop.html", "/?shot=settings&style=cinema&mode=light", "compare-settings-cinema-light.png", 1440, 900],
+  ["E/notifications-desktop.html", "/?shot=notifications&demo=1&style=cinema&mode=dark", "compare-notifications-cinema-dark.png", 1440, 900],
   ["E/profile-desktop.html", "/?shot=profile&demo=1&style=cinema&mode=dark", "compare-profile-cinema-dark.png", 1440, 900],
-  ["E/search-desktop.html", "/?shot=search&style=cinema&mode=dark", "compare-search-cinema-dark.png", 1440, 900],
+  ["E/queue-desktop.html", "/?shot=queue&style=cinema&mode=dark", "compare-queue-cinema-dark.png", 1440, 900],
   ["E/auth-desktop.html", "/?shot=auth&style=cinema&mode=dark", "compare-auth-cinema-dark.png", 1440, 900],
-  ["G/room-desktop.html", "/?shot=room&style=gruvbox&mode=light", "compare-room-gruvbox-light.png", 1440, 900],
+  ["E/members-desktop.html", "/?shot=members&style=cinema&mode=dark", "compare-members-cinema-dark.png", 1440, 900],
 ] as const;
 
 for (const [mock, appPath, file, width, height] of cases) {

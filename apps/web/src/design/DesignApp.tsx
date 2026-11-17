@@ -6,6 +6,7 @@ import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
 import { demoFriends, demoMessages, demoRooms, heatCells } from "./fixtures.js";
+import { AuthScreen, CreateScreen, EmptyScreen, JoinScreen, MembersScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, QueueScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
 import { posterFor } from "./posters.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
 
@@ -204,7 +205,7 @@ export function DesignApp({
 
   return (
     <div className={narrow ? "design-app is-narrow" : "design-app"} data-view={view}>
-      {view === "room" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
+      {view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
           {demo ? (
@@ -227,7 +228,8 @@ export function DesignApp({
       {view === "room" && roomId ? room : null}
       {view === "room" && !roomId ? <RoomPreview /> : null}
       {view === "home" && style === "gruvbox" ? <GruvboxHome demo={demo} /> : null}
-      {view === "home" && style !== "gruvbox" ? (
+      {view === "home" && narrow && style !== "gruvbox" ? <MobileHome /> : null}
+      {(view === "home" || view === "create" || view === "join" || view === "onboarding" || view === "notifications") && style !== "gruvbox" && !narrow ? (
         <div className="wrap screen-scroll">
           <main>
             <div className="greet">
@@ -380,118 +382,25 @@ export function DesignApp({
               <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => go("/")}><b>{item.title || item.url}</b></button>)}</div>
             </form>
           ) : null}
-          {view === "create" && session ? (
-            <form onSubmit={(event) => void createRoom(event)}>
-              <input className="inbox" value={title} onChange={(event) => setTitle(event.target.value)} />
-              <button className="btn btn-primary" type="submit">{text.create}</button>
-            </form>
-          ) : null}
-          {view === "join" && session ? (
-            <form onSubmit={(event) => void joinRoom(event)}>
-              <input className="inbox mono" value={code} onChange={(event) => setCode(event.target.value)} />
-              <button className="btn btn-social" type="submit">{text.enter}</button>
-            </form>
-          ) : null}
-          {view === "settings" ? (
-            <div className="settings-grid">
-              <aside>
-                <div className="slink on">{text.style}</div>
-                <button type="button" className="slink" onClick={() => go("/notifications")}>{text.notifications}</button>
-                <button type="button" className="slink" onClick={() => go("/profile")}>{text.profile}</button>
-              </aside>
-              <div className="panel">
-                <h2>{text.style}</h2>
-                <p className="lead">{locale === "en" ? "Cinema is the main style. Gruvbox is a separate layout." : "Стиль и тема. Основной стиль — Кинозал, Gruvbox подключается отдельно."}</p>
-                <div className="set-row">
-                  <div><b>{text.style}</b><small>{text.cinema} / {text.gruvbox}</small></div>
-                  <div className="seg">
-                    <button type="button" className={style === "cinema" ? "on" : ""} onClick={() => void saveAppearance("cinema", mode)}>{text.cinema}</button>
-                    <button type="button" className={style === "gruvbox" ? "on" : ""} onClick={() => void saveAppearance("gruvbox", mode)}>{text.gruvbox}</button>
-                  </div>
-                </div>
-                <div className="set-row">
-                  <div><b>{text.mode}</b></div>
-                  <div className="seg">
-                    {(["dark", "light", "system"] as const).map((item) => (
-                      <button key={item} type="button" className={mode === item ? "on" : ""} onClick={() => void saveAppearance(style, item)}>{text[item]}</button>
-                    ))}
-                  </div>
-                </div>
-                <p>Telegram: {linked}</p>
-                <button type="button" onClick={onSignOut}>{t("lobby.signOut")}</button>
-              </div>
-            </div>
-          ) : null}
+          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} onSubmit={(event) => void createRoom(event)} /> : null}
+          {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} /> : null}
+          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} /> : null}
           {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
-          {view === "profile" ? (
-            <div>
-              <h2 className={`nm p-${hue}`}>{session?.user.displayName}</h2>
-              <p>{text.level} {level}</p>
-              <div className="heat-grid">{heat.slice(-60).map((cell) => <i key={cell.day} className={cell.score > 0 ? "a3" : ""} />)}</div>
-              <h3>{text.leaderboard}</h3>
-              <ul>{ranks.map((row) => <li key={row.id}>{row.displayName} · {row.xp} · {row.totalMessages}/{row.totalReactions}/{row.totalVoiceSeconds}</li>)}</ul>
-              <h3>{text.blacklist}</h3>
-              <ul>{blocked.map((row) => <li key={row.id}>{row.displayName} <button type="button" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } })}>{text.block}</button></li>)}</ul>
-            </div>
-          ) : null}
-          {view === "premium" ? (
-            <div className="shop">
-              {["theme.aurora", "frame.film", "badge.night"].map((sku) => (
-                <article key={sku} className="sku"><b>{sku}</b><span className="price">Blink</span></article>
-              ))}
-            </div>
-          ) : null}
-          {view === "notifications" ? <ul>{notes.map((note) => <li key={note.id}><b>{note.title}</b> {note.body}</li>)}</ul> : null}
-          {view === "onboarding" ? <div className="empty"><h2>{text.onboarding}</h2><p>{text.onboardingBody}</p><button type="button" className="btn btn-primary" onClick={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }}>{text.save}</button></div> : null}
+          {view === "profile" ? <ProfileScreen /> : null}
+          {view === "premium" ? <PremiumScreen /> : null}
+          {view === "notifications" ? <NotificationsScreen /> : null}
+          {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}
           {view === "auth" ? (
-            <>
-            <form className="auth-card" onSubmit={(event) => {
-              event.preventDefault();
-              void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) });
-            }}>
-              <h2>{text.telegram}</h2>
-              <button type="button" className="tg-btn" onClick={() => void signIn({ preventDefault() {} } as FormEvent)}>{text.telegram}</button>
-              <div className="or">email</div>
-              <input className="inbox" value={name} onChange={(event) => setName(event.target.value)} placeholder="email" />
-              <button className="btn btn-primary" type="submit">{text.signIn}</button>
-            </form>
-            <form className="auth-card" onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              void fetch(`${apiUrl}/auth/telegram-widget`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.fromEntries(data.entries())) });
-            }}>
-              <input name="id" placeholder="id" />
-              <input name="auth_date" placeholder="auth_date" />
-              <input name="hash" placeholder="hash" />
-              <input name="first_name" placeholder="first_name" />
-              <button type="submit">Telegram</button>
-            </form>
-            </>
+            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }); }} />
           ) : null}
-          {view === "missing" ? <div className="empty"><h2>{text.missing}</h2><button type="button" onClick={() => go("/")}>{text.enter}</button></div> : null}
-          {view === "offline" ? <div className="empty"><h2>{text.offline}</h2><button type="button" onClick={() => window.location.reload()}>{text.refresh}</button></div> : null}
-          {view === "unavailable" ? (
-            <div className="empty">
-              <h2>{text.unavailable}</h2>
-              <p>{text.unavailableBody}</p>
-              <button type="button" className="btn btn-primary" onClick={() => go("/")}>{text.refresh}</button>
-              <button type="button" onClick={() => go("/search")}>{text.replace}</button>
-            </div>
+          {view === "missing" ? <EmptyScreen title={text.missing} action={<button type="button" onClick={() => go("/")}>{text.enter}</button>} /> : null}
+          {view === "offline" ? <EmptyScreen title={text.offline} action={<button type="button" onClick={() => window.location.reload()}>{text.refresh}</button>} /> : null}
+          {view === "unavailable" ? <EmptyScreen title={text.unavailable} body={text.unavailableBody} action={<button type="button" onClick={() => go("/search")}>{text.replace}</button>} /> : null}
+          {view === "members" ? <MembersScreen /> : null}
+          {view === "room-settings" ? (
+            <RoomSettingsScreen onSave={(event) => { event.preventDefault(); if (!session || !roomId) return; void fetch(`${apiUrl}/rooms/${roomId}/defaults`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ canChat: true, canSpeak: true }) }); }} />
           ) : null}
-          {view === "members" ? (
-            <div>
-              <p>{ice}</p>
-              <button type="button" onClick={() => void navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => stream.getTracks().forEach((track) => track.stop()))}>{text.voiceTest}</button>
-              <label>{text.report}<input value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-            </div>
-          ) : null}
-          {view === "room-settings" && session && roomId ? (
-            <form onSubmit={(event) => { event.preventDefault(); void fetch(`${apiUrl}/rooms/${roomId}/defaults`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ canChat: true, canSpeak: true }) }); }}>
-              <p>{text.defaults}</p>
-              <button className="btn btn-primary" type="submit">{text.save}</button>
-            </form>
-          ) : null}
-          {view === "queue" ? <p>{text.search}</p> : null}
+          {view === "queue" ? <QueueScreen /> : null}
         </Page>
       ) : null}
       {narrow && view === "home" ? (
@@ -520,7 +429,11 @@ function RoomPreview() {
   return (
     <div className={gruv ? "g-room" : "cinema-room"}>
       {gruv ? (
-        <header className="tabline"><span className="brand"><span className="dot" />LUME</span><div className="bufs"><span className="buf on"><span className="nr">1</span>room</span></div></header>
+        <header className="tabline">
+          <span className="brand"><span className="dot" />LUME</span>
+          <div className="bufs"><span className="buf on"><span className="nr">0</span>room</span><span className="buf"><span className="nr">1</span>чат</span><span className="buf"><span className="nr">2</span>очередь</span></div>
+          <span className="hash">#7KQ-2M</span>
+        </header>
       ) : (
         <header className="top">
           <span className="logo"><i />lume</span>
@@ -531,8 +444,36 @@ function RoomPreview() {
           <button type="button" className="btn btn-outline">Позвать</button>
         </header>
       )}
-      <div className="body">
-        <section className="player-col">
+      <div className={gruv ? "body g-tiled" : "body"}>
+        {gruv ? (
+          <>
+            <div className="col-l">
+              <section className="pane stage-pane"><div className="pt">~stage</div><div className="stage" /></section>
+              <section className="pane">
+                <div className="pt">#очередь <span className="dim">3</span> <span className="vote">пропуск 2/4</span></div>
+                <div className="qrow"><span className="nr">01</span><span className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><div><b>Город после дождя</b><small>1:48:02</small></div></div>
+                <div className="qrow"><span className="nr">02</span><span className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }} /><div><b>Лес, который помнит</b><small>52:10</small></div></div>
+                <div className="qrow add"><span className="nr">--</span><span className="th">+</span><div><b>:add</b></div></div>
+              </section>
+            </div>
+            <div className="col-r">
+              <section className="pane">
+                <div className="pt">#чат <span className="dim">12</span></div>
+                <div className="log">
+                  <div className="msg"><span className="ts">21:02</span><span className="nick n p-dasha">Даша</span><div>я с попкорном, начинайте</div></div>
+                  <div className="msg"><span className="ts">21:08</span><span className="nick n p-artem">Артём</span><div>вот этот кадр с фарами</div></div>
+                  <div className="msg mine"><span className="ts">21:09</span><span className="nick n p-me">Альберт</span><div>Ого, не знал</div></div>
+                </div>
+              </section>
+              <section className="pane">
+                <div className="pt">#голос <span className="dim">4/6</span></div>
+                <div className="voice"><div className="vp spk"><span className="av lg p-lisa">ЛМ</span>Лиза</div><div className="vp"><span className="av lg p-artem">АТ</span>Артём</div></div>
+              </section>
+              <div className="comp"><span className="prompt">:</span><span className="in">написать в комнату_</span></div>
+            </div>
+          </>
+        ) : null}
+        {gruv ? null : <section className="player-col">
           <div className="stage-card"><div className="top-ov"><span className="pill">Пустая дорога — режиссёрская версия</span></div></div>
           <div className="ctl">
             <button type="button" className="play">II</button>
@@ -559,8 +500,8 @@ function RoomPreview() {
               </div>
             </div>
           </div>
-        </section>
-        <aside className={gruv ? "pane irc" : "rail"}>
+        </section>}
+        {gruv ? null : <aside className="rail">
           <div className="tabs"><span className="tab on">Чат <span className="n">12</span></span><span className="tab">Люди <span className="n">6</span></span><span className="tab">Очередь <span className="n">3</span></span></div>
           <div className="pin"><span className="bar" /><div><b>Закреплено · Лиза</b>После фильма — голосуем за следующий в очереди</div></div>
           <div className="log">
@@ -573,23 +514,15 @@ function RoomPreview() {
               </div>
             ))}
           </div>
-        </aside>
+        </aside>}
       </div>
       {gruv ? <footer className="status"><span className="sl-mode">ROOM</span><span className="sl-mid">:</span></footer> : null}
     </div>
   );
 }
 
-function Page({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return (
-    <section className="page-screen" data-page={title}>
-      <aside>
-        <button type="button" className="btn btn-outline" onClick={onClose}>Назад</button>
-        <h1>{title}</h1>
-      </aside>
-      <div>{children}</div>
-    </section>
-  );
+function Page({ title, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  return <div className="screen-fill" data-page={title}>{children}</div>;
 }
 
 function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "key" }) {

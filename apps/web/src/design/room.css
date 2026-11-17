@@ -52,6 +52,24 @@
 .cinema-room .tr-queue{list-style:none;display:flex;gap:10px;padding:0;margin:0;overflow:auto}
 .cinema-room .tr-queue li{min-width:140px;min-height:92px;border-radius:8px;background-size:cover;background-position:center;padding:8px;color:#fff;text-shadow:0 1px 2px #000}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.g-room.g-tiled,.g-room{display:grid;grid-template-rows:28px 1fr 24px;height:100vh}
+.g-room .g-tiled,.g-room .body.g-tiled{display:grid;grid-template-columns:1fr 428px;gap:10px;padding:12px 10px}
+.g-room .col-l{display:grid;grid-template-rows:minmax(0,1fr) 210px;gap:10px}
+.g-room .col-r{display:grid;grid-template-rows:minmax(0,1fr) 86px 52px;gap:10px}
+.g-room .stage{flex:1;min-height:180px;background:#000 url(/dev-seed/desert.jpg) center/cover}
+.g-room .qrow{display:grid;grid-template-columns:28px 72px 1fr;gap:10px;align-items:center;padding:8px 4px}
+.g-room .qrow .th{width:72px;height:42px;background:center/cover;display:block}
+.g-room .msg{display:grid;grid-template-columns:48px 80px 1fr;gap:8px;padding:2px 8px;font-family:var(--font)}
+.settings-wrap,.profile-wrap{display:grid;grid-template-columns:220px 1fr;gap:24px;padding:20px 28px;align-items:start}
+.profile-wrap{grid-template-columns:280px 1fr}
+.style-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.style-card{text-align:left;background:var(--s2);border:1px solid var(--line);border-radius:12px;padding:10px;color:inherit}
+.style-card.on{outline:2px solid var(--accent)}
+.style-card .preview{display:block;height:64px;border-radius:8px;margin-bottom:8px;background:linear-gradient(140deg,#2a211c,#ffb23e)}
+.style-card .preview.gruv{background:linear-gradient(140deg,#1d2021,#fabd2f)}
+.design-app[data-view="auth"]{display:grid;place-items:center;min-height:100vh}
+.mobile-home .acts{display:flex;flex-direction:column}
+.page-body{min-height:calc(100vh - 64px);display:grid;place-items:center}
 .g-room{min-height:calc(100vh - 28px)}
 .g-room .brand .dot{border-radius:0;background:var(--orange)}
 .g-room .body{grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px}
