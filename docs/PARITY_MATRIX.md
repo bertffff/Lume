@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 86 |
+| Done | 87 |
 | Done (needs creds) | 12 |
 | Partial | 19 |
 | Redesign | 7 |
-| Missing | 13 |
+| Missing | 12 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -91,7 +91,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F072 | Replies | Done | replyToId is stored and shown. |
 | F073 | Image messages | Done | A chat photo is checked for jpeg, png, gif, or webp and for a 10 MB cap, then stored and posted as an image message. |
 | F074 | Chat reactions max 3 | Done | A fourth distinct emoji from the same person is rejected. |
-| F075 | Emoji picker | Missing | Three fixed emoji. |
+| F075 | Emoji picker | Done | Chat quick reactions are grouped into hot, faces, and marks, more than three emoji. A tap floats that emoji. |
 | F076 | Pinned message | Done | The pin banner can be cleared. |
 | F077 | Typing indicator | Done | Several typers collapse into one line. typingLine is tested. |
 | F078 | Mentions | Done | A message that mentions your display name is highlighted. There is no autocomplete. |

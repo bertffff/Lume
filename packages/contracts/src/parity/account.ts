@@ -1,3 +1,9 @@
+export const emojiCategories = {
+  hot: ["🔥", "❤️", "😂"],
+  faces: ["😮", "👏", "😢"],
+  marks: ["👍", "👎", "✨"],
+} as const;
+
 export function lastIncidents<T>(items: readonly T[], limit = 10): T[] {
   return items.slice(0, limit);
 }

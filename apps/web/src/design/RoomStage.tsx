@@ -1,4 +1,4 @@
-import { shouldHoldForReady, type RoomLayout } from "@lume/contracts";
+import { emojiCategories, shouldHoldForReady, type RoomLayout } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -212,7 +212,7 @@ export function RoomStage({
               );
             })}
           </div>
-          <div className="quick"><span>🔥</span><span>😂</span><span>😮</span><span>❤️</span><span>👏</span></div>
+          <div className="quick">{Object.values(emojiCategories).flat().map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)}>{emoji}</button>)}</div>
           <form className="comp" onSubmit={sendChat}>
             <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder="Написать в комнату…" />
             <button type="submit" className="send" data-testid="chat-send">{t("chat.send")}</button>

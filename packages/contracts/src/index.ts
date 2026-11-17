@@ -124,6 +124,7 @@ export {
   refreshKeepsPlayback,
   recoveryActions,
   lastIncidents,
+  emojiCategories,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,
