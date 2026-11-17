@@ -1,3 +1,7 @@
+export function vkEmbedCommand(videoId: string): { source: "vk" | "rutube"; method: "play" | "pause"; videoId: string } {
+  return { source: videoId.startsWith("rt") ? "rutube" : "vk", method: "play", videoId };
+}
+
 export const viewerPermissionKeys = ["canChat", "canQueue", "canSpeak", "canReact", "canSeek", "canInvite"] as const;
 
 export const moderationPresets = ["Киноночь", "Вечеринка", "Закрытый", "С модерацией"] as const;

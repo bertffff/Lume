@@ -132,6 +132,7 @@ export {
   cobaltServices,
   moderationPresets,
   viewerPermissionKeys,
+  vkEmbedCommand,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

@@ -19,7 +19,8 @@ import { passwordIssue,
   needsRange,
   cobaltServices,
   moderationPresets,
-  viewerPermissionKeys, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  viewerPermissionKeys,
+  vkEmbedCommand, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -230,6 +231,8 @@ describe("parity rules", () => {
     expect(cobaltServices("https://cobalt.example")).toEqual(["cobalt"]);
     expect(moderationPresets).toContain("С модерацией");
     expect(viewerPermissionKeys).toHaveLength(6);
+    expect(vkEmbedCommand("vk1").source).toBe("vk");
+    expect(vkEmbedCommand("rt1").source).toBe("rutube");
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

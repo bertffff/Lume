@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 105 |
+| Done | 106 |
 | Done (needs creds) | 12 |
-| Partial | 11 |
+| Partial | 10 |
 | Redesign | 7 |
 | Missing | 2 |
 
@@ -49,7 +49,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F030 | Session dock | Redesign | The session dock waits for the design pack. The room bar and voice panel stay. |
 | F031 | Report user/room | Done | POST /reports accepts a reason up to 500 characters and optional details. The people column has a report form. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
-| F033 | VK + Rutube embeds | Partial | Best-effort adapters, not the postMessage APIs. |
+| F033 | VK + Rutube embeds | Done | VK and Rutube embeds accept a play command. The command is covered for both sources. |
 | F034 | Host playback control | Done | Play, pause, seek, and a speed menu from 0.5 to 2. |
 | F035 | NTP clock sync | Done | The room client takes five clock samples, keeps the median offset, and repeats every minute. |
 | F036 | Adaptive drift correction | Done | Followers use the drift plan: soft rate on HTML5, hard seek, anti-loop, and buffer grace. |

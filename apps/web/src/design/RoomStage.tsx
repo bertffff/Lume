@@ -107,7 +107,7 @@ export function RoomStage({
             <button type="button" className="logo" onClick={onLeave}><i />lume</button>
             <div className="crumb"><b data-testid="room-title">{room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
             <span className="spacer" />
-            <div className="sync"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span></div>
+            <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span></div>
             <div className="who">
               <div className="stack">
                 {members.slice(0, 4).map((member) => (
@@ -167,7 +167,9 @@ export function RoomStage({
                   ))}
                 </ul>
                 <div className="vbtns">
-                  <button type="button" className="vbtn" onClick={() => void voice.toggleMute()}>🎤</button>
+                  <button type="button" className="vbtn" onClick={() => void voice.join()}>Войти</button>
+                <button type="button" className="vbtn" onClick={() => void navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => stream.getTracks().forEach((track) => track.stop()))}>Тест</button>
+                <button type="button" className="vbtn" onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
                   <button type="button" className="vbtn leave" onClick={() => void voice.leave()}>✕</button>
                 </div>
               </div>

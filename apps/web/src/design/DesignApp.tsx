@@ -204,7 +204,7 @@ export function DesignApp({
   });
 
   return (
-    <div className={narrow ? "design-app is-narrow" : "design-app"} data-view={view}>
+    <div className={narrow ? "design-app is-narrow session-hub" : "design-app session-hub"} data-view={view}>
       {view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
