@@ -24,8 +24,11 @@ export function SettingsScreen({
 }) {
   const [telegramId, setTelegramId] = useState("");
   const [linked, setLinked] = useState("…");
+  const [services, setServices] = useState<string[]>([]);
   useEffect(() => {
-    if (!token || !apiUrl) return;
+    if (!apiUrl) return;
+    void fetch(`${apiUrl}/video/services`).then((response) => response.json()).then((payload: { services?: string[] }) => setServices(payload.services ?? [])).catch(() => setServices([]));
+    if (!token) return;
     void fetch(`${apiUrl}/auth/linked-accounts`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { email?: boolean; telegram?: boolean }) => {
@@ -92,6 +95,7 @@ export function SettingsScreen({
           <div><b>Чёрный список</b>{blocked.map((row) => <small key={row.id}>{row.displayName} <button type="button" onClick={() => onUnblock?.(row.id)}>убрать</button></small>)}{blocked.length === 0 ? <small>Пусто</small> : null}</div>
         </div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
+        <div className="set-row"><div><b>Сервисы извлечения</b><small>{services.length === 0 ? "Cobalt не задан" : services.join(", ")}</small></div></div>
         <div className="set-row"><div><b>Плеер</b><small>Качество 1080p, скорость 1×</small></div></div>
         <div className="set-row">
           <div><b>Удаление аккаунта</b><small>30 дней на восстановление. Подтверждение — DELETE.</small></div>

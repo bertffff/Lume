@@ -1,3 +1,7 @@
+export function cobaltServices(apiUrl: string | undefined): string[] {
+  return apiUrl ? ["cobalt"] : [];
+}
+
 export function needsRange(header: string | undefined): boolean {
   return header === undefined || !header.startsWith("bytes=");
 }

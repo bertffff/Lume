@@ -1,4 +1,5 @@
 import {
+  cobaltServices,
   consumeMagic,
   dayScore,
   imageKind,
@@ -49,7 +50,7 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
   }));
 
   app.get("/video/services", async () => ({
-    services: env.COBALT_API_URL ? ["cobalt"] : [],
+    services: cobaltServices(env.COBALT_API_URL),
     unavailable: !env.COBALT_API_URL,
   }));
 

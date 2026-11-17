@@ -129,6 +129,7 @@ export {
   historyLabel,
   favouriteLine,
   needsRange,
+  cobaltServices,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,
