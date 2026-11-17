@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 95 |
+| Done | 96 |
 | Done (needs creds) | 12 |
 | Partial | 15 |
 | Redesign | 7 |
-| Missing | 8 |
+| Missing | 7 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -115,7 +115,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F096 | Friends | Partial | Request, accept, decline, remove, block, and name search with a 20/minute limit. No legacy duplicate API. |
 | F097 | Friend presence | Done | A friend row shows the room they are in. |
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |
-| F099 | Watch sessions | Missing | Not recorded. |
+| F099 | Watch sessions | Done | Leaving a room records a watch session. The profile lists the longest sessions with friends. |
 | F100 | Watch history | Done | Watch history is stored per video and the profile lists it by source. |
 | F101 | Favourite videos | Done | GET /me/favourites returns videos watched more than once. The profile lists them. |
 | F102 | Discovery feed | Done | Discovery suggestions from watch history show on the queue. |
