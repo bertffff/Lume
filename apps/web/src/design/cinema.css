@@ -174,7 +174,7 @@ html[data-style="cinema"][data-theme="light"] .theme-btn .ph-sun{display:none}
 .search-lg .kbd{margin-left:auto}
 .acts{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:14px}
 .tile{border-radius:var(--r-lg);padding:18px;background:var(--s1);border:1px solid var(--line);position:relative;overflow:hidden;min-height:188px;display:flex;flex-direction:column;box-shadow:var(--shadow-card)}
-.tile.resume{padding:0;color:#F3EDE6;color-scheme:dark;background:#000 none 70% 55%/cover}
+.tile.resume{padding:0;color:#F3EDE6;color-scheme:dark;background:#000 url(/dev-seed/desert.jpg) 70% 55%/cover}
 .tile.resume::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,7,.15) 20%,rgba(10,8,7,.82) 100%)}
 .tile.resume .c{position:relative;z-index:1;padding:16px 18px;display:flex;flex-direction:column;height:100%}
 .tile.resume .eyebrow{color:var(--accent)}

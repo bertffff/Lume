@@ -1,4 +1,5 @@
-.cinema-room,.g-room{min-height:calc(100vh - 64px);display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+.cinema-room{height:100vh;display:grid;grid-template-rows:52px 1fr;background:var(--bg);color:var(--text);overflow:hidden}
+.g-room{min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
 .cinema-room .top{height:52px;display:flex;align-items:center;gap:16px;padding:0 16px 0 20px;border-bottom:1px solid var(--line)}
 .cinema-room .logo{font:700 19px/1 var(--font-display, var(--font));display:flex;align-items:center;gap:7px;background:none;border:0;color:inherit}
 .cinema-room .logo .dot,.g-room .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
@@ -10,7 +11,7 @@
 .cinema-room .who{display:flex}
 .cinema-room .body,.g-room .body{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:0;flex:1}
 .cinema-room .player-col{display:flex;flex-direction:column;gap:12px;padding:16px 20px;min-width:0}
-.cinema-room .stage-card{position:relative;flex:1;min-height:280px;border-radius:10px;overflow:hidden;background:#000}
+.cinema-room .stage-card{position:relative;flex:1;min-height:0;border-radius:10px;overflow:hidden;background:#000 url(/dev-seed/desert.jpg) center/cover}
 .cinema-room .stage-card .tr-player{background:transparent;border:0;height:100%;display:flex;flex-direction:column}
 .cinema-room .stage-card .tr-frame,.cinema-room .stage-card .tr-stage{flex:1;min-height:220px;background:#000 center/cover}
 .cinema-room .low{display:grid;grid-template-columns:1.05fr 1.2fr;gap:12px}

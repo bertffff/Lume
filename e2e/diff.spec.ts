@@ -47,9 +47,13 @@ for (const [mock, appPath, file, width, height] of cases) {
     await page.goto(`file:///tmp/lume-design/final/${mock}`);
     const mode = appPath.includes("mode=light") ? "light" : "dark";
     await page.evaluate((next) => { document.documentElement.dataset.theme = next; }, mode);
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(600);
     await page.screenshot({ path: "/tmp/mock-side.png" });
     await page.goto(appPath);
     await page.locator(".design-app").waitFor();
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(600);
     await page.screenshot({ path: "/tmp/app-side.png" });
     const ratio = mismatch("/tmp/mock-side.png", "/tmp/app-side.png", `/opt/cursor/artifacts/${file}`);
     console.log(file, ratio.toFixed(3));

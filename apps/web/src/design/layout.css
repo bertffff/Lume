@@ -14,11 +14,12 @@ html[data-style="gruvbox"] .design-app{font-family:var(--font)}
 .design-app .search-lg input{border:0;background:transparent;color:inherit;flex:1;min-width:0;outline:none;font:inherit}
 .design-app .nav{height:64px;display:flex;align-items:center;gap:16px;padding:0 28px;border-bottom:1px solid var(--line, var(--bg2))}
 html[data-style="gruvbox"] .design-app .nav{display:none}
-.design-app .logo{font:700 20px/1 var(--font-display, var(--font));letter-spacing:-.02em;display:flex;align-items:center;gap:7px}
+.design-app .logo{font:700 20px/1 var(--font-display, var(--font));letter-spacing:-.02em;display:flex;align-items:center;gap:7px;background:none;border:0;color:inherit;padding:0}
+.design-app .logo i{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block;box-shadow:0 0 12px 2px color-mix(in srgb, var(--accent) 55%, transparent)}
 .design-app .logo i.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:block}
 html[data-style="gruvbox"] .design-app .logo i.dot{border-radius:0;background:var(--orange)}
 .design-app .me{display:flex;align-items:center;gap:8px;font-weight:500}
-.design-app .wrap{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:16px 28px 20px}
+.design-app .wrap{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:16px 28px 20px;height:calc(100vh - 64px);box-sizing:border-box;overflow:hidden}
 .design-app .tile input,.design-app .tile .inbox{width:100%;margin-top:8px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--s2);color:var(--text);padding:0 12px}
 .design-app .greet h1{font:600 28px/34px var(--font-display, var(--font));letter-spacing:-.02em}
 .design-app .greet .sub{color:var(--text-2);margin-top:3px}
@@ -33,9 +34,47 @@ html[data-style="gruvbox"] .design-app .st .ring{border-radius:0}
 .design-app .pill{height:28px;padding:0 10px;border-radius:999px;background:var(--s1);color:var(--text-2);border:1px solid var(--line, transparent)}
 html[data-style="gruvbox"] .design-app .pill{border-radius:0}
 .design-app .pill.on{background:var(--text);color:var(--bg)}
-.design-app .rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.design-app .wrap>main{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.design-app .rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1;min-height:0}
 .design-app .rc{text-align:left;background:none;border:0;color:inherit}
-.design-app .rc .th{position:relative;height:148px;border-radius:6px;background:linear-gradient(160deg,#2a211c,#0e0c0b);display:flex;align-items:flex-start;padding:8px}
+.design-app .rc{display:flex;flex-direction:column;min-height:0;background:none;border:0;color:inherit;text-align:left;padding:0}
+.design-app .rc .th{position:relative;flex:1;min-height:120px;height:auto;border-radius:var(--r-sm);overflow:hidden;background:center/cover;padding:0}
+.design-app .rc .th .tag{position:absolute;left:8px;top:8px;height:22px;padding:0 7px;border-radius:4px;background:rgba(0,0,0,.6);display:flex;align-items:center;gap:6px;font:500 11px/1 var(--font-ui);color:#fff}
+.design-app .rc .th .tag i.d{width:6px;height:6px;border-radius:50%;background:#FF5544;display:block}
+.design-app .rc .bd{margin-top:8px;display:flex;align-items:center;gap:10px}
+.design-app .rc b{display:block;font:600 14px/19px var(--font-ui)}
+.design-app .rc small{font:400 12.5px/16px var(--font-ui);color:var(--text-2)}
+.design-app .stack{display:flex;margin-left:auto}
+.design-app .stack .av{border:2px solid var(--bg);margin-left:-7px}
+.design-app .side{display:flex;flex-direction:column;min-height:0;overflow:auto}
+.design-app .side h3{font:600 15px/20px var(--font-display);display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.design-app .side h3 span{font:400 12px/1 var(--font-mono);color:var(--social-text)}
+.design-app .card{background:var(--s1);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:10px;border:1px solid var(--line)}
+.design-app .fr{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.design-app .fr .s{color:var(--text-2);font-size:12px}
+.design-app .pres{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;border:2px solid var(--s1);background:var(--ok)}
+.design-app .pres.idle{background:var(--text-3)}
+.design-app .mini{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line-2);font-size:12.5px;font-weight:500;background:transparent;color:inherit}
+.design-app .mini.go{background:var(--social);color:var(--social-ink);border-color:transparent}
+.design-app .lvl{display:flex;align-items:center;gap:12px}
+.design-app .lvl .mark{width:44px;height:44px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:700 18px/1 var(--font-display)}
+.design-app .xp{margin-top:8px;height:4px;border-radius:2px;background:var(--s3);position:relative}
+.design-app .xp i{position:absolute;left:0;top:0;bottom:0;width:68%;background:var(--accent);border-radius:2px}
+.design-app .ach{display:flex;gap:6px;margin-top:8px}
+.design-app .ach span{flex:1;height:36px;border-radius:8px;background:var(--s2);display:grid;place-items:center;color:var(--text-3)}
+.design-app .ach span.got{background:var(--accent-soft);color:var(--accent-text)}
+.design-app .ev{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.design-app .ev .d{font:500 10px/13px var(--font-mono);color:var(--text-3);text-transform:uppercase}
+.design-app .ev .d b{display:block;font:600 14px/16px var(--font-mono);color:var(--text)}
+.design-app .st .ring{width:64px;height:64px;border-radius:50%;padding:3px}
+.design-app .st.p-lisa .ring{background:var(--p-lisa)}
+.design-app .st.p-sonya .ring{background:var(--p-sonya)}
+.design-app .st.p-dasha .ring{background:var(--p-dasha)}
+.design-app .st.p-nick .ring{background:var(--s3)}
+.design-app .st .ring .face{width:100%;height:100%;border-radius:50%;border:3px solid var(--ring-gap, var(--bg));background-size:cover;background-position:center;position:relative}
+.design-app .st .ring .av{position:absolute;right:-5px;bottom:-3px;width:20px;height:20px;font-size:8px}
+.design-app .icon-btn{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;position:relative}
+.design-app .badge-dot{position:absolute;top:6px;right:6px}
 .design-app .rc .bd{margin-top:8px;display:flex;justify-content:space-between;gap:8px}
 .design-app .side .card{margin-bottom:10px}
 .design-app .fr{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line, var(--bg2))}

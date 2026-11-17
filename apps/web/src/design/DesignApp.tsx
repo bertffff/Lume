@@ -5,7 +5,7 @@ import { legacyText } from "../i18n/legacy.js";
 import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
-import { demoFriends, demoMessages, demoRooms } from "./fixtures.js";
+import { demoFriends, demoMessages, demoRooms, heatCells } from "./fixtures.js";
 import { posterFor } from "./posters.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
 
@@ -198,19 +198,23 @@ export function DesignApp({
 
   return (
     <div className="design-app" data-view={view}>
-      {style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
+      {view === "room" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
         <nav className="nav">
-          <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i className="dot" />lume</button>
-          <label className="search-lg">
-            <input aria-label={text.search} placeholder={text.search} value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => go("/search")} />
-            <span className="kbd">/</span>
-          </label>
+          <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
+          {demo ? (
+            <div className="search-lg"><i className="ph ph-magnifying-glass" />Найти видео или комнату<span className="kbd">/</span></div>
+          ) : (
+            <label className="search-lg">
+              <input aria-label={text.search} placeholder={text.search} value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => go("/search")} />
+              <span className="kbd">/</span>
+            </label>
+          )}
           <div style={{ flex: 1 }} />
-          <button type="button" className="icon-btn" onClick={() => go("/notifications")} aria-label={text.notifications}>•</button>
-          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}>{mode === "light" ? "☾" : "☀"}</button>
+          <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><i className="ph ph-bell" /><span className="badge-dot" /></button>
+          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><i className="ph ph-sun" /><i className="ph ph-moon" /></button>
           <button type="button" className="me" onClick={() => go("/profile")}>
-            <span className={`av p-${hue}`}>{initials(session?.user.displayName ?? "?")}</span>
-            <span className={`nm p-${hue}`}>{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
+            <span className="av p-me">{demo ? "АВ" : initials(session?.user.displayName ?? "?")}</span>
+            <span className="nm p-me">{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
           </button>
         </nav>
       )}
@@ -226,12 +230,10 @@ export function DesignApp({
             {demo ? (
               <div className="stories">
                 <div className="st new"><div className="ring">+</div>Своя</div>
-                {demoFriends.map((friend) => (
-                  <div className={`st p-${friend.hue}`} key={friend.name}>
-                    <div className="ring"><div className="face"><span className={`av p-${friend.hue}`}>{initials(friend.name)}</span></div></div>
-                    {friend.name}
-                  </div>
-                ))}
+                <div className="st p-lisa"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }}><span className="av p-lisa">Л</span></div></div>Лиза</div>
+                <div className="st p-sonya"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="av p-sonya">С</span></div></div>Соня</div>
+                <div className="st p-dasha"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="av p-dasha">Д</span></div></div>Даша</div>
+                <div className="st p-nick"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="av p-nick">Н</span></div></div>Ник</div>
               </div>
             ) : null}
             {!session && !demo ? (
@@ -257,30 +259,35 @@ export function DesignApp({
               </div>
             ) : (
               <div className="acts">
-                <button type="button" className="tile resume" style={{ background: "url(/dev-seed/desert.jpg) center/cover" }} onClick={() => {
+                <button type="button" className="tile resume" onClick={() => {
                   if (!session) return;
                   void fetch(`${apiUrl}/rooms/resume-last`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })
                     .then((response) => response.json())
                     .then((payload: { room?: { id: string } }) => { if (payload.room) onOpen(payload.room.id); });
                 }}>
-                  <div className="c"><div className="eyebrow">{text.resume}</div><h2>{demo ? "Пустая дорога — режиссёрская версия" : resume ?? text.empty}</h2></div>
+                  <div className="c">
+                    <div className="eyebrow">{text.resume}</div>
+                    <h2>{demo ? "Пустая дорога — режиссёрская версия" : resume ?? text.empty}</h2>
+                    {demo ? <div className="sub">Ночной кинозал · 6 зрителей · 01:12:44 / 02:03:10</div> : null}
+                    {demo ? <div className="pb"><i /></div> : null}
+                  </div>
                 </button>
                 <form className="tile create" onSubmit={(event) => void createRoom(event)}>
+                  <div className="ic"><i className="ph-bold ph-plus" /></div>
                   <h3>{text.create}</h3>
                   <p>{text.createHint}</p>
                   {demo ? null : <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />}
                   {demo ? null : <button type="submit" data-testid="lobby-create">{text.create}</button>}
-                  <span className="chips">
-                    <button type="button" className="pill" onClick={() => setTitle("Киноночь")}>Киноночь</button>
-                    <button type="button" className="pill" onClick={() => setTitle("Вечеринка")}>Вечеринка</button>
-                    <button type="button" className="pill" onClick={() => setTitle("Закрытый")}>Закрытый</button>
-                    <button type="button" className="pill" onClick={() => setTitle("С модерацией")}>С модерацией</button>
-                  </span>
                 </form>
                 <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
+                  <div className="ic"><i className="ph-bold ph-key" /></div>
                   <h3>{text.join}</h3>
-                  <p>{text.joinHint}</p>
-                  <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" />
+                  <p>{demo ? "Код комнаты из шести знаков" : text.joinHint}</p>
+                  {demo ? (
+                    <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i className="blank">2</i><i className="blank">M</i></div>
+                  ) : (
+                    <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" />
+                  )}
                   <button type="submit" className="go" data-testid="lobby-join">{text.enter}</button>
                 </form>
               </div>
@@ -294,12 +301,13 @@ export function DesignApp({
               </div>
             </div>
             <div className="rooms">
-              {demo ? demoRooms.map((item) => (
-                <button key={item.title} type="button" className="rc">
-                  <div className="th" style={{ backgroundImage: `url(${item.poster})` }}><span className="tag">{item.count}</span></div>
-                  <div className="bd"><div><b>{item.title}</b><small>{item.sub}</small></div></div>
-                </button>
-              )) : shownRooms.map((item) => (
+              {demo ? (
+                <>
+                  <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span></div><div className="bd"><div><b>Пятничный звук</b><small>Концерт на крыше</small></div><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span></div></div></div>
+                  <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span></div><div className="bd"><div><b>Нуар по средам</b><small>Город после дождя</small></div><div className="stack"><span className="av sm p-nick">Н</span></div></div></div>
+                  <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag">в 22:00</span></div><div className="bd"><div><b>Документалки</b><small>Лес, который помнит</small></div><div className="stack"><span className="av sm p-dasha">Д</span></div></div></div>
+                </>
+              ) : shownRooms.map((item) => (
                 <button key={item.id} type="button" className="rc" onClick={() => { if (!session) return; void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}>
                   <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}><span className="tag">{item.memberCount ?? 0}</span></div>
                   <div className="bd"><b>{item.title}</b><small className="mono">{item.code}</small></div>
@@ -309,14 +317,15 @@ export function DesignApp({
           </main>
           <aside className="side">
             <section className="card">
-              <h3>{text.online}</h3>
-              {demo ? demoFriends.map((row) => (
-                <div className="fr" key={row.name}>
-                  <span className={`av lg p-${row.hue}`}>{initials(row.name)}</span>
-                  <div><div className={`n p-${row.hue}`}>{row.name}</div><small>{row.note}</small></div>
-                  <button type="button" className={row.go ? "mini go" : "mini"}>{row.go ? "Зайти" : "Позвать"}</button>
-                </div>
-              )) : friends.map((row) => (
+              <h3>Друзья онлайн <span>14</span></h3>
+              {demo ? (
+                <>
+                  <div className="fr"><span className="av lg p-lisa">ЛМ<span className="pres" /></span><div><div className="n p-lisa">Лиза</div><div className="s">ведёт «Ночной кинозал»</div></div><button type="button" className="mini go">Зайти</button></div>
+                  <div className="fr"><span className="av lg p-artem">АТ<span className="pres" /></span><div><div className="n p-artem">Артём</div><div className="s">в «Ночном кинозале»</div></div><button type="button" className="mini go">Зайти</button></div>
+                  <div className="fr"><span className="av lg p-sonya">СН<span className="pres" /></span><div><div className="n p-sonya">Соня</div><div className="s">в «Пятничном звуке»</div></div><button type="button" className="mini">Зайти</button></div>
+                  <div className="fr"><span className="av lg p-nick">НК<span className="pres idle" /></span><div><div className="n p-nick">Ник</div><div className="s">был час назад</div></div><button type="button" className="mini">Позвать</button></div>
+                </>
+              ) : friends.map((row) => (
                 <div className="fr" key={row.id}>
                   <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
                   <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? text.empty}</small></div>
@@ -325,19 +334,33 @@ export function DesignApp({
               ))}
             </section>
             <section className="card">
-              <div className="lvl"><div className="mark">{demo ? 7 : level}</div><div><b>{text.level} {demo ? 7 : level}</b><small>{demo ? "2 340 XP · до 8-го ещё 660" : ""}</small></div></div>
+              <div className="lvl"><div className="mark">{demo ? 7 : level}</div><div><b>{demo ? "Уровень 7" : `${text.level} ${level}`}</b><small>{demo ? "2 340 XP · до 8-го ещё 660" : ""}</small></div></div>
+              {demo ? <div className="xp"><i /></div> : null}
+              {demo ? <div className="ach"><span className="got">🎞</span><span className="got">☾</span><span className="got">☺</span><span>♛</span><span>⚡</span></div> : null}
             </section>
             <section className="card">
-              <h3>{text.reminders}</h3>
-              {notes.slice(0, 3).map((note) => <p key={note.id}>{note.title}</p>)}
+              <h3>Напоминания <span>2</span></h3>
+              {demo ? (
+                <>
+                  <div className="ev"><div className="d">сегодня<b>22:00</b></div><div><div className="t">Лес, который помнит</div><div className="h">комната <span className="nm p-dasha">Даши</span></div></div></div>
+                  <div className="ev"><div className="d">вт<b>20:30</b></div><div><div className="t">Сериальный вторник</div><div className="h"><span className="nm p-sonya">Соня</span> приглашает</div></div></div>
+                </>
+              ) : notes.slice(0, 3).map((note) => <p key={note.id}>{note.title}</p>)}
             </section>
             <section className="card heat-wrap heat-compact" aria-label={text.season}>
               <div className="heat-top"><h3>{text.season}</h3></div>
-              <div className="heat-grid">
-                {(demo ? Array.from({ length: 17 * 7 }, (_, index) => index % 5) : heat.slice(-119).map((cell) => cell.score)).map((score, index) => (
-                  <i key={index} className={score > 3 ? "a4" : score > 2 ? "a3" : score > 1 ? "a2" : score > 0 ? "a1" : ""} />
-                ))}
-              </div>
+              {demo ? <div className="stats"><b>14 дней</b> подряд · 142 сеанса</div> : null}
+              {demo ? (
+                <div className="heat-cal">
+                  <div />
+                  <div className="heat-months"><span>июл</span><span /><span>авг</span><span /><span /><span /><span /><span>сен</span><span /><span /><span /><span>окт</span><span /><span /><span /><span>ноя</span><span /></div>
+                  <div className="heat-days"><span>пн</span><span>вт</span><span>ср</span><span>чт</span><span>пт</span><span>сб</span><span>вс</span></div>
+                  <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
+                </div>
+              ) : (
+                <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
+              )}
+              {demo ? <div className="heat-leg">меньше <i /><i className="a1" /><i className="a2" /><i className="a3" /><i className="a4" /> больше</div> : null}
             </section>
           </aside>
         </div>
@@ -484,11 +507,18 @@ function RoomPreview() {
       {gruv ? (
         <header className="tabline"><span className="brand"><span className="dot" />LUME</span><div className="bufs"><span className="buf on"><span className="nr">1</span>room</span></div></header>
       ) : (
-        <header className="top"><span className="logo"><i className="dot" />lume</span><div className="crumb"><b>Ночной кинозал</b><span className="slate mono">7KQ-2M</span></div></header>
+        <header className="top">
+          <span className="logo"><i />lume</span>
+          <div className="crumb"><b>Ночной кинозал</b><span className="slate mono">7KQ-2M</span></div>
+          <span className="spacer" />
+          <div className="sync"><span className="dot" /><b>Синхронно</b> <span className="mono">±40 мс</span></div>
+          <div className="who"><div className="stack"><span className="av sm p-lisa">ЛМ</span><span className="av sm p-artem">АТ</span><span className="av sm p-mark">МК</span><span className="av sm p-dasha">ДС</span></div>смотрят</div>
+          <button type="button" className="btn btn-outline">Позвать</button>
+        </header>
       )}
       <div className="body">
         <section className="player-col">
-          <div className="stage-card" style={{ background: "url(/dev-seed/desert.jpg) center/cover", minHeight: 280 }} />
+          <div className="stage-card"><div className="top-ov"><span className="pill">Пустая дорога — режиссёрская версия</span></div></div>
           <div className="ctl">
             <button type="button" className="play">II</button>
             <span className="time">01:12:44 <span>/ 02:03:10</span></span>
@@ -506,16 +536,18 @@ function RoomPreview() {
               </div>
             </div>
             <div className="card">
-              <div className="ct">Дальше в очереди</div>
+              <div className="ct">Дальше в очереди <small>3 видео</small><span className="pill">Пропуск 2 из 4</span></div>
               <div className="q">
-                <div className="qi"><div className="im" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><b>Город после дождя</b></div>
-                <div className="qi"><div className="im" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }} /><b>Лес, который помнит</b></div>
+                <div className="qi"><div className="im" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span>1:48:02</span></div><b>Город после дождя</b></div>
+                <div className="qi"><div className="im" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span>52:10</span></div><b>Лес, который помнит</b></div>
+                <div className="qi add"><div className="im">+</div><b>Добавить</b></div>
               </div>
             </div>
           </div>
         </section>
         <aside className={gruv ? "pane irc" : "rail"}>
-          <div className="tabs"><span className="tab on">Чат</span><span className="tab">Люди</span><span className="tab">Очередь</span></div>
+          <div className="tabs"><span className="tab on">Чат <span className="n">12</span></span><span className="tab">Люди <span className="n">6</span></span><span className="tab">Очередь <span className="n">3</span></span></div>
+          <div className="pin"><span className="bar" /><div><b>Закреплено · Лиза</b>После фильма — голосуем за следующий в очереди</div></div>
           <div className="log">
             {demoMessages.map((message, index) => "system" in message && message.system ? (
               <span className="sys" key={index}>{message.text}</span>
