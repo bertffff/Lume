@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 74 |
+| Done | 75 |
 | Done (needs creds) | 12 |
-| Partial | 27 |
+| Partial | 26 |
 | Redesign | 7 |
 | Missing | 17 |
 
@@ -24,7 +24,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F005 | Magic-link login | Done | A link is issued for 15 minutes and used once. Opening `?magic=` verifies it and stores the session. SMTP is still optional; without it the link is returned to the caller. |
 | F006 | Telegram Mini App auth | Done | initData expires after 300 seconds by default, and a clock more than 30 seconds ahead is rejected. |
 | F007 | Telegram Login Widget | Done | POST /auth/telegram-widget checks the Login Widget hash. The auth screen posts the fields. |
-| F008 | Link / unlink Telegram | Missing | No link routes. |
+| F008 | Link / unlink Telegram | Done | Settings can link a numeric Telegram id and unlink it. Unlink is refused without an email. A Telegram id already on another account returns 409. |
 | F009 | Linked accounts status | Missing | No endpoint. |
 | F010 | Dev auth bypass | Done | ALLOW_STUB_AUTH guest JWT. |
 | F011 | Post-auth pending room | Done | A room code from the Telegram start param or ?code= is filled into the join field. |

@@ -386,7 +386,7 @@ export function DesignApp({
           ) : null}
           {view === "create" ? <CreateScreen title={title} onTitle={setTitle} onSubmit={(event) => void createRoom(event)} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} /> : null}
-          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} /> : null}
+          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} /> : null}
           {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
           {view === "profile" ? <ProfileScreen /> : null}
           {view === "premium" ? <PremiumScreen /> : null}
@@ -399,7 +399,13 @@ export function DesignApp({
               void fetch(`${apiUrl}/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name, password: String(data.get("password") ?? ""), displayName: String(data.get("displayName") ?? name) }) })
                 .then((response) => response.json())
                 .then((payload: { accessToken?: string; refreshToken?: string; user?: { id: string; displayName: string } }) => {
-                  if (payload.accessToken && payload.user) onSession({ accessToken: payload.accessToken, ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}), user: payload.user });
+                  if (payload.accessToken && payload.user) {
+                    onSession({
+                      accessToken: payload.accessToken,
+                      ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}),
+                      user: { id: payload.user.id, displayName: payload.user.displayName, telegramId: null, username: null, locale: "ru", themeId: "ember" },
+                    });
+                  }
                 });
             }} />
           ) : null}

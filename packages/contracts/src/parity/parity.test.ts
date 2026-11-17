@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { levelFromXp, earnedAchievementKeys, xpForKeys } from "./achievements.js";
 import { passwordIssue,
   registerAvailability,
-  magicTokenFromSearch, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  magicTokenFromSearch,
+  unlinkAllowed, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { nextHost, reclaimHost } from "./host.js";
@@ -180,6 +181,8 @@ describe("parity rules", () => {
     expect(registerAvailability("development", false)).toBe("ok");
     expect(magicTokenFromSearch("?magic=abcdef12")).toBe("abcdef12");
     expect(magicTokenFromSearch("?magic=short")).toBeNull();
+    expect(unlinkAllowed(true)).toBe(true);
+    expect(unlinkAllowed(false)).toBe(false);
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

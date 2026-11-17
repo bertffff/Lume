@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -7,12 +7,27 @@ export function SettingsScreen({
   mode,
   onStyle,
   onMode,
+  token,
+  apiUrl,
 }: {
   style: StyleId;
   mode: ModeId;
   onStyle: (style: StyleId) => void;
   onMode: (mode: ModeId) => void;
+  token?: string;
+  apiUrl?: string;
 }) {
+  const [telegramId, setTelegramId] = useState("");
+  const [linked, setLinked] = useState("…");
+  useEffect(() => {
+    if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/auth/linked-accounts`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { email?: boolean; telegram?: boolean }) => {
+        setLinked([payload.email ? "почта" : null, payload.telegram ? "Telegram" : null].filter(Boolean).join(" · ") || "нет");
+      })
+      .catch(() => setLinked("нет"));
+  }, [token, apiUrl]);
   const system = mode === "system";
   return (
     <div className="settings-wrap">
@@ -61,7 +76,12 @@ export function SettingsScreen({
             <button type="button" className={system ? "on" : ""} onClick={() => onMode("system")}>Вкл</button>
           </div>
         </div>
-        <div className="set-row"><div><b>Аккаунт</b><small>Имя, почта, Telegram</small></div></div>
+        <div className="set-row">
+          <div><b>Telegram</b><small>{linked}. Отвязка только если есть почта.</small></div>
+          <input value={telegramId} onChange={(event) => setTelegramId(event.target.value)} placeholder="id" aria-label="telegram id" />
+          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/link-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ telegramId }) }); }}>Привязать</button>
+          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/unlink-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Отвязать</button>
+        </div>
         <div className="set-row"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
         <div className="set-row"><div><b>Приватность</b><small>Кто видит профиль и статус</small></div></div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
@@ -120,7 +140,7 @@ export function AuthScreen({ onTelegram, name, onName, onEmail, onRegister }: {
   name: string;
   onName: (value: string) => void;
   onEmail: (event: FormEvent) => void;
-  onRegister: (event: FormEvent) => void;
+  onRegister: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [password, setPassword] = useState("");

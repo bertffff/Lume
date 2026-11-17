@@ -1,3 +1,7 @@
+export function unlinkAllowed(hasEmail: boolean): boolean {
+  return hasEmail;
+}
+
 export function magicTokenFromSearch(search: string): string | null {
   const token = new URLSearchParams(search).get("magic");
   return token && token.length >= 8 ? token : null;

@@ -6,6 +6,7 @@ import {
 import { devAuthRequestSchema } from "@lume/contracts";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
+import { unlinkAllowed } from "@lume/contracts";
 import { z } from "zod";
 import type { ApiEnv } from "../env.js";
 import { mintAccessToken } from "../auth/jwt.js";
@@ -187,6 +188,8 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: P
     if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
     const body = z.object({ telegramId: z.string().regex(/^\d+$/) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const taken = await prisma.user.findFirst({ where: { telegramId: BigInt(body.data.telegramId), NOT: { id: actor.userId } } });
+    if (taken) return reply.code(409).send({ error: "Telegram account already linked to another user" });
     await prisma.user.update({ where: { id: actor.userId }, data: { telegramId: BigInt(body.data.telegramId) } });
     return reply.send({ linked: true });
   });
@@ -196,7 +199,7 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: P
     if (!actor) return;
     if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
     const user = await prisma.user.findUnique({ where: { id: actor.userId } });
-    if (!user?.email) return reply.code(400).send({ error: "email_required" });
+    if (!unlinkAllowed(Boolean(user?.email))) return reply.code(400).send({ error: "email_required" });
     await prisma.user.update({ where: { id: actor.userId }, data: { telegramId: null } });
     return reply.send({ linked: false });
   });
