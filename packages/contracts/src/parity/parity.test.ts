@@ -8,7 +8,7 @@ import { passwordIssue,
   scheduledDeletion, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
-import { nextHost, reclaimHost } from "./host.js";
+import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
 import { rewriteHlsManifest } from "./manifest.js";
 import { allowsAction, allowsModeration, defaultViewerPermissions } from "./permissions.js";
 import { buildDigest, inQuietHours, nextDigestAt } from "./quiet.js";
@@ -57,6 +57,8 @@ describe("parity rules", () => {
   });
 
   it("picks a moderator before the oldest viewer", () => {
+    expect(hostLeavePauses("host")).toBe(true);
+    expect(hostLeavePauses("viewer")).toBe(false);
     const next = nextHost(
       [
         { userId: "host", role: "host", joinedAtMs: 1 },

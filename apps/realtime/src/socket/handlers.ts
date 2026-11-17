@@ -1,5 +1,6 @@
 import {
   canControlPlayback,
+  hostLeavePauses,
   castSkipVote,
   chatReactSchema,
   chatSendSchema,
@@ -496,7 +497,7 @@ async function onLeave(
   try {
     const role = await roleOf(redis, parsed.data.roomId, actor.userId);
     await api.leave(actor.token, parsed.data.roomId);
-    if (role === "host") {
+    if (hostLeavePauses(role ?? "")) {
       const paused = await commitPlayback(redis.pub, parsed.data.roomId, { type: "pause", actorId: actor.userId });
       if (paused !== "version_conflict") {
         io.to(parsed.data.roomId).emit("playback:state", paused);

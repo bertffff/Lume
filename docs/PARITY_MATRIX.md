@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 77 |
+| Done | 78 |
 | Done (needs creds) | 12 |
-| Partial | 26 |
+| Partial | 25 |
 | Redesign | 7 |
 | Missing | 15 |
 
@@ -35,7 +35,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F016 | Join by code | Done | Join by code works, including a code carried in the page query. |
 | F017 | Join bans, capacity, history | Done | Join writes a system line. The service test checks the reclaim wording as well. |
 | F018 | Permanent vs temporary host | Done | The returning owner gets «вернулся и забрал хост», covered by the room service test. |
-| F019 | Host succession | Partial | Leave promotes a mod, otherwise the earliest member. Playback is not paused. |
+| F019 | Host succession | Done | Leave promotes a moderator, otherwise the earliest member, and pauses playback when the host leaves. The chat line says the new host took over. |
 | F020 | Resume-last-room snapshot | Partial | Empty room writes lastRoomSnapshot. People screen shows Продолжить просмотр. Recreate route is not wired. |
 | F021 | Room settings | Redesign | Description, member cap, and hide-reactions already save. The full settings sheet waits for the design pack. |
 | F022 | Browse public rooms | Partial | Public list only. No search, filters, or sorts. |

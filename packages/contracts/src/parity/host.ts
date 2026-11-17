@@ -7,6 +7,10 @@ export interface HostCandidate {
 }
 
 /** Prefer a moderator, otherwise the member who joined earliest. */
+export function hostLeavePauses(role: string): boolean {
+  return role === "host";
+}
+
 export function nextHost(members: readonly HostCandidate[], leavingUserId: string): string | null {
   const rest = members.filter((member) => member.userId !== leavingUserId);
   if (rest.length === 0) {
