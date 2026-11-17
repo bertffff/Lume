@@ -42,10 +42,12 @@ function clock(totalSeconds: number): string {
 export function PlayerPanel({
   aspect,
   onAspect,
+  bare = false,
 }: {
   aspect: number;
   synced?: boolean;
   onAspect: (aspect: number) => void;
+  bare?: boolean;
 }) {
   const { t } = useI18n();
   const handed = useRef(false);
@@ -272,6 +274,14 @@ export function PlayerPanel({
       .filter((viewer) => viewer.phase === "buffering")
       .map((viewer) => live.state.members.find((member) => member.userId === viewer.userId)?.displayName ?? viewer.userId) ??
     [];
+
+  if (bare) {
+    return (
+      <div className="tr-frame bare-stage" ref={frameRef}>
+        {nowPlaying ? <div ref={mountRef} className="tr-embed" data-testid="player-mount" /> : <p className="tr-empty">{t("player.empty")}</p>}
+      </div>
+    );
+  }
 
   return (
     <section className="tr-panel tr-player" aria-label={t("player.stage")}>

@@ -77,6 +77,12 @@ export function DesignApp({
   const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number; totalMessages: number; totalReactions: number; totalVoiceSeconds: number }>>([]);
   const [resume, setResume] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "friends" | "film" | "music">("all");
+  const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 800);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
   const [ice, setIce] = useState<string | null>(null);
@@ -197,7 +203,7 @@ export function DesignApp({
   });
 
   return (
-    <div className="design-app" data-view={view}>
+    <div className={narrow ? "design-app is-narrow" : "design-app"} data-view={view}>
       {view === "room" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
