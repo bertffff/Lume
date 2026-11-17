@@ -105,8 +105,17 @@ export function SettingsScreen({
 
 export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: string } = {}) {
   const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null; watchCount: number }>>([]);
+  const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
+  const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   useEffect(() => {
     if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { platforms?: Array<{ source: string; count: number }>; topFriends?: Array<{ partnerId: string; seconds: number }> }) => {
+        setPlatforms(payload.platforms ?? []);
+        setFriendsWatch(payload.topFriends ?? []);
+      })
+      .catch(() => undefined);
     void fetch(`${apiUrl}/me/favourites`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number }> }) => setFavourites(payload.items ?? []))
@@ -144,6 +153,10 @@ export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: stri
           <div className="stats"><b>14 дней</b> подряд · 142 сеанса</div>
           <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
         </div>
+        <h3>История просмотров</h3>
+        {platforms.length === 0 ? <p>Пока пусто</p> : platforms.map((item) => <p key={item.source}>{item.source} · {item.count}</p>)}
+        <h3>Сеансы с друзьями</h3>
+        {friendsWatch.length === 0 ? <p>Пока пусто</p> : friendsWatch.map((item) => <p key={item.partnerId}>{item.partnerId} · {item.seconds} с</p>)}
         <h3>Избранное</h3>
         {favourites.length === 0 ? <p>Пока пусто</p> : favourites.map((item) => <p key={item.url}>{favouriteLine(item.title, item.watchCount)}</p>)}
         <h3>Недавние комнаты</h3>
