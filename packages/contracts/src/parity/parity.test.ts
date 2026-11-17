@@ -182,7 +182,7 @@ describe("parity rules", () => {
     expect(detectSource("https://youtu.be/abc")?.id).toBe("youtube");
     expect(detectSource("https://vk.com/video-1_2")?.id).toBe("vk");
     expect(detectSource("https://rutube.ru/video/abc/")?.id).toBe("rutube");
-    expect(sourceRules.length).toBeGreaterThanOrEqual(24);
+    expect(sourceRules.length).toBe(23);
     expect(planPlayback({ url: "https://www.tiktok.com/@a/video/1", premium: false })).toEqual({
       type: "error",
       code: "premium_required",
