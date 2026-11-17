@@ -127,6 +127,8 @@ export {
   emojiCategories,
   withoutBlocked,
   historyLabel,
+  favouriteLine,
+  needsRange,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

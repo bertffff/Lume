@@ -1,3 +1,11 @@
+export function needsRange(header: string | undefined): boolean {
+  return header === undefined || !header.startsWith("bytes=");
+}
+
+export function favouriteLine(title: string | null, watchCount: number): string {
+  return `${title ?? "видео"} · ${watchCount}`;
+}
+
 export function historyLabel(count: number): string {
   return count > 0 ? `история ${count}` : "";
 }

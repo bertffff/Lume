@@ -14,7 +14,9 @@ import { passwordIssue,
   lastIncidents,
   emojiCategories,
   withoutBlocked,
-  historyLabel, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  historyLabel,
+  favouriteLine,
+  needsRange, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -216,6 +218,9 @@ describe("parity rules", () => {
     expect(withoutBlocked([{ id: "a" }, { id: "b" }], "a")).toEqual([{ id: "b" }]);
     expect(historyLabel(3)).toBe("история 3");
     expect(historyLabel(0)).toBe("");
+    expect(favouriteLine("Пустая дорога", 4)).toBe("Пустая дорога · 4");
+    expect(needsRange(undefined)).toBe(true);
+    expect(needsRange("bytes=0-1")).toBe(false);
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

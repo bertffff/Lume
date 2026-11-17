@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { linkedLabel } from "@lume/contracts";
+import { favouriteLine, linkedLabel } from "@lume/contracts";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -103,7 +103,15 @@ export function SettingsScreen({
   );
 }
 
-export function ProfileScreen() {
+export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: string } = {}) {
+  const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null; watchCount: number }>>([]);
+  useEffect(() => {
+    if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/me/favourites`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number }> }) => setFavourites(payload.items ?? []))
+      .catch(() => setFavourites([]));
+  }, [token, apiUrl]);
   return (
     <div className="profile-wrap">
       <aside className="side-p">
@@ -136,6 +144,8 @@ export function ProfileScreen() {
           <div className="stats"><b>14 дней</b> подряд · 142 сеанса</div>
           <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
         </div>
+        <h3>Избранное</h3>
+        {favourites.length === 0 ? <p>Пока пусто</p> : favourites.map((item) => <p key={item.url}>{favouriteLine(item.title, item.watchCount)}</p>)}
         <h3>Недавние комнаты</h3>
         <div className="rooms">
           <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }} /><div className="bd"><b>Ночной кинозал</b><small>Пустая дорога</small></div></div>

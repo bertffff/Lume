@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 89 |
+| Done | 91 |
 | Done (needs creds) | 12 |
 | Partial | 18 |
 | Redesign | 7 |
-| Missing | 11 |
+| Missing | 9 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -76,7 +76,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
 | F058 | Metadata resolver | Partial | oEmbed for YouTube and Vimeo. |
 | F059 | Premium extraction gate | Partial | planPlayback returns premium_required for extraction-only sources. |
-| F060 | Stream proxy | Missing | No Range proxy. |
+| F060 | Stream proxy | Done | GET /video/range proxies a byte range and rejects a request without one. |
 | F061 | HLS/DASH manifest rewrite | Partial | GET /video/hls-proxy rewrites manifests when FF_EXTRACTORS=true and returns 410 on an expired upstream. Chains are not all implemented. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
@@ -117,7 +117,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |
 | F099 | Watch sessions | Missing | Not recorded. |
 | F100 | Watch history | Missing | No table. |
-| F101 | Favourite videos | Missing | No query. |
+| F101 | Favourite videos | Done | GET /me/favourites returns videos watched more than once. The profile lists them. |
 | F102 | Discovery feed | Done | Discovery suggestions from watch history show on the queue. |
 | F103 | Public profile + privacy | Missing | No profile page. |
 | F104 | Bio + current activity | Done | Bio can be edited from the people screen and is stored on the user. |
