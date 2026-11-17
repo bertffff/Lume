@@ -117,6 +117,7 @@ export {
   magicTokenFromSearch,
   unlinkAllowed,
   linkedLabel,
+  scheduledDeletion,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

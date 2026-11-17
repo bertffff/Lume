@@ -1,3 +1,7 @@
+export function scheduledDeletion(nowMs: number): number {
+  return nowMs + 30 * 24 * 60 * 60 * 1000;
+}
+
 export function linkedLabel(accounts: { email: boolean; telegram: boolean }): string {
   const parts = [accounts.email ? "почта" : null, accounts.telegram ? "Telegram" : null].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "нет";

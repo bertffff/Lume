@@ -87,7 +87,11 @@ export function SettingsScreen({
         <div className="set-row"><div><b>Приватность</b><small>Кто видит профиль и статус</small></div></div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
         <div className="set-row"><div><b>Плеер</b><small>Качество 1080p, скорость 1×</small></div></div>
-        <div className="set-row"><div><b>Голос</b><small>Микрофон по умолчанию</small></div></div>
+        <div className="set-row">
+          <div><b>Удаление аккаунта</b><small>30 дней на восстановление. Подтверждение — DELETE.</small></div>
+          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me/delete`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ confirmation: "DELETE" }) }); }}>Удалить</button>
+          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me/restore`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Восстановить</button>
+        </div>
       </div>
     </div>
   );

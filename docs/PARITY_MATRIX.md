@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 76 |
+| Done | 77 |
 | Done (needs creds) | 12 |
-| Partial | 27 |
+| Partial | 26 |
 | Redesign | 7 |
 | Missing | 15 |
 
@@ -30,7 +30,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F011 | Post-auth pending room | Done | A room code from the Telegram start param or ?code= is filled into the join field. |
 | F012 | Onboarding | Done | Three onboarding lines show once, then the flag is saved on the account. |
 | F013 | GDPR ZIP export | Done | People can download a 24-hour ZIP. The zip bytes and the expiry rule are tested. |
-| F014 | Account deletion + purge | Partial | Soft delete, restore, and a BullMQ purge at 03:00 UTC. The worker needs Redis and Postgres. |
+| F014 | Account deletion + purge | Done | Settings sends DELETE and can restore inside 30 days. The purge job still runs at 03:00 UTC when Redis and Postgres are up. |
 | F015 | Create room wizard + presets | Done | Room codes are 8 characters. Create offers Киноночь, Вечеринка, Закрытый, and С модерацией. |
 | F016 | Join by code | Done | Join by code works, including a code carried in the page query. |
 | F017 | Join bans, capacity, history | Done | Join writes a system line. The service test checks the reclaim wording as well. |

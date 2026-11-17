@@ -6,6 +6,7 @@ import {
   passwordIssue,
   registerAvailability,
   resumeCard,
+  scheduledDeletion,
   tempMuteExpiry,
   type RateBucket,
   type ResumeSnapshot,
@@ -577,7 +578,7 @@ export function registerSocialRoutes(
     }
     const body = z.object({ confirmation: z.literal("DELETE") }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const when = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const when = new Date(scheduledDeletion(Date.now()));
     await prisma.user.update({
       where: { id: actor.userId },
       data: { deletedAt: new Date(), scheduledDeletionAt: when, bio: null, avatarUrl: null, displayName: "Удалён" },
