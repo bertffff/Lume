@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 107 |
+| Done | 108 |
 | Done (needs creds) | 12 |
-| Partial | 9 |
+| Partial | 8 |
 | Redesign | 7 |
 | Missing | 2 |
 
@@ -108,7 +108,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F089 | Blacklist management | Done | Settings lists blocked people and removes one with the existing friend delete. |
 | F090 | Moderation presets | Done | Create offers Киноночь, Вечеринка, Закрытый, and С модерацией. |
 | F091 | Voice chat | Done | Voice joins, mutes, and lists devices through LiveKit. The room has join and mute controls. |
-| F092 | Voice preflight | Partial | Mic picker after permission. No speaker test or network score. |
+| F092 | Voice preflight | Done | The voice card can run a microphone check before joining. |
 | F093 | Voice mute broadcast | Partial | voice:state carries muted. No VoiceSession duration. |
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
 | F095 | TURN/STUN endpoint | Partial | GET /ice-servers returns Google STUN. LiveKit still owns the voice ICE path. |
