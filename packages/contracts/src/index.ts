@@ -123,6 +123,7 @@ export {
   reportIssue,
   refreshKeepsPlayback,
   recoveryActions,
+  lastIncidents,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

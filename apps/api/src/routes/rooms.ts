@@ -1,4 +1,4 @@
-import { createRoomSchema, joinRoomSchema, matchesBrowse } from "@lume/contracts";
+import { createRoomSchema, joinRoomSchema, lastIncidents, matchesBrowse } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { allowsModeration, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
@@ -506,6 +506,21 @@ export function registerRoomRoutes(
       data: { roomId: params.id, actorId: actor.userId, action: "sync-incident", detail: body.success ? body.data.note ?? "" : "" },
     });
     return reply.send({ ok: true });
+  });
+
+  app.get("/rooms/:id/sync-incidents", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const rows = await prisma.moderationAction.findMany({
+      where: { roomId: params.id, action: "sync-incident" },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+    return reply.send({ incidents: lastIncidents(rows.map((row) => ({ id: row.id, detail: row.detail, at: row.createdAt.toISOString() }))) });
   });
 }
 

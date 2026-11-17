@@ -10,7 +10,8 @@ import { passwordIssue,
   matchesBrowse,
   reportIssue,
   refreshKeepsPlayback,
-  recoveryActions, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  recoveryActions,
+  lastIncidents, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -205,6 +206,7 @@ describe("parity rules", () => {
     expect(refreshKeepsPlayback(1200, true)).toEqual({ positionMs: 1200, status: "playing" });
     expect(refreshKeepsPlayback(-5, false).positionMs).toBe(0);
     expect(recoveryActions).toEqual(["retry", "open", "replace"]);
+    expect(lastIncidents([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

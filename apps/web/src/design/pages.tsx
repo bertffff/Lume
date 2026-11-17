@@ -283,7 +283,15 @@ export function MembersScreen() {
   );
 }
 
-export function RoomSettingsScreen({ onSave }: { onSave: (event: FormEvent) => void }) {
+export function RoomSettingsScreen({ onSave, token, apiUrl, roomId }: { onSave: (event: FormEvent) => void; token?: string; apiUrl?: string; roomId?: string | null }) {
+  const [incidents, setIncidents] = useState<Array<{ id: string; detail: string }>>([]);
+  useEffect(() => {
+    if (!token || !apiUrl || !roomId) return;
+    void fetch(`${apiUrl}/rooms/${roomId}/sync-incidents`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { incidents?: Array<{ id: string; detail: string }> }) => setIncidents(payload.incidents ?? []))
+      .catch(() => setIncidents([]));
+  }, [token, apiUrl, roomId]);
   return (
     <form className="settings-wrap" onSubmit={onSave}>
       <aside><div className="slink on">Модерация</div><div className="slink">Права</div></aside>
@@ -294,6 +302,8 @@ export function RoomSettingsScreen({ onSave }: { onSave: (event: FormEvent) => v
         <div className="set-row"><div><b>Голос</b><small>Зрители могут говорить</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
         <div className="set-row"><div><b>Медленный режим</b><small>Одно сообщение в 10 секунд</small></div></div>
         <button className="btn btn-primary" type="submit">Сохранить</button>
+        <h3>Сбои синхронизации</h3>
+        {incidents.length === 0 ? <p>Пока пусто. Храним последние 10.</p> : incidents.map((item) => <p key={item.id}>{item.detail || item.id}</p>)}
       </div>
     </form>
   );

@@ -1,3 +1,7 @@
+export function lastIncidents<T>(items: readonly T[], limit = 10): T[] {
+  return items.slice(0, limit);
+}
+
 export const recoveryActions = ["retry", "open", "replace"] as const;
 
 export function refreshKeepsPlayback(positionMs: number, playing: boolean): { positionMs: number; status: "playing" | "paused" } {

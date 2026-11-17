@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 84 |
+| Done | 85 |
 | Done (needs creds) | 12 |
 | Partial | 20 |
 | Redesign | 7 |
-| Missing | 14 |
+| Missing | 13 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -65,7 +65,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F046 | Low-bandwidth mode | Done | Low bandwidth is a player switch saved on this browser. |
 | F047 | Floating reactions | Partial | Floats can be hidden for other people or for the whole room. Own reactions stay visible when only the personal switch is on. |
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
-| F049 | Sync telemetry | Missing | No incident log. |
+| F049 | Sync telemetry | Done | A sync incident is stored on the room. Settings lists the latest 10. |
 | F050 | Source detection | Partial | 25-source detector and playback plan exist. Not every extractor runs. |
 | F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
 | F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |
