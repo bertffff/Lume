@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 122 |
+| Done | 123 |
 | Done (needs creds) | 12 |
-| Partial | 1 |
+| Partial | 0 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -132,7 +132,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F113 | Host stats | Done | Hosted room count is shown. |
 | F114 | Leaderboards | Done | GET /stats ranks people by XP and lists open rooms. The profile shows that table. |
 | F115 | In-app notifications | Done | The people screen lists unread notices. |
-| F116 | Telegram bot notify | Partial | Telegram sendMessage runs when TELEGRAM_BOT_TOKEN and telegramId are set. |
+| F116 | Telegram bot notify | Done | Settings says whether Telegram notifications are on. |
 | F117 | Email notifications | Done (needs creds) | Email send is skipped until SMTP_HOST is set. Documented in docs/CONFIG.md. |
 | F118 | Web push + service worker | Done (needs creds) | The service worker is registered. Push send is skipped until VAPID_PUBLIC_KEY is set. |
 | F119 | Per-channel × type prefs | Done | All 4 channels and 6 notification types are a grid of switches. |
