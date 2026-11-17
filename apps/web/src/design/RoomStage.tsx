@@ -1,4 +1,4 @@
-import type { RoomLayout } from "@lume/contracts";
+import { shouldHoldForReady, type RoomLayout } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -55,7 +55,8 @@ export function RoomStage({
   const playing = live.state.playback.status === "playing";
   const queue = live.state.queue.filter((item) => item.id !== room.nowPlaying?.id);
   const gruv = style === "gruvbox";
-  const status = `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
+  const waiting = shouldHoldForReady(true, live.state.viewers.filter((viewer) => viewer.phase === "buffering").length);
+  const status = waiting ? "Ждём готовности" : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
 
   function addUrl(event: FormEvent) {
     event.preventDefault();
