@@ -1,4 +1,4 @@
-import type { FormEvent, ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -115,12 +115,15 @@ export function ProfileScreen() {
   );
 }
 
-export function AuthScreen({ onTelegram, name, onName, onEmail }: {
+export function AuthScreen({ onTelegram, name, onName, onEmail, onRegister }: {
   onTelegram: () => void;
   name: string;
   onName: (value: string) => void;
   onEmail: (event: FormEvent) => void;
+  onRegister: (event: FormEvent) => void;
 }) {
+  const [tab, setTab] = useState<"login" | "register">("login");
+  const [password, setPassword] = useState("");
   return (
     <div className="auth-wrap">
       <div className="brand">
@@ -128,13 +131,17 @@ export function AuthScreen({ onTelegram, name, onName, onEmail }: {
         <h1>Смотрим вместе, как будто в одном зале</h1>
         <p>Синхронный просмотр с друзьями. Войдите через Telegram — и сразу в комнату.</p>
       </div>
-      <form className="auth-card" onSubmit={onEmail}>
-        <div className="tabs2"><button type="button" className="tab on">Вход</button><button type="button" className="tab">Регистрация</button></div>
+      <form className="auth-card" onSubmit={tab === "register" ? onRegister : onEmail}>
+        <div className="tabs2">
+          <button type="button" className={tab === "login" ? "tab on" : "tab"} onClick={() => setTab("login")}>Вход</button>
+          <button type="button" className={tab === "register" ? "tab on" : "tab"} onClick={() => setTab("register")}>Регистрация</button>
+        </div>
         <button type="button" className="tg-btn" onClick={onTelegram}>Войти через Telegram</button>
         <div className="or">или почта</div>
         <label className="field">Почта<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder="albert@example.com" /></label>
-        <label className="field">Пароль<input type="password" defaultValue="password" /></label>
-        <button className="btn btn-primary" type="submit" data-testid="lobby-sign-in">Войти</button>
+        <label className="field">Пароль<input name="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+        {tab === "register" ? <label className="field">Имя<input name="displayName" defaultValue={name.split("@")[0] || "Гость"} /></label> : null}
+        <button className="btn btn-primary" type="submit" data-testid="lobby-sign-in">{tab === "register" ? "Создать аккаунт" : "Войти"}</button>
       </form>
     </div>
   );

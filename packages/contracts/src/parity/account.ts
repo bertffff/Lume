@@ -1,3 +1,7 @@
+export function registerAvailability(nodeEnv: string, redisConfigured: boolean): "ok" | "redis_unconfigured" {
+  return nodeEnv === "production" && !redisConfigured ? "redis_unconfigured" : "ok";
+}
+
 export function passwordIssue(password: string): "short" | "long" | "shape" | null {
   if (password.length < 8) return "short";
   if (password.length > 128) return "long";

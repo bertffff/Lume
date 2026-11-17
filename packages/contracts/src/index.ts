@@ -113,6 +113,7 @@ export {
 export {
   allowHit,
   passwordIssue,
+  registerAvailability,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

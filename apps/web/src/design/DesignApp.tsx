@@ -393,7 +393,15 @@ export function DesignApp({
           {view === "notifications" ? <NotificationsScreen /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}
           {view === "auth" ? (
-            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }); }} />
+            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }); }} onRegister={(event) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              void fetch(`${apiUrl}/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name, password: String(data.get("password") ?? ""), displayName: String(data.get("displayName") ?? name) }) })
+                .then((response) => response.json())
+                .then((payload: { accessToken?: string; refreshToken?: string; user?: { id: string; displayName: string } }) => {
+                  if (payload.accessToken && payload.user) onSession({ accessToken: payload.accessToken, ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}), user: payload.user });
+                });
+            }} />
           ) : null}
           {view === "missing" ? <EmptyScreen title="Комната не найдена" body="Кода 7KQ-2M нет или сеанс уже закончился. Проверьте приглашение или создайте свою." action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>На главную</button><button type="button" className="btn btn-primary" onClick={() => go("/create")}>Создать комнату</button></>} /> : null}
           {view === "offline" ? <EmptyScreen title="Нет соединения" body="Похоже, вы офлайн. Проверьте сеть — комната дождётся, когда вы вернётесь." action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Повторить</button>} /> : null}

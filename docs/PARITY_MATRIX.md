@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 72 |
+| Done | 73 |
 | Done (needs creds) | 12 |
-| Partial | 29 |
+| Partial | 28 |
 | Redesign | 7 |
 | Missing | 17 |
 
@@ -17,7 +17,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 
 | ID | Feature | Lume | What is true now |
 | --- | --- | --- | --- |
-| F001 | Email + password register | Partial | Register exists with the old shape rules. Hash is scrypt, not bcrypt. No Redis-down 503. |
+| F001 | Email + password register | Done | Register checks the shape rules, returns 409 on a duplicate email, and 503 when production has no Redis. The auth screen has a registration tab. Hash stays scrypt. |
 | F002 | Email + password login | Done | Login is limited to 20 attempts per 15 minutes per email. |
 | F003 | JWT access + rotating refresh | Done | The browser stores the refresh token and retries a 401 once. shouldRefresh covers the decision. |
 | F004 | Logout with server revocation | Done | POST /auth/logout deletes the refresh token. A revoked token cannot rotate. The sign-out button calls it. |

@@ -4,6 +4,7 @@ import {
   isFavourite,
   levelFromXp,
   passwordIssue,
+  registerAvailability,
   resumeCard,
   tempMuteExpiry,
   type RateBucket,
@@ -46,7 +47,7 @@ export function registerSocialRoutes(
   service: RoomService | null,
 ): void {
   app.post("/auth/register", async (request, reply) => {
-    if (env.NODE_ENV === "production" && !env.REDIS_URL) {
+    if (registerAvailability(env.NODE_ENV, Boolean(env.REDIS_URL)) === "redis_unconfigured") {
       return reply.code(503).send({ error: "redis_unconfigured" });
     }
     if (!prisma || !env.JWT_SECRET) {
