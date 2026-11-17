@@ -27,10 +27,12 @@ const uploads = new Map<string, { bytes: Buffer; type: string }>();
 const magicLinks = new Map<string, MagicRow>();
 
 export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null): void {
-  app.get("/stats", async () => ({
-    watchers: [],
-    parties: [],
-  }));
+  app.get("/stats", async () => {
+    if (!prisma) return { watchers: [], parties: [] };
+    const users = await prisma.user.findMany({ orderBy: { xp: "desc" }, take: 10, select: { id: true, displayName: true, xp: true } });
+    const rooms = await prisma.room.findMany({ where: { status: { not: "ended" } }, orderBy: { createdAt: "desc" }, take: 10, select: { id: true, title: true } });
+    return { watchers: users, parties: rooms };
+  });
 
   app.get("/flags", async () => ({
     smartQueue: true,

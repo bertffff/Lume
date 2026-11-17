@@ -107,8 +107,10 @@ export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: stri
   const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null; watchCount: number }>>([]);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
+  const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number }>>([]);
   useEffect(() => {
     if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/stats`).then((response) => response.json()).then((payload: { watchers?: Array<{ id: string; displayName: string; xp: number }> }) => setRanks(payload.watchers ?? [])).catch(() => setRanks([]));
     void fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { platforms?: Array<{ source: string; count: number }>; topFriends?: Array<{ partnerId: string; seconds: number }> }) => {
@@ -153,6 +155,8 @@ export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: stri
           <div className="stats"><b>14 дней</b> подряд · 142 сеанса</div>
           <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
         </div>
+        <h3>Таблица</h3>
+        {ranks.length === 0 ? <p>Пока пусто</p> : ranks.map((row) => <p key={row.id}>{row.displayName} · {row.xp}</p>)}
         <h3>История просмотров</h3>
         {platforms.length === 0 ? <p>Пока пусто</p> : platforms.map((item) => <p key={item.source}>{item.source} · {item.count}</p>)}
         <h3>Сеансы с друзьями</h3>

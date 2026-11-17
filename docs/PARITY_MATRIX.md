@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 97 |
+| Done | 98 |
 | Done (needs creds) | 12 |
-| Partial | 15 |
+| Partial | 14 |
 | Redesign | 7 |
 | Missing | 6 |
 
@@ -130,7 +130,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |
 | F112 | Engagement widget | Done | The profile shows voice and watch seconds next to each friend from the studio totals. |
 | F113 | Host stats | Done | Hosted room count is shown. |
-| F114 | Leaderboards | Partial | GET /stats exists and returns empty lists. No screen ranks people. |
+| F114 | Leaderboards | Done | GET /stats ranks people by XP and lists open rooms. The profile shows that table. |
 | F115 | In-app notifications | Done | The people screen lists unread notices. |
 | F116 | Telegram bot notify | Partial | Telegram sendMessage runs when TELEGRAM_BOT_TOKEN and telegramId are set. |
 | F117 | Email notifications | Done (needs creds) | Email send is skipped until SMTP_HOST is set. Documented in docs/CONFIG.md. |
