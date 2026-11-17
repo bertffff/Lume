@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 96 |
+| Done | 97 |
 | Done (needs creds) | 12 |
 | Partial | 15 |
 | Redesign | 7 |
-| Missing | 7 |
+| Missing | 6 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -128,7 +128,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F109 | Achievement pin slots | Done | Three pin slots can be filled from earned achievements. |
 | F110 | Activity heatmap | Done | The studio returns 365 days and the people screen marks active ones. |
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |
-| F112 | Engagement widget | Missing | No voice-second total. |
+| F112 | Engagement widget | Done | The profile shows voice and watch seconds next to each friend from the studio totals. |
 | F113 | Host stats | Done | Hosted room count is shown. |
 | F114 | Leaderboards | Partial | GET /stats exists and returns empty lists. No screen ranks people. |
 | F115 | In-app notifications | Done | The people screen lists unread notices. |
