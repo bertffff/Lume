@@ -240,12 +240,14 @@ export function CreateScreen({ title, onTitle, onSubmit }: { title: string; onTi
       <div className="mh"><h2>Создать комнату</h2><span className="sp" /></div>
       <div className="mb">
         <div className="steps"><span className="on" /><span className="on" /><span /></div>
-        <label className="field">Название<input data-testid="lobby-title" value={title} onChange={(event) => onTitle(event.target.value)} /></label>
+        <label className="field">Название<input data-testid="lobby-title" value={title || "Ночной кинозал"} onChange={(event) => onTitle(event.target.value)} /></label>
+        <label className="choice-label">Кто может войти</label>
         <div className="choices">
           <div className="choice"><b>Друзья</b><p>По ссылке, только из списка друзей</p></div>
-          <div className="choice on"><b>По коду</b><p>Кто знает код</p></div>
+          <div className="choice on"><b>По коду</b><p>Кто знает код 7KQ-2M</p></div>
           <div className="choice"><b>Публичная</b><p>Видна в открытых комнатах</p></div>
         </div>
+        <label className="choice-label">Права зрителей по умолчанию</label>
         <div className="choices">
           <div className="choice on"><b>Очередь</b><p>Могут добавлять видео</p></div>
           <div className="choice on"><b>Чат</b><p>Писать и ставить реакции</p></div>
@@ -258,15 +260,15 @@ export function CreateScreen({ title, onTitle, onSubmit }: { title: string; onTi
 }
 
 export function JoinScreen({ code, onCode, onSubmit }: { code: string; onCode: (value: string) => void; onSubmit: (event: FormEvent) => void }) {
-  const cells = (code || "7KQ-2M").replace("-", "").padEnd(6, " ").slice(0, 6).split("");
   return (
     <div className="overlay docked"><form className="modal" onSubmit={onSubmit}>
       <div className="mh"><h2>Войти по коду</h2></div>
       <div className="mb">
-        <div className="codein">{cells.slice(0, 3).map((cell, index) => <i key={index}>{cell}</i>)}<span className="dash">–</span>{cells.slice(3).map((cell, index) => <i key={index} className={cell === " " ? "blank" : ""}>{cell.trim() || "·"}</i>)}</div>
+        <p>Введите код комнаты — шесть знаков, как в приглашении.</p>
+        <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i>2</i><i className="blank">_</i></div>
         <input className="inbox mono" data-testid="lobby-code" value={code} onChange={(event) => onCode(event.target.value)} aria-label="code" />
       </div>
-      <div className="mf"><button className="btn btn-social" type="submit" data-testid="lobby-join">Войти</button></div>
+      <div className="mf"><button type="button" className="btn btn-ghost">Отмена</button><button className="btn btn-social" type="submit" data-testid="lobby-join">Войти</button></div>
     </form></div>
   );
 }
@@ -280,7 +282,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
         <h3>Создай или найди комнату</h3>
         <p>Создай свою, зайди к друзьям или введи код приглашения. Это займёт секунды.</p>
       </div>
-      <div className="mf"><button type="button" className="btn btn-primary" onClick={onDone}>Дальше</button></div>
+      <div className="mf"><button type="button" className="btn btn-ghost" onClick={onDone}>Пропустить</button><button type="button" className="btn btn-primary" onClick={onDone}>Дальше</button></div>
     </div></div>
   );
 }

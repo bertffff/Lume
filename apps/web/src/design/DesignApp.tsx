@@ -565,17 +565,21 @@ function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "
             </div>
           ) : null}
           {rail === "chat" ? <>
-          <div className="pin"><span className="bar" /><div><b>Закреплено · Лиза</b>После фильма — голосуем за следующий в очереди</div></div>
+          <div className="pin"><span className="bar" /><div><b>Закреплено · <span className="nm p-lisa">Лиза</span></b>После фильма — голосуем за следующий в очереди</div></div>
           <div className="log">
-            {demoMessages.map((message, index) => "system" in message && message.system ? (
-              <span className="sys" key={index}>{message.text}</span>
-            ) : (
-              <div className={"mine" in message && message.mine ? "m mine" : "m"} key={index}>
-                {"name" in message ? <span className={`av p-${message.hue}`}>{initials(message.name)}</span> : null}
-                <div className="bu">{"name" in message ? <div className={`n p-${message.hue}`}>{message.name}</div> : null}{"body" in message ? message.body : ""}</div>
-              </div>
-            ))}
+            <span className="sys"><span className="nm p-mark">Марк</span> зашёл в комнату</span>
+            <div className="m"><span className="av p-dasha">ДС</span><div className="bu"><div className="n p-dasha">Даша</div>я с попкорном, начинайте</div></div>
+            <span className="sys"><span className="nm p-lisa">Лиза</span> поставила на паузу · 01:02:10</span>
+            <div className="m"><span className="av p-artem">АТ</span><div className="bu"><div className="n p-artem">Артём</div><span className="tc">01:11:58</span>вот этот кадр с фарами — прям обои<div className="rs"><span className="me">🔥 3</span><span>😮 1</span></div></div></div>
+            <div className="m"><span className="av p-lisa">ЛМ</span><div className="bu"><div className="n p-lisa">Лиза <span className="tg">ведущая</span></div><span className="q"><b>Артём</b>вот этот кадр с фарами…</span>Оператор тот же, что в «Ночном рейсе»</div></div>
+            <div className="m mine"><div className="bu">Ого, не знал. Надо пересмотреть</div></div>
+            <div className="m"><span className="av p-mark">МК</span><div className="bu"><div className="n p-mark">Марк</div>кто-нибудь ещё буферится? у меня 2 сек</div></div>
+            <span className="sys"><span className="nm p-mark">Марк</span> догнал комнату</span>
+            <div className="typ">Даша печатает…</div>
           </div>
+          <div className="slow">Медленный режим · одно сообщение в 10 с</div>
+          <div className="quick"><span>🔥</span><span>😂</span><span>😮</span><span>❤️</span><span>👏</span></div>
+          <div className="comp"><div className="in"><span className="sp">Написать в комнату…</span></div><button type="button" className="send">➤</button></div>
           </> : null}
         </aside>}
       </div>
