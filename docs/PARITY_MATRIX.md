@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 94 |
+| Done | 95 |
 | Done (needs creds) | 13 |
-| Partial | 26 |
+| Partial | 25 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -82,7 +82,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
 | F064 | SearXNG search | Done (needs creds) | The queue has a search box. It stays empty until SEARXNG_URL is set. |
 | F065 | Cobalt services list | Done | GET /video/services lists Cobalt only when COBALT_API_URL is set. Settings shows that list. |
-| F066 | Video detect endpoint | Partial | The live queue calls POST /video/detect and shows the source. The route forces premium false and there is no integration test. |
+| F066 | Video detect endpoint | Done | POST /video/detect uses the caller's saved premium flag. The live queue shows source and plan. |
 | F067 | Shared queue | Done | Reorder, a pending line, and a duplicate URL rejection are in place. |
 | F068 | Queue history | Partial | The queue shows a history count. There is no way to clear history. |
 | F069 | Queue recommendations | Partial | The live queue can show the first discovery title. It does not add that suggestion. |

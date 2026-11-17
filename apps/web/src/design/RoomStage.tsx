@@ -96,9 +96,9 @@ export function RoomStage({
     const next = url.trim();
     if (!next) return;
     live?.addQueue(next);
-    void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
+    void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
       .then((response) => response.json())
-      .then((payload: { source?: string | null }) => setDetected(payload.source ?? "unknown"))
+      .then((payload: { source?: string | null; plan?: { type?: string } }) => setDetected(`${payload.source ?? "unknown"}${payload.plan?.type ? `:${payload.plan.type}` : ""}`))
       .catch(() => setDetected(null));
     setUrl("");
   }

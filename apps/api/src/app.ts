@@ -50,7 +50,7 @@ export async function buildApp(
   registerRoomRoutes(app, env, service, options?.prisma ?? null);
   registerVoiceRoutes(app, env, service);
   registerSocialRoutes(app, env, options?.prisma ?? null, service);
-  registerVideoRoutes(app, env);
+  registerVideoRoutes(app, env, options?.prisma ?? null);
   registerExtraRoutes(app, env, options?.prisma ?? null);
 
   app.setErrorHandler((error, _request, reply) => {

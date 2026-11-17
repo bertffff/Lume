@@ -1,9 +1,11 @@
 import { detectSource, needsRange, planPlayback, refreshKeepsPlayback, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
+import { verifyAccessToken } from "@lume/contracts/node";
+import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ApiEnv } from "../env.js";
 
-export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv): void {
+export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null = null): void {
   app.get("/video/range", async (request, reply) => {
     const query = z.object({ url: z.string().url() }).safeParse(request.query);
     if (!query.success || urlBlocked(query.data.url)) return reply.code(400).send({ error: "blocked" });
@@ -26,7 +28,18 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv): void {
     const body = z.object({ url: z.string().min(1) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
     const source = detectSource(body.data.url);
-    return reply.send({ source: source?.id ?? null, plan: planPlayback({ url: body.data.url, premium: false }) });
+    let premium = false;
+    const header = request.headers.authorization;
+    if (prisma && env.JWT_SECRET && header?.startsWith("Bearer ")) {
+      try {
+        const actor = await verifyAccessToken(env.JWT_SECRET, header.slice("Bearer ".length));
+        const user = await prisma.user.findUnique({ where: { id: actor.userId }, select: { isPremium: true } });
+        premium = Boolean(user?.isPremium);
+      } catch {
+        premium = false;
+      }
+    }
+    return reply.send({ source: source?.id ?? null, plan: planPlayback({ url: body.data.url, premium }) });
   });
 
   app.get("/video/search", async (request, reply) => {
