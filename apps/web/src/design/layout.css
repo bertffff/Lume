@@ -103,7 +103,19 @@ html[data-style="gruvbox"] .design-app .panel{border-radius:0}
 .design-app.is-narrow .bell,.design-app.is-narrow .me,.design-app.is-narrow .side{display:none}
 .design-app.is-narrow .rc{display:grid;grid-template-columns:96px 1fr;align-items:center}
 .design-app.is-narrow .rc .th{height:52px;min-height:0}
-.design-app.is-narrow .tabbar{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);height:56px;border-top:1px solid var(--line);background:var(--bg)}
+.design-app.is-narrow .tabbar{display:none}
+.design-app.is-narrow .tile{min-height:0}
+.design-app.is-narrow .tile.resume{min-height:112px}
+.design-app.is-narrow .tile.create{min-height:100px}
+.design-app.is-narrow .greet h1{font:600 22px/26px var(--font-display, var(--font))}
+.design-app.is-narrow .stories{gap:12px;margin:10px 0 12px}
+.design-app.is-narrow .st{width:64px}
+.design-app.is-narrow .st .ring{width:56px;height:56px}
+.design-app.is-narrow .pad{padding:0 14px 16px}
+.cinema-room .unavail{position:absolute;inset:0;background:rgba(10,8,7,.72);display:grid;place-items:center;text-align:center;padding:22px}
+.cinema-room .unavail h2{color:#F3EDE6}
+.cinema-room .rail-list{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.design-app{position:relative}
 .design-app.is-narrow .tabbar button{background:none;border:0;color:var(--text-2);font-size:12px}
 @media (max-width: 800px){
   .design-app .wrap,.design-app .room-grid,.design-app .acts,.design-app .rooms,.design-app .results,.design-app .shop,.design-app .page-screen{grid-template-columns:1fr}

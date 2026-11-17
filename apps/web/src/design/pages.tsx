@@ -227,7 +227,11 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   return (
     <div className="overlay"><div className="modal">
       <div className="mh"><h2>Добро пожаловать в lume</h2><span>1 / 3</span></div>
-      <div className="mb"><p>Выберите стиль, пригласите друга и включите голос, когда будете готовы.</p></div>
+      <div className="mb">
+        <div className="steps"><span className="on" /><span /><span /></div>
+        <h3>Создай или найди комнату</h3>
+        <p>Создай свою, зайди к друзьям или введи код приглашения. Это займёт секунды.</p>
+      </div>
       <div className="mf"><button type="button" className="btn btn-primary" onClick={onDone}>Дальше</button></div>
     </div></div>
   );

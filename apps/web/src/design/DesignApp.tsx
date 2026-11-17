@@ -226,10 +226,12 @@ export function DesignApp({
         </nav>
       )}
       {view === "room" && roomId ? room : null}
-      {view === "room" && !roomId ? <RoomPreview /> : null}
+      {(view === "room" || view === "notifications" || view === "members" || view === "queue" || view === "unavailable") && !roomId ? (
+        <RoomPreview rail={view === "members" ? "people" : view === "queue" ? "queue" : "chat"} unavailable={view === "unavailable"} />
+      ) : null}
       {view === "home" && style === "gruvbox" ? <GruvboxHome demo={demo} /> : null}
       {view === "home" && narrow && style !== "gruvbox" ? <MobileHome /> : null}
-      {(view === "home" || view === "create" || view === "join" || view === "onboarding" || view === "notifications") && style !== "gruvbox" && !narrow ? (
+      {(view === "home" || view === "create" || view === "join" || view === "onboarding") && style !== "gruvbox" && !narrow ? (
         <div className="wrap screen-scroll">
           <main>
             <div className="greet">
@@ -393,14 +395,13 @@ export function DesignApp({
           {view === "auth" ? (
             <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }); }} />
           ) : null}
-          {view === "missing" ? <EmptyScreen title={text.missing} action={<button type="button" onClick={() => go("/")}>{text.enter}</button>} /> : null}
-          {view === "offline" ? <EmptyScreen title={text.offline} action={<button type="button" onClick={() => window.location.reload()}>{text.refresh}</button>} /> : null}
-          {view === "unavailable" ? <EmptyScreen title={text.unavailable} body={text.unavailableBody} action={<button type="button" onClick={() => go("/search")}>{text.replace}</button>} /> : null}
-          {view === "members" ? <MembersScreen /> : null}
+          {view === "missing" ? <EmptyScreen title="Комната не найдена" body="Кода 7KQ-2M нет или сеанс уже закончился. Проверьте приглашение или создайте свою." action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>На главную</button><button type="button" className="btn btn-primary" onClick={() => go("/create")}>Создать комнату</button></>} /> : null}
+          {view === "offline" ? <EmptyScreen title="Нет соединения" body="Похоже, вы офлайн. Проверьте сеть — комната дождётся, когда вы вернётесь." action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Повторить</button>} /> : null}
+          {view === "members" ? null : null}
           {view === "room-settings" ? (
             <RoomSettingsScreen onSave={(event) => { event.preventDefault(); if (!session || !roomId) return; void fetch(`${apiUrl}/rooms/${roomId}/defaults`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ canChat: true, canSpeak: true }) }); }} />
           ) : null}
-          {view === "queue" ? <QueueScreen /> : null}
+          {view === "queue" ? null : null}
         </Page>
       ) : null}
       {narrow && view === "home" ? (
@@ -424,7 +425,7 @@ export function DesignApp({
   );
 }
 
-function RoomPreview() {
+function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "people" | "queue"; unavailable?: boolean }) {
   const gruv = document.documentElement.dataset.style === "gruvbox";
   return (
     <div className={gruv ? "g-room" : "cinema-room"}>
@@ -474,7 +475,18 @@ function RoomPreview() {
           </>
         ) : null}
         {gruv ? null : <section className="player-col">
-          <div className="stage-card"><div className="top-ov"><span className="pill">Пустая дорога — режиссёрская версия</span></div></div>
+          <div className="stage-card">
+            <div className="top-ov"><span className="pill">Пустая дорога — режиссёрская версия</span></div>
+            {unavailable ? (
+              <div className="unavail">
+                <h2>Видео недоступно</h2>
+                <p>Источник не отвечает. Ведущая может обновить ссылку или заменить ролик.</p>
+                <div className="inbox">https://youtu.be/…</div>
+                <button type="button" className="btn btn-outline">Открыть на платформе</button>
+                <button type="button" className="btn btn-primary">Заменить видео</button>
+              </div>
+            ) : null}
+          </div>
           <div className="ctl">
             <button type="button" className="play">II</button>
             <span className="time">01:12:44 <span>/ 02:03:10</span></span>
@@ -502,7 +514,32 @@ function RoomPreview() {
           </div>
         </section>}
         {gruv ? null : <aside className="rail">
-          <div className="tabs"><span className="tab on">Чат <span className="n">12</span></span><span className="tab">Люди <span className="n">6</span></span><span className="tab">Очередь <span className="n">3</span></span></div>
+          <div className="tabs">
+            <span className={rail === "chat" ? "tab on" : "tab"}>Чат <span className="n">12</span></span>
+            <span className={rail === "people" ? "tab on" : "tab"}>Люди <span className="n">6</span></span>
+            <span className={rail === "queue" ? "tab on" : "tab"}>Очередь <span className="n">3</span></span>
+          </div>
+          {rail === "people" ? (
+            <div className="rail-list">
+              <div className="eyebrow">Ведущая</div>
+              <div className="row"><span className="av p-lisa">ЛМ</span><div><b className="n p-lisa">Лиза</b><small>говорит · ведущая</small></div></div>
+              <div className="eyebrow">В комнате</div>
+              <div className="row"><span className="av p-me">АВ</span><div><b className="n p-me">Альберт</b><small>вы · в голосе</small></div></div>
+              <div className="row"><span className="av p-artem">АТ</span><div><b className="n p-artem">Артём</b><small>в голосе</small></div></div>
+              <div className="row"><span className="av p-mark">МК</span><div><b className="n p-mark">Марк</b><small>микрофон выкл</small></div></div>
+            </div>
+          ) : null}
+          {rail === "queue" ? (
+            <div className="rail-list">
+              <button type="button" className="btn btn-primary">Добавить видео</button>
+              <div className="eyebrow">Сейчас</div>
+              <div className="row"><b>Пустая дорога</b><small>01:12:44 / 02:03:10 · Лиза</small></div>
+              <div className="eyebrow">Дальше · пропуск 2 из 4</div>
+              <div className="row"><b>Город после дождя</b><small>Артём · 4 голоса</small></div>
+              <div className="row"><b>Лес, который помнит</b><small>Даша · 2 голоса</small></div>
+            </div>
+          ) : null}
+          {rail === "chat" ? <>
           <div className="pin"><span className="bar" /><div><b>Закреплено · Лиза</b>После фильма — голосуем за следующий в очереди</div></div>
           <div className="log">
             {demoMessages.map((message, index) => "system" in message && message.system ? (
@@ -514,6 +551,7 @@ function RoomPreview() {
               </div>
             ))}
           </div>
+          </> : null}
         </aside>}
       </div>
       {gruv ? <footer className="status"><span className="sl-mode">ROOM</span><span className="sl-mid">:</span></footer> : null}
