@@ -1,5 +1,6 @@
 import {
   canControlPlayback,
+  holdPlaybackOp,
   hostLeavePauses,
   castSkipVote,
   chatReactSchema,
@@ -313,15 +314,16 @@ async function control(
     fail(socket, { code: "forbidden", message: "only the host or a mod moves playback" });
     return;
   }
-  const result = await commitPlayback(
-    redis.pub,
-    parsed.data.roomId,
+  const viewers = await listViewerPhases(redis.pub, parsed.data.roomId);
+  const buffering = viewers.filter((viewer) => viewer.phase === "buffering").length;
+  const requested =
     op.type === "seek"
-      ? { type: "seek", actorId: actor.userId, positionMs: op.positionMs }
+      ? { type: "seek" as const, actorId: actor.userId, positionMs: op.positionMs }
       : parsed.data.positionMs === undefined
         ? { type: op.type, actorId: actor.userId }
-        : { type: op.type, actorId: actor.userId, positionMs: parsed.data.positionMs },
-  );
+        : { type: op.type, actorId: actor.userId, positionMs: parsed.data.positionMs };
+  const held = holdPlaybackOp(requested, buffering);
+  const result = await commitPlayback(redis.pub, parsed.data.roomId, held);
   if (result === "version_conflict") {
     fail(socket, { code: "version_conflict", message: "playback write lost the race" });
     return;

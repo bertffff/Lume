@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 91 |
+| Done | 92 |
 | Done (needs creds) | 13 |
-| Partial | 29 |
+| Partial | 28 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -55,7 +55,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F036 | Adaptive drift correction | Done | Followers use the drift plan: soft rate on HTML5, hard seek, anti-loop, and buffer grace. |
 | F037 | Host heartbeats | Done | The host emits playback:heartbeat every second. heartbeatLag is tested. |
 | F038 | Sync indicator | Done | The player shows synced, syncing, lagging, or waiting, and a resync button seeks to the server clock. |
-| F039 | Buffering / ready | Partial | The sync line calls the ready gate with the wait flag hard-coded on. Playback is not held. |
+| F039 | Buffering / ready | Done | The sync engine turns play into pause while any viewer is buffering. The live room shows that hold. |
 | F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
 | F041 | Video URL refresh | Done | POST /video/refresh keeps the current time and play state. The unavailable card calls it. A scheduled refresher is still not running. |
 | F042 | Player error recovery | Partial | Retry, open, and replace are on the shot preview, not on a live player error. |

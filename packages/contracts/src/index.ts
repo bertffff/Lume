@@ -172,6 +172,7 @@ export {
   shouldRecordWatch,
   hlsProxyUrl,
   shouldHoldForReady,
+  holdPlaybackOp,
   typingLine,
   dayScore,
   gestureDelta,

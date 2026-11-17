@@ -177,6 +177,16 @@ export function shouldHoldForReady(wait: boolean, buffering: number): boolean {
   return wait && buffering > 0;
 }
 
+export function holdPlaybackOp<T extends { type: "play" | "pause" | "seek" }>(
+  op: T,
+  bufferingCount: number,
+): T {
+  if (op.type === "play" && shouldHoldForReady(bufferingCount > 0, bufferingCount)) {
+    return { ...op, type: "pause" };
+  }
+  return op;
+}
+
 export function hlsProxyUrl(apiBase: string, source: string): string {
   return `${apiBase}/video/hls-proxy?url=${encodeURIComponent(source)}`;
 }

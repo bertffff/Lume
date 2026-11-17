@@ -1,4 +1,4 @@
-import { decideCas, initialPlayback } from "@lume/contracts";
+import { decideCas, holdPlaybackOp, initialPlayback } from "@lume/contracts";
 import { describe, expect, it } from "vitest";
 import { commitPlayback } from "./playback.js";
 
@@ -45,5 +45,16 @@ describe("playback cas", () => {
       expect(paused.status).toBe("paused");
       expect(paused.version).toBe(playing.version + 1);
     }
+  });
+
+  it("stores a pause when play is held for a buffering viewer", async () => {
+    const redis = memoryRedis();
+    const held = holdPlaybackOp({ type: "play" as const, actorId: "host" }, 1);
+    expect(held.type).toBe("pause");
+    const stored = await commitPlayback(redis, "room-hold", held);
+    expect(stored).not.toBe("version_conflict");
+    if (stored !== "version_conflict") expect(stored.status).toBe("paused");
+    const free = holdPlaybackOp({ type: "play" as const, actorId: "host" }, 0);
+    expect(free.type).toBe("play");
   });
 });

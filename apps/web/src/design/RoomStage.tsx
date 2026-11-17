@@ -79,7 +79,8 @@ export function RoomStage({
   const playing = live.state.playback.status === "playing";
   const queue = live.state.queue.filter((item) => item.id !== room.nowPlaying?.id);
   const gruv = style === "gruvbox";
-  const waiting = shouldHoldForReady(true, live.state.viewers.filter((viewer) => viewer.phase === "buffering").length);
+  const bufferingCount = live.state.viewers.filter((viewer) => viewer.phase === "buffering").length;
+  const waiting = shouldHoldForReady(bufferingCount > 0, bufferingCount);
   const status = waiting ? "Ждём готовности" : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
 
   function addUrl(event: FormEvent) {
@@ -118,6 +119,7 @@ export function RoomStage({
             <span className="spacer" />
             <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
               <button type="button" data-testid="sync-incident" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) })}>Сбой</button>
+              <button type="button" data-testid="report-buffering" onClick={() => live.reportViewer("buffering")}>Буфер</button>
             </div>
             <div className="who">
               <div className="stack">
