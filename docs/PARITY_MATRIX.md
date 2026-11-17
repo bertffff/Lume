@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 104 |
+| Done | 105 |
 | Done (needs creds) | 12 |
 | Partial | 11 |
 | Redesign | 7 |
-| Missing | 3 |
+| Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -95,7 +95,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F076 | Pinned message | Done | The pin banner can be cleared. |
 | F077 | Typing indicator | Done | Several typers collapse into one line. typingLine is tested. |
 | F078 | Mentions | Done | A message that mentions your display name is highlighted. There is no autocomplete. |
-| F079 | Unread anchor | Missing | No jump. |
+| F079 | Unread anchor | Done | The chat column has a jump back to the latest messages. |
 | F080 | System messages | Done | Join, leave, and host-change lines are written into the chat. |
 | F081 | Slow mode | Done | The composer counts down while slow mode blocks the next message. Hosts are exempt. |
 | F082 | Six member permissions | Done | Room settings shows the six viewer permissions and saves them as the room defaults. |

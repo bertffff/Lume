@@ -580,7 +580,7 @@ function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "
           </div>
           <div className="slow">Медленный режим · одно сообщение в 10 с</div>
           <div className="quick"><span>🔥</span><span>😂</span><span>😮</span><span>❤️</span><span>👏</span></div>
-          <div className="comp"><div className="in"><span className="sp">Написать в комнату…</span></div><button type="button" className="send">➤</button></div>
+          <div className="comp"><button type="button" onClick={(event) => event.currentTarget.closest(".rail")?.querySelector(".log")?.scrollTo({ top: 0 })}>К новым</button><div className="in"><span className="sp">Написать в комнату…</span></div><button type="button" className="send">➤</button></div>
           </> : null}
         </aside>}
       </div>
