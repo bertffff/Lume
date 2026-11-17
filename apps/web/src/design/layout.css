@@ -97,8 +97,17 @@ html[data-style="gruvbox"] .design-app .tr-side{border-radius:0}
 html[data-style="gruvbox"] .design-app .panel{border-radius:0}
 .design-app .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line, var(--bg2))}
 .design-app .lead{color:var(--text-2);margin-bottom:18px}
+.design-app .page-screen{min-height:calc(100vh - 64px);padding:28px;display:grid;grid-template-columns:220px 1fr;gap:24px;background:var(--bg)}
+.design-app .page-screen h1{font:600 28px/34px var(--font-display, var(--font));margin:12px 0}
+.design-app.is-narrow .search-lg{width:auto;flex:1;height:38px}
+.design-app.is-narrow .bell,.design-app.is-narrow .me,.design-app.is-narrow .side{display:none}
+.design-app.is-narrow .rc{display:grid;grid-template-columns:96px 1fr;align-items:center}
+.design-app.is-narrow .rc .th{height:52px;min-height:0}
+.design-app.is-narrow .tabbar{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);height:56px;border-top:1px solid var(--line);background:var(--bg)}
+.design-app.is-narrow .tabbar button{background:none;border:0;color:var(--text-2);font-size:12px}
 @media (max-width: 800px){
-  .design-app .wrap,.design-app .room-grid,.design-app .acts,.design-app .rooms,.design-app .results,.design-app .shop{grid-template-columns:1fr}
+  .design-app .wrap,.design-app .room-grid,.design-app .acts,.design-app .rooms,.design-app .results,.design-app .shop,.design-app .page-screen{grid-template-columns:1fr}
   .design-app .search-lg{width:auto;flex:1}
   .design-app .nav{padding:0 12px;gap:8px}
+  .design-app .side{display:none}
 }

@@ -16,7 +16,15 @@
 .cinema-room .bare-stage .tr-embed,.cinema-room .bare-stage .tr-empty{width:100%;height:100%}
 .cinema-room.is-narrow{height:auto;min-height:100vh;display:flex;flex-direction:column}
 .cinema-room.is-narrow .body{display:flex;flex-direction:column}
-.cinema-room.is-narrow .rail{min-height:320px}
+.cinema-room.is-narrow .rail{min-height:240px}
+.cinema-room.is-narrow .stage-card{height:200px;flex:none;border-radius:0}
+.cinema-room.is-narrow .top{height:48px}
+.cinema-room.is-narrow .low{position:relative}
+.cinema-room.is-narrow .sheet-tab{width:100%;height:36px;border:0;border-top:1px solid var(--line);background:var(--s1);color:var(--text)}
+.g-room{height:100vh;display:grid;grid-template-rows:32px 1fr 24px;background:var(--bg);color:var(--text)}
+.g-room .body{display:grid;grid-template-columns:1.4fr .8fr;min-height:0}
+.g-room .player-col,.g-room .irc{min-height:0;overflow:auto;border:1px solid var(--line)}
+.g-room .status{display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--s1);border-top:1px solid var(--line)}
 .design-app.is-narrow .wrap{display:flex;flex-direction:column;height:auto;overflow:visible}
 .design-app.is-narrow .rooms{display:flex;flex-direction:column}
 .design-app.is-narrow .acts{grid-template-columns:1fr}
@@ -57,7 +65,11 @@
 .g-room .status input{flex:1;background:transparent;border:0;color:inherit;font:inherit}
 .g-home .acts,.g-home .rooms{gap:10px}
 .g-home .tile,.g-home .rc .th{border-radius:0;border:1px solid var(--bg2)}
+.g-home.wrap{display:grid;grid-template-columns:1.1fr 1.2fr .9fr;grid-template-rows:1fr auto;gap:8px;padding:8px;height:calc(100vh - 56px)}
+.g-home .srow{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:6px 8px}
+.g-home .srow.on{background:var(--bg2)}
 .g-home .tile.create{background:var(--yellow,#fabd2f);color:#1d2021}
+.icon{width:16px;height:16px;display:inline-block;vertical-align:middle}
 @media (max-width: 800px){
   .cinema-room .body,.g-room .body,.cinema-room .low,.g-room .low{grid-template-columns:1fr}
   .cinema-room .rail{border-left:0;border-top:1px solid var(--line)}

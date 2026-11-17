@@ -208,7 +208,7 @@ export function DesignApp({
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
           {demo ? (
-            <div className="search-lg"><i className="ph ph-magnifying-glass" />Найти видео или комнату<span className="kbd">/</span></div>
+            <div className="search-lg"><Icon name="search" />Найти видео или комнату<span className="kbd">/</span></div>
           ) : (
             <label className="search-lg">
               <input aria-label={text.search} placeholder={text.search} value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => go("/search")} />
@@ -216,8 +216,8 @@ export function DesignApp({
             </label>
           )}
           <div style={{ flex: 1 }} />
-          <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><i className="ph ph-bell" /><span className="badge-dot" /></button>
-          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><i className="ph ph-sun" /><i className="ph ph-moon" /></button>
+          <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><Icon name="bell" /><span className="badge-dot" /></button>
+          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><Icon name="sun" /><Icon name="moon" /></button>
           <button type="button" className="me" onClick={() => go("/profile")}>
             <span className="av p-me">{demo ? "АВ" : initials(session?.user.displayName ?? "?")}</span>
             <span className="nm p-me">{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
@@ -226,8 +226,9 @@ export function DesignApp({
       )}
       {view === "room" && roomId ? room : null}
       {view === "room" && !roomId ? <RoomPreview /> : null}
-      {view === "home" ? (
-        <div className={style === "gruvbox" ? "wrap screen-scroll g-home" : "wrap screen-scroll"}>
+      {view === "home" && style === "gruvbox" ? <GruvboxHome demo={demo} /> : null}
+      {view === "home" && style !== "gruvbox" ? (
+        <div className="wrap screen-scroll">
           <main>
             <div className="greet">
               <h1>{text.evening}{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1>
@@ -279,14 +280,14 @@ export function DesignApp({
                   </div>
                 </button>
                 <form className="tile create" onSubmit={(event) => void createRoom(event)}>
-                  <div className="ic"><i className="ph-bold ph-plus" /></div>
+                  <div className="ic"><Icon name="plus" /></div>
                   <h3>{text.create}</h3>
                   <p>{text.createHint}</p>
                   {demo ? null : <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />}
                   {demo ? null : <button type="submit" data-testid="lobby-create">{text.create}</button>}
                 </form>
                 <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
-                  <div className="ic"><i className="ph-bold ph-key" /></div>
+                  <div className="ic"><Icon name="key" /></div>
                   <h3>{text.join}</h3>
                   <p>{demo ? "Код комнаты из шести знаков" : text.joinHint}</p>
                   {demo ? (
@@ -493,6 +494,14 @@ export function DesignApp({
           {view === "queue" ? <p>{text.search}</p> : null}
         </Page>
       ) : null}
+      {narrow && view === "home" ? (
+        <nav className="tabbar">
+          <button type="button" onClick={() => go("/")}>Главная</button>
+          <button type="button" onClick={() => go("/search")}>Поиск</button>
+          <button type="button" onClick={() => go("/notifications")}>Звонок</button>
+          <button type="button" onClick={() => go("/profile")}>Я</button>
+        </nav>
+      ) : null}
       {style === "gruvbox" ? (
         <footer className="status">
           <span className="sl-mode">{view.toUpperCase()}</span>
@@ -573,11 +582,50 @@ function RoomPreview() {
 
 function Page({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
-    <div className="overlay">
-      <section className="modal" role="dialog" aria-label={title}>
-        <header className="mh"><h2>{title}</h2><span className="sp" /><button type="button" onClick={onClose}>×</button></header>
-        <div className="mb">{children}</div>
+    <section className="page-screen" data-page={title}>
+      <aside>
+        <button type="button" className="btn btn-outline" onClick={onClose}>Назад</button>
+        <h1>{title}</h1>
+      </aside>
+      <div>{children}</div>
+    </section>
+  );
+}
+
+function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "key" }) {
+  const path = {
+    search: "M11 11l4 4M7.5 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z",
+    bell: "M12 20a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-5V10a6 6 0 1 0-12 0v5l-2 2h16z",
+    sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0-4v2m0 12v2M4 12H2m20 0h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19",
+    moon: "M16 14.5A6.5 6.5 0 0 1 9.5 4 6.5 6.5 0 1 0 16 14.5z",
+    plus: "M12 5v14M5 12h14",
+    key: "M14 8a4 4 0 1 0-3.2 6.4L8 17v2H6v2H4v-2.8l6.1-6.1A4 4 0 0 0 14 8z",
+  }[name];
+  return (
+    <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function GruvboxHome({ demo }: { demo: boolean }) {
+  if (!demo) return <p className="lead">Войдите, чтобы открыть сессии.</p>;
+  return (
+    <div className="g-home wrap">
+      <section className="pane"><div className="pt">#сессии <span className="dim">4</span></div>
+        <div className="srow on"><span>&gt;</span><b>Ночной кинозал</b><span>6</span><span>live</span></div>
+        <div className="srow"><b>Пятничный звук</b><span>38</span><span>live</span></div>
+        <div className="srow"><b>Нуар по средам</b><span>12</span><span>live</span></div>
+        <div className="srow"><b>Документалки</b><span>--</span><span>22:00</span></div>
       </section>
+      <section className="pane"><div className="pt">~продолжить</div>
+        <h2>Пустая дорога — режиссёрская версия</h2>
+        <p>ночной кинозал · 6 · 01:12:44</p>
+      </section>
+      <section className="pane"><div className="pt">:new</div><h3>создать комнату</h3><p>:new</p></section>
+      <section className="pane"><div className="pt">:join</div><h3>войти по коду</h3><p>7KQ-2M</p></section>
+      <section className="pane"><div className="pt">#сезон</div><div className="heat-grid">{heatCells.slice(0, 49).map((name, index) => <i key={index} className={name} />)}</div></section>
+      <section className="pane"><div className="pt">#афиша</div><p>Пятничный звук · 38</p></section>
     </div>
   );
 }
