@@ -26,7 +26,10 @@ export async function buildApp(
     ? new RoomService(createPrismaRepository(options.prisma), undefined, undefined, fetchOEmbedTitle)
     : null;
 
-  await app.register(cors, { origin: env.WEB_ORIGIN });
+  await app.register(cors, {
+    origin: env.WEB_ORIGIN,
+    methods: ["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE"],
+  });
   const limiter = env.REDIS_URL ? new Redis(env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false }) : null;
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0] ?? request.url;

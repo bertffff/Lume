@@ -784,6 +784,7 @@ async function profileOf(prisma: PrismaClient, userId: string, includePrivate: b
     xp: user.xp,
     level: levelFromXp(user.xp),
     isPremium: user.isPremium,
+    hideOtherReactions: user.hideOtherReactions,
     stats: {
       parties: user.totalParties,
       messages: user.totalMessages,

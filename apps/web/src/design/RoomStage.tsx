@@ -41,6 +41,7 @@ export function RoomStage({
   const [voiceSeconds, setVoiceSeconds] = useState(0);
   const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
   const [playerError, setPlayerError] = useState<string | null>(null);
+  const [hideOther, setHideOther] = useState(false);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -62,6 +63,12 @@ export function RoomStage({
         .catch(() => setTip(null));
     }
     void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIceUrl(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIceUrl(null));
+    if (token) {
+      void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
+        .then((response) => response.json())
+        .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions)))
+        .catch(() => setHideOther(false));
+    }
     const onResize = () => setNarrow(window.innerWidth < 800);
     window.addEventListener("resize", onResize);
     return () => {
@@ -121,6 +128,13 @@ export function RoomStage({
             <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
               <button type="button" data-testid="sync-incident" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) })}>Сбой</button>
               <button type="button" data-testid="report-buffering" onClick={() => live.reportViewer("buffering")}>Буфер</button>
+              <button type="button" data-testid="hide-other-reactions" onClick={() => {
+                const next = !hideOther;
+                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: next }) })
+                  .then(() => fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${live.accessToken}` } }))
+                  .then((response) => response.json())
+                  .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions)));
+              }}>Скрыть чужие</button>
             </div>
             <div className="who">
               <div className="stack">
@@ -153,8 +167,8 @@ export function RoomStage({
                 </form>
               </div>
             ) : null}
-            <div className="flo">
-              {live.floats.slice(-2).map((float) => (
+            <div className="flo" data-testid="float-log" data-hide-other={hideOther ? "true" : "false"}>
+              {live.floats.filter((float) => !hideOther || float.userId === live.selfId).slice(-2).map((float) => (
                 <div className="fb" key={float.id}><span>{float.emoji}</span></div>
               ))}
             </div>
