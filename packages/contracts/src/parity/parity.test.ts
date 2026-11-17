@@ -24,7 +24,7 @@ import { rewriteHlsManifest } from "./manifest.js";
 import { allowsAction, allowsModeration, defaultViewerPermissions } from "./permissions.js";
 import { buildDigest, inQuietHours, nextDigestAt } from "./quiet.js";
 import { decideFriendRequest, canToggleReaction, extractTimecodeSeconds, mentionsUser } from "./social.js";
-import { detectSource, planPlayback } from "./sources.js";
+import { detectSource, planPlayback, sourceRules } from "./sources.js";
 import { hostnameBlocked, ipBlocked, urlBlocked, dnsPinned } from "./ssrf.js";
 import {
   autoQuality,
@@ -182,6 +182,7 @@ describe("parity rules", () => {
     expect(detectSource("https://youtu.be/abc")?.id).toBe("youtube");
     expect(detectSource("https://vk.com/video-1_2")?.id).toBe("vk");
     expect(detectSource("https://rutube.ru/video/abc/")?.id).toBe("rutube");
+    expect(sourceRules.length).toBeGreaterThanOrEqual(24);
     expect(planPlayback({ url: "https://www.tiktok.com/@a/video/1", premium: false })).toEqual({
       type: "error",
       code: "premium_required",

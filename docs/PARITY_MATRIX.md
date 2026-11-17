@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 91 |
+| Done | 92 |
 | Done (needs creds) | 12 |
-| Partial | 18 |
+| Partial | 17 |
 | Redesign | 7 |
 | Missing | 9 |
 
@@ -66,7 +66,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F047 | Floating reactions | Partial | Floats can be hidden for other people or for the whole room. Own reactions stay visible when only the personal switch is on. |
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
 | F049 | Sync telemetry | Done | A sync incident is stored on the room. Settings lists the latest 10. |
-| F050 | Source detection | Partial | 25-source detector and playback plan exist. Not every extractor runs. |
+| F050 | Source detection | Done | The detector covers the source list, including YouTube, VK, and Rutube, and the queue shows the result. Extractors that need credentials stay idle until configured. |
 | F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
 | F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |
 | F053 | VK extractor | Done (needs creds) | VK HLS is parsed from a fixture. Live cookies stay off until VK_COOKIES is set. |
