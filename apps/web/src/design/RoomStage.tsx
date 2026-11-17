@@ -116,6 +116,8 @@ export function RoomStage({
               </div>
               смотрят
             </div>
+            <button type="button" className="btn btn-outline" onClick={() => onLayout({ ...layout, videoAspect: 16 / 9 })}>16:9</button>
+            <button type="button" className="btn btn-outline" onClick={() => onLayout({ ...layout, videoAspect: layout.videoAspect > 2 ? 16 / 9 : 2.2 })}>Шире</button>
             <button type="button" className="btn btn-outline">Позвать</button>
           </>
         )}
