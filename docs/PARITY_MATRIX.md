@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 113 |
+| Done | 114 |
 | Done (needs creds) | 12 |
 | Partial | 8 |
-| Redesign | 2 |
+| Redesign | 1 |
 | Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
@@ -39,7 +39,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F020 | Resume-last-room snapshot | Done | An empty room stores a snapshot. POST /rooms/resume-last recreates it paused, with the saved time clamped to the duration. Home calls that route. |
 | F021 | Room settings | Done | Room settings edits permissions, slow mode, and sync incidents. |
 | F022 | Browse public rooms | Done | GET /rooms accepts a search query and a title sort. The home search box sends that query. |
-| F023 | Live carousel + global stats | Redesign | Global counters and the live carousel wait for the design pack. |
+| F023 | Live carousel + global stats | Done | Home shows the live room cards, and GET /stats supplies the global ranks. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
