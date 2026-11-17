@@ -486,7 +486,14 @@ export function registerRoomRoutes(
       return;
     }
     const params = z.object({ id: z.string() }).parse(request.params);
-    const body = z.object({ canChat: z.boolean().optional(), canSpeak: z.boolean().optional() }).safeParse(request.body);
+    const body = z.object({
+      canChat: z.boolean().optional(),
+      canQueue: z.boolean().optional(),
+      canSpeak: z.boolean().optional(),
+      canReact: z.boolean().optional(),
+      canSeek: z.boolean().optional(),
+      canInvite: z.boolean().optional(),
+    }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
     const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
     if (!self || self.role !== "host" || self.leftAt) return reply.code(403).send({ error: "forbidden" });

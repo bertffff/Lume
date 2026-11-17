@@ -7,8 +7,8 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv): void {
   app.get("/video/range", async (request, reply) => {
     const query = z.object({ url: z.string().url() }).safeParse(request.query);
     if (!query.success || urlBlocked(query.data.url)) return reply.code(400).send({ error: "blocked" });
-    const range = typeof request.headers.range === "string" ? request.headers.range : undefined;
-    if (needsRange(range)) return reply.code(416).send({ error: "range_required" });
+    const range = request.headers.range;
+    if (typeof range !== "string" || needsRange(range)) return reply.code(416).send({ error: "range_required" });
     const upstream = await fetch(query.data.url, { headers: { range }, signal: AbortSignal.timeout(10_000) }).catch(() => null);
     if (!upstream) return reply.code(502).send({ error: "upstream" });
     reply.header("accept-ranges", "bytes");

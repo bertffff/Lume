@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 89 |
+| Done | 90 |
 | Done (needs creds) | 13 |
-| Partial | 31 |
+| Partial | 30 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -98,7 +98,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F079 | Unread anchor | Missing | Jump-to-latest exists only on the room preview, not in the live chat. |
 | F080 | System messages | Done | Join, leave, and host-change lines are written into the chat. |
 | F081 | Slow mode | Done | The composer counts down while slow mode blocks the next message. Hosts are exempt. |
-| F082 | Six member permissions | Partial | The sheet shows six labels. POST /rooms/:id/defaults accepts and stores only canChat and canSpeak. |
+| F082 | Six member permissions | Done | POST /rooms/:id/defaults stores canChat, canQueue, canSpeak, canReact, canSeek, and canInvite. The live room edits those checkboxes. |
 | F083 | Make host | Done | The host can hand the room to another member. The handoff is tested. |
 | F084 | Kick | Done | Kick still persists leftAt. |
 | F085 | Session / permanent / global ban | Done | Join refuses session, permanent, and blacklist bans. |

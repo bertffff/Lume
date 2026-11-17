@@ -39,6 +39,7 @@ export function RoomStage({
   const [tip, setTip] = useState<string | null>(null);
   const [iceUrl, setIceUrl] = useState<string | null>(null);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
+  const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -205,6 +206,24 @@ export function RoomStage({
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                 </form>
               </div>
+              {live.canControl ? (
+                <form data-testid="room-defaults" onSubmit={(event) => {
+                  event.preventDefault();
+                  void fetch(`${apiUrl}/rooms/${room.id}/defaults`, {
+                    method: "POST",
+                    headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
+                    body: JSON.stringify(permissions),
+                  });
+                }}>
+                  {(Object.keys(permissions) as Array<keyof typeof permissions>).map((key) => (
+                    <label key={key}>
+                      <input data-testid={`perm-${key}`} type="checkbox" checked={permissions[key]} onChange={(event) => setPermissions((current) => ({ ...current, [key]: event.target.checked }))} />
+                      {key}
+                    </label>
+                  ))}
+                  <button type="submit" data-testid="perm-save">Права</button>
+                </form>
+              ) : null}
               {live.canControl ? <button type="button" data-testid="queue-next" onClick={live.playNext}>{t("queue.next")}</button> : null}
               <form data-testid="report-form" onSubmit={(event) => {
                 event.preventDefault();
