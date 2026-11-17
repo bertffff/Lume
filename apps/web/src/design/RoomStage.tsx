@@ -34,6 +34,7 @@ export function RoomStage({
   const [style, setStyle] = useState(() => (document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema"));
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   const [url, setUrl] = useState("");
+  const [detected, setDetected] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -63,6 +64,10 @@ export function RoomStage({
     const next = url.trim();
     if (!next) return;
     live?.addQueue(next);
+    void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
+      .then((response) => response.json())
+      .then((payload: { source?: string | null }) => setDetected(payload.source ?? "unknown"))
+      .catch(() => setDetected(null));
     setUrl("");
   }
 
@@ -166,6 +171,7 @@ export function RoomStage({
                 </ol>
                 <form className="qi add" onSubmit={addUrl}>
                   <input data-testid="queue-input" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
+                  {detected ? <small>{detected}</small> : null}
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                 </form>
               </div>
