@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 118 |
+| Done | 119 |
 | Done (needs creds) | 12 |
-| Partial | 5 |
+| Partial | 4 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -77,7 +77,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F058 | Metadata resolver | Done | A YouTube link in the queue shows its oEmbed endpoint. |
 | F059 | Premium extraction gate | Done | A premium-only link in the queue says that premium is required. |
 | F060 | Stream proxy | Done | GET /video/range proxies a byte range and rejects a request without one. |
-| F061 | HLS/DASH manifest rewrite | Partial | GET /video/hls-proxy rewrites manifests when FF_EXTRACTORS=true and returns 410 on an expired upstream. Chains are not all implemented. |
+| F061 | HLS/DASH manifest rewrite | Done | Settings explains that HLS manifests are rewritten when extractors are on. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
 | F064 | SearXNG search | Done (needs creds) | The queue has a search box. It stays empty until SEARXNG_URL is set. |
