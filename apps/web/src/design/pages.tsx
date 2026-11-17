@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { favouriteLine, linkedLabel, partyAchievements } from "@lume/contracts";
+import { favouriteLine, linkedLabel, partyAchievements, viewerPermissionKeys } from "@lume/contracts";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -345,6 +345,9 @@ export function RoomSettingsScreen({ onSave, token, apiUrl, roomId }: { onSave: 
         <div className="set-row"><div><b>Чат</b><small>Зрители могут писать</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
         <div className="set-row"><div><b>Голос</b><small>Зрители могут говорить</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
         <div className="set-row"><div><b>Медленный режим</b><small>Одно сообщение в 10 секунд</small></div></div>
+        {viewerPermissionKeys.map((key) => (
+          <div className="set-row" key={key}><div><b>{key}</b></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
+        ))}
         <button className="btn btn-primary" type="submit">Сохранить</button>
         <h3>Сбои синхронизации</h3>
         {incidents.length === 0 ? <p>Пока пусто. Храним последние 10.</p> : incidents.map((item) => <p key={item.id}>{item.detail || item.id}</p>)}

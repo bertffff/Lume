@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 100 |
+| Done | 101 |
 | Done (needs creds) | 12 |
-| Partial | 13 |
+| Partial | 12 |
 | Redesign | 7 |
 | Missing | 5 |
 
@@ -98,7 +98,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F079 | Unread anchor | Missing | No jump. |
 | F080 | System messages | Done | Join, leave, and host-change lines are written into the chat. |
 | F081 | Slow mode | Done | The composer counts down while slow mode blocks the next message. Hosts are exempt. |
-| F082 | Six member permissions | Partial | A host sees six permission toggles and an override flag. Room defaults are not edited from settings. |
+| F082 | Six member permissions | Done | Room settings shows the six viewer permissions and saves them as the room defaults. |
 | F083 | Make host | Done | The host can hand the room to another member. The handoff is tested. |
 | F084 | Kick | Done | Kick still persists leftAt. |
 | F085 | Session / permanent / global ban | Done | Join refuses session, permanent, and blacklist bans. |

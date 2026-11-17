@@ -18,7 +18,8 @@ import { passwordIssue,
   favouriteLine,
   needsRange,
   cobaltServices,
-  moderationPresets, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  moderationPresets,
+  viewerPermissionKeys, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -228,6 +229,7 @@ describe("parity rules", () => {
     expect(cobaltServices(undefined)).toEqual([]);
     expect(cobaltServices("https://cobalt.example")).toEqual(["cobalt"]);
     expect(moderationPresets).toContain("С модерацией");
+    expect(viewerPermissionKeys).toHaveLength(6);
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

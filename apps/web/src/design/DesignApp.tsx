@@ -413,7 +413,7 @@ export function DesignApp({
           {view === "offline" ? <EmptyScreen title="Нет соединения" body="Похоже, вы офлайн. Проверьте сеть — комната дождётся, когда вы вернётесь." action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Повторить</button>} /> : null}
           {view === "members" ? null : null}
           {view === "room-settings" ? (
-            <RoomSettingsScreen token={session?.accessToken} apiUrl={apiUrl} roomId={roomId} onSave={(event) => { event.preventDefault(); if (!session || !roomId) return; void fetch(`${apiUrl}/rooms/${roomId}/defaults`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ canChat: true, canSpeak: true }) }); }} />
+            <RoomSettingsScreen token={session?.accessToken} apiUrl={apiUrl} roomId={roomId} onSave={(event) => { event.preventDefault(); if (!session || !roomId) return; void fetch(`${apiUrl}/rooms/${roomId}/defaults`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ canChat: true, canSpeak: true, canQueue: true, canReact: true, canSeek: false, canInvite: true }) }); }} />
           ) : null}
           {view === "queue" ? null : null}
         </Page>

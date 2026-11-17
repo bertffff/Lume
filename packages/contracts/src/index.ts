@@ -131,6 +131,7 @@ export {
   needsRange,
   cobaltServices,
   moderationPresets,
+  viewerPermissionKeys,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,
