@@ -36,6 +36,7 @@ export function RoomStage({
   const [url, setUrl] = useState("");
   const [detected, setDetected] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; title: string | null }>>([]);
+  const [tip, setTip] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -51,6 +52,10 @@ export function RoomStage({
         .then((response) => response.json())
         .then((payload: { history?: Array<{ id: string; title: string | null }> }) => setHistory(payload.history ?? []))
         .catch(() => setHistory([]));
+      void fetch(`${apiUrl}/me/discovery`, { headers: { authorization: `Bearer ${token}` } })
+        .then((response) => response.json())
+        .then((payload: { items?: Array<{ title: string | null; url: string }> }) => setTip(payload.items?.[0]?.title ?? payload.items?.[0]?.url ?? null))
+        .catch(() => setTip(null));
     }
     const onResize = () => setNarrow(window.innerWidth < 800);
     window.addEventListener("resize", onResize);
@@ -168,7 +173,7 @@ export function RoomStage({
               </div>
             </div>
             <div className="card queue-card">
-              <div className="ct">Дальше в очереди <small>{queue.length}</small>{historyLabel(history.length) ? <small>{historyLabel(history.length)}</small> : null}{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
+              <div className="ct">Дальше в очереди <small>{queue.length}</small>{historyLabel(history.length) ? <small>{historyLabel(history.length)}</small> : null}{tip ? <small>ещё: {tip}</small> : null}{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
               <div className="q">
                 <ol className="tr-queue q">
                   {queue.slice(0, 2).map((item) => (

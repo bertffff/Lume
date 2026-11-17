@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 103 |
+| Done | 104 |
 | Done (needs creds) | 12 |
-| Partial | 12 |
+| Partial | 11 |
 | Redesign | 7 |
 | Missing | 3 |
 
@@ -85,7 +85,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F066 | Video detect endpoint | Done | POST /video/detect classifies a URL. Adding a queue item shows that source. YouTube, VK, and Rutube are covered. |
 | F067 | Shared queue | Done | Reorder, a pending line, and a duplicate URL rejection are in place. |
 | F068 | Queue history | Done | The queue column reloads room history and shows how many rows came back. |
-| F069 | Queue recommendations | Partial | The queue panel shows the first discovery suggestion from watch history. |
+| F069 | Queue recommendations | Done | The queue column shows the first discovery suggestion from watch history. |
 | F070 | Auto-advance | Done | When the host's player ends, the next queue item starts. |
 | F071 | Chat text | Done | Chat messages are limited to 500 characters. |
 | F072 | Replies | Done | replyToId is stored and shown. |
