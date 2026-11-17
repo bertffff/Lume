@@ -43,11 +43,13 @@ export function PlayerPanel({
   aspect,
   onAspect,
   bare = false,
+  onError,
 }: {
   aspect: number;
   synced?: boolean;
   onAspect: (aspect: number) => void;
   bare?: boolean;
+  onError?: (url: string) => void;
 }) {
   const { t } = useI18n();
   const handed = useRef(false);
@@ -95,6 +97,8 @@ export function PlayerPanel({
   playbackStatusRef.current = playback?.status;
   const onAspectRef = useRef(onAspect);
   onAspectRef.current = onAspect;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   useEffect(() => {
     const element = frameRef.current;
@@ -131,6 +135,7 @@ export function PlayerPanel({
         setLimited(adapter.limited);
         adapter.onState((state) => {
           phaseRef.current = state.phase;
+          if (state.phase === "error") onErrorRef.current?.(nowPlaying?.url ?? "");
           if (canControlRef.current && playbackStatusRef.current === "playing" && state.phase === "ready") {
             void adapter.play();
           }
@@ -155,6 +160,7 @@ export function PlayerPanel({
       })
       .catch(() => {
         phaseRef.current = "error";
+        onErrorRef.current?.(nowPlaying?.url ?? "");
       });
     return () => {
       cancelled = true;

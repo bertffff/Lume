@@ -515,6 +515,21 @@ export function registerRoomRoutes(
     return reply.send({ ok: true });
   });
 
+  app.post("/rooms/:id/recovery", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ action: z.enum(["retry", "open", "replace"]), url: z.string().min(1) }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const row = await prisma.moderationAction.create({
+      data: { roomId: params.id, actorId: actor.userId, action: `recovery:${body.data.action}`, detail: body.data.url },
+    });
+    return reply.send({ id: row.id, action: body.data.action, url: body.data.url });
+  });
+
   app.get("/rooms/:id/sync-incidents", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {

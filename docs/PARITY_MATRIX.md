@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 92 |
+| Done | 93 |
 | Done (needs creds) | 13 |
-| Partial | 28 |
+| Partial | 27 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -58,7 +58,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F039 | Buffering / ready | Done | The sync engine turns play into pause while any viewer is buffering. The live room shows that hold. |
 | F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
 | F041 | Video URL refresh | Done | POST /video/refresh keeps the current time and play state. The unavailable card calls it. A scheduled refresher is still not running. |
-| F042 | Player error recovery | Partial | Retry, open, and replace are on the shot preview, not on a live player error. |
+| F042 | Player error recovery | Done | A failed live video shows retry, open, and replace. Retry is stored on the room. |
 | F043 | Tap gesture zones | Done | A double tap on the left or right of the player seeks 10 seconds. The zone math is tested. |
 | F044 | Progress, fullscreen, speed | Done | The player has a speed menu from 0.5 to 2. |
 | F045 | Quality selector | Done | Quality can be auto, low, or high. Auto follows the tested network rule and is saved locally. |

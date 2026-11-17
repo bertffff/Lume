@@ -40,6 +40,7 @@ export function RoomStage({
   const [iceUrl, setIceUrl] = useState<string | null>(null);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
   const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
+  const [playerError, setPlayerError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -139,7 +140,19 @@ export function RoomStage({
         <section className="player-col">
           <div className="stage-card stage-root">
             {room.nowPlaying ? <div className="top-ov"><span className="pill">{room.nowPlaying.title}</span></div> : null}
-            <PlayerPanel bare aspect={layout.videoAspect} synced={synced} onAspect={(videoAspect) => onLayout({ ...layout, videoAspect })} />
+            <PlayerPanel bare aspect={layout.videoAspect} synced={synced} onError={(url) => setPlayerError(url || "error")} onAspect={(videoAspect) => onLayout({ ...layout, videoAspect })} />
+            {playerError ? (
+              <div className="unavail" data-testid="player-error">
+                <h2>Видео недоступно</h2>
+                <p>{playerError}</p>
+                <button type="button" data-testid="player-retry" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) })}>Обновить ссылку</button>
+                <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); void fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) }); }}>Открыть на платформе</button>
+                <form onSubmit={(event) => { event.preventDefault(); const next = String(new FormData(event.currentTarget).get("url") ?? ""); if (!next) return; live.addQueue(next); setPlayerError(null); void fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "replace", url: next }) }); }}>
+                  <input data-testid="player-replace-url" name="url" placeholder="Новая ссылка" />
+                  <button type="submit" data-testid="player-replace">Заменить видео</button>
+                </form>
+              </div>
+            ) : null}
             <div className="flo">
               {live.floats.slice(-2).map((float) => (
                 <div className="fb" key={float.id}><span>{float.emoji}</span></div>
