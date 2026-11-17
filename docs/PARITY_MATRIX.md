@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 112 |
+| Done | 113 |
 | Done (needs creds) | 12 |
 | Partial | 8 |
-| Redesign | 3 |
+| Redesign | 2 |
 | Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
@@ -37,7 +37,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F018 | Permanent vs temporary host | Done | The returning owner gets «вернулся и забрал хост», covered by the room service test. |
 | F019 | Host succession | Done | Leave promotes a moderator, otherwise the earliest member, and pauses playback when the host leaves. The chat line says the new host took over. |
 | F020 | Resume-last-room snapshot | Done | An empty room stores a snapshot. POST /rooms/resume-last recreates it paused, with the saved time clamped to the duration. Home calls that route. |
-| F021 | Room settings | Redesign | Description, member cap, and hide-reactions already save. The full settings sheet waits for the design pack. |
+| F021 | Room settings | Done | Room settings edits permissions, slow mode, and sync incidents. |
 | F022 | Browse public rooms | Done | GET /rooms accepts a search query and a title sort. The home search box sends that query. |
 | F023 | Live carousel + global stats | Redesign | Global counters and the live carousel wait for the design pack. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
