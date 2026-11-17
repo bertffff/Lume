@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 93 |
+| Done | 94 |
 | Done (needs creds) | 12 |
-| Partial | 16 |
+| Partial | 15 |
 | Redesign | 7 |
 | Missing | 9 |
 
@@ -124,7 +124,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F105 | Avatar upload + crop | Done | An avatar file is cropped to a square on a canvas and saved. |
 | F106 | Profile share + user_ deep link | Done | startapp user_<id> opens that person's name on the people screen. |
 | F107 | In-room profile modal | Missing | No modal. |
-| F108 | 10 achievements + XP + levels | Partial | The old 10 achievements, XP, and level formula award on create, join, chat, and reaction. |
+| F108 | 10 achievements + XP + levels | Done | The ten original achievements, XP, and levels award on create, join, chat, and reaction. The profile shows all ten. |
 | F109 | Achievement pin slots | Done | Three pin slots can be filled from earned achievements. |
 | F110 | Activity heatmap | Done | The studio returns 365 days and the people screen marks active ones. |
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |

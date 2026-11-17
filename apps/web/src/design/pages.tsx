@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { favouriteLine, linkedLabel } from "@lume/contracts";
+import { favouriteLine, linkedLabel, partyAchievements } from "@lume/contracts";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -123,7 +123,7 @@ export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: stri
         </div>
         <div className="card">
           <h3>Достижения</h3>
-          <div className="ach"><span className="got">🎞</span><span className="got">☾</span><span className="got">☺</span><span>♛</span></div>
+          <div className="ach">{partyAchievements.map((item) => <span key={item.key} className="got" title={item.titleRu}>{item.icon}</span>)}</div>
           <div className="dim">3 из 10 открыто · 3 слота для значков</div>
         </div>
         <div className="card">

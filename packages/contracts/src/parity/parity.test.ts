@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { levelFromXp, earnedAchievementKeys, xpForKeys } from "./achievements.js";
+import { levelFromXp, earnedAchievementKeys, partyAchievements, xpForKeys } from "./achievements.js";
 import { passwordIssue,
   registerAvailability,
   magicTokenFromSearch,
@@ -183,6 +183,7 @@ describe("parity rules", () => {
     expect(detectSource("https://vk.com/video-1_2")?.id).toBe("vk");
     expect(detectSource("https://rutube.ru/video/abc/")?.id).toBe("rutube");
     expect(sourceRules.length).toBe(23);
+    expect(partyAchievements).toHaveLength(10);
     expect(planPlayback({ url: "https://www.tiktok.com/@a/video/1", premium: false })).toEqual({
       type: "error",
       code: "premium_required",
