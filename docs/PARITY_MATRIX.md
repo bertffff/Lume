@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 109 |
+| Done | 110 |
 | Done (needs creds) | 12 |
 | Partial | 8 |
-| Redesign | 6 |
+| Redesign | 5 |
 | Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
@@ -151,7 +151,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F132 | Themes | Redesign | Жар and Мел wait for the design pack. Ember and Aurora stay. |
 | F133 | i18n RU/EN | Done | All eight legacy namespaces load in Russian and English. The home line uses common.nav.home. |
 | F134 | Landing page | Done | Signed-out home is the landing. Signed-in home is the session hub. |
-| F135 | Home session hub | Redesign | The session-hub layout waits for the design pack. Resume and friends already exist as sections. |
+| F135 | Home session hub | Done | Home is the session hub: resume, create, join, open rooms, and friends. |
 | F136 | Telegram storage uploads | Done (needs creds) | Uploads stay on local disk. S3 and a Telegram storage chat are used when CDN_ENDPOINT or TELEGRAM_STORAGE_CHAT is set. |
 | F137 | P2P segment mesh | Missing | Documented in docs/ROADMAP.md. Not built. |
 
