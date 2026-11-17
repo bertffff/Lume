@@ -1,4 +1,4 @@
-import { emojiCategories, shouldHoldForReady, type RoomLayout } from "@lume/contracts";
+import { emojiCategories, historyLabel, shouldHoldForReady, type RoomLayout } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -35,6 +35,7 @@ export function RoomStage({
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   const [url, setUrl] = useState("");
   const [detected, setDetected] = useState<string | null>(null);
+  const [history, setHistory] = useState<Array<{ id: string; title: string | null }>>([]);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -43,6 +44,14 @@ export function RoomStage({
       setStyle(document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema");
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-style"] });
+    const room = live?.state.room.id;
+    const token = live?.accessToken;
+    if (room && token) {
+      void fetch(`${apiUrl}/rooms/${room}/history`, { headers: { authorization: `Bearer ${token}` } })
+        .then((response) => response.json())
+        .then((payload: { history?: Array<{ id: string; title: string | null }> }) => setHistory(payload.history ?? []))
+        .catch(() => setHistory([]));
+    }
     const onResize = () => setNarrow(window.innerWidth < 800);
     window.addEventListener("resize", onResize);
     return () => {
@@ -159,7 +168,7 @@ export function RoomStage({
               </div>
             </div>
             <div className="card queue-card">
-              <div className="ct">Дальше в очереди <small>{queue.length}</small>{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
+              <div className="ct">Дальше в очереди <small>{queue.length}</small>{historyLabel(history.length) ? <small>{historyLabel(history.length)}</small> : null}{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
               <div className="q">
                 <ol className="tr-queue q">
                   {queue.slice(0, 2).map((item) => (

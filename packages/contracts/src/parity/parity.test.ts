@@ -12,7 +12,9 @@ import { passwordIssue,
   refreshKeepsPlayback,
   recoveryActions,
   lastIncidents,
-  emojiCategories, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  emojiCategories,
+  withoutBlocked,
+  historyLabel, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -211,6 +213,9 @@ describe("parity rules", () => {
     expect(recoveryActions).toEqual(["retry", "open", "replace"]);
     expect(lastIncidents([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(Object.values(emojiCategories).flat().length).toBeGreaterThan(3);
+    expect(withoutBlocked([{ id: "a" }, { id: "b" }], "a")).toEqual([{ id: "b" }]);
+    expect(historyLabel(3)).toBe("история 3");
+    expect(historyLabel(0)).toBe("");
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

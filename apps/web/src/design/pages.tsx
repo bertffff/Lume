@@ -10,6 +10,8 @@ export function SettingsScreen({
   onMode,
   token,
   apiUrl,
+  blocked = [],
+  onUnblock,
 }: {
   style: StyleId;
   mode: ModeId;
@@ -17,6 +19,8 @@ export function SettingsScreen({
   onMode: (mode: ModeId) => void;
   token?: string;
   apiUrl?: string;
+  blocked?: Array<{ id: string; displayName: string }>;
+  onUnblock?: (id: string) => void;
 }) {
   const [telegramId, setTelegramId] = useState("");
   const [linked, setLinked] = useState("…");
@@ -84,7 +88,9 @@ export function SettingsScreen({
           <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/unlink-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Отвязать</button>
         </div>
         <div className="set-row"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
-        <div className="set-row"><div><b>Приватность</b><small>Кто видит профиль и статус</small></div></div>
+        <div className="set-row">
+          <div><b>Чёрный список</b>{blocked.map((row) => <small key={row.id}>{row.displayName} <button type="button" onClick={() => onUnblock?.(row.id)}>убрать</button></small>)}{blocked.length === 0 ? <small>Пусто</small> : null}</div>
+        </div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
         <div className="set-row"><div><b>Плеер</b><small>Качество 1080p, скорость 1×</small></div></div>
         <div className="set-row">

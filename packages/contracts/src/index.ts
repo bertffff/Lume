@@ -125,6 +125,8 @@ export {
   recoveryActions,
   lastIncidents,
   emojiCategories,
+  withoutBlocked,
+  historyLabel,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

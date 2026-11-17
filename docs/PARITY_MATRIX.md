@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 87 |
+| Done | 89 |
 | Done (needs creds) | 12 |
-| Partial | 19 |
+| Partial | 18 |
 | Redesign | 7 |
-| Missing | 12 |
+| Missing | 11 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -43,7 +43,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
-| F027 | DB-backed queue reload | Partial | Queue is in Postgres. No room history table. |
+| F027 | DB-backed queue reload | Done | Played items are stored in room history and reloaded into the queue column. |
 | F028 | Layout presets × aspect | Redesign | Resizable panels stay. Enlarged and immersive presets wait for the design pack. |
 | F029 | Mobile room sheet | Redesign | The mobile sheet waits for the design pack. Panels already reflow. |
 | F030 | Session dock | Redesign | The session dock waits for the design pack. The room bar and voice panel stay. |
@@ -105,7 +105,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F086 | Mute and temp-mute | Done | Temp mute is 30s–24h, stored on the member, and blocks join and chat until it expires. |
 | F087 | Moderation log | Done | The voice panel lists the persisted moderation log for a host or mod. |
 | F088 | Member action sheet | Done | The member row can kick, mute, promote, transfer host, and report. |
-| F089 | Blacklist management | Missing | No list or remove. |
+| F089 | Blacklist management | Done | Settings lists blocked people and removes one with the existing friend delete. |
 | F090 | Moderation presets | Missing | No create-wizard presets. |
 | F091 | Voice chat | Partial | LiveKit instead of mediasoup, by product decision. Join, mute, devices. |
 | F092 | Voice preflight | Partial | Mic picker after permission. No speaker test or network score. |

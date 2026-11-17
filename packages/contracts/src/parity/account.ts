@@ -1,3 +1,11 @@
+export function historyLabel(count: number): string {
+  return count > 0 ? `история ${count}` : "";
+}
+
+export function withoutBlocked<T extends { id: string }>(rows: readonly T[], id: string): T[] {
+  return rows.filter((row) => row.id !== id);
+}
+
 export const emojiCategories = {
   hot: ["🔥", "❤️", "😂"],
   faces: ["😮", "👏", "😢"],
