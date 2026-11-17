@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 87 |
+| Done | 88 |
 | Done (needs creds) | 13 |
-| Partial | 33 |
+| Partial | 32 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -47,7 +47,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F028 | Layout presets × aspect | Partial | The live header toggles a number on the layout object. It does not change the player frame. |
 | F029 | Mobile room sheet | Partial | A narrow layout stacks panels. There is no live bottom sheet with queue items. |
 | F030 | Session dock | Partial | The sync pill has a session-dock class. It is not a dock of session controls. |
-| F031 | Report user/room | Partial | POST /reports exists. The preview form sends targetId 'mark'. The live form reports the first member only. |
+| F031 | Report user/room | Done | POST /reports stores the selected member. The live room reports that person, and the preview no longer sends targetId mark. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
 | F033 | VK + Rutube embeds | Partial | A helper names vk or rutube. No embed posts that command into the live player. |
 | F034 | Host playback control | Done | Play, pause, seek, and a speed menu from 0.5 to 2. |

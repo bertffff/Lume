@@ -204,17 +204,22 @@ export function RoomStage({
                 </form>
               </div>
               {live.canControl ? <button type="button" data-testid="queue-next" onClick={live.playNext}>{t("queue.next")}</button> : null}
-              <form onSubmit={(event) => {
+              <form data-testid="report-form" onSubmit={(event) => {
                 event.preventDefault();
                 const data = new FormData(event.currentTarget);
                 const reason = String(data.get("reason") ?? "").trim();
-                const target = members[0]?.userId;
-                if (!reason || !target) return;
+                const target = String(data.get("target") ?? "");
+                if (!reason || !target || target === live.selfId) return;
                 void fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) });
                 event.currentTarget.reset();
               }}>
-                <input name="reason" placeholder="Жалоба" aria-label="report" />
-                <button type="submit">Пожаловаться</button>
+                <select data-testid="report-target" name="target" aria-label="report target">
+                  {members.filter((member) => member.userId !== live.selfId).map((member) => (
+                    <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                  ))}
+                </select>
+                <input data-testid="report-reason" name="reason" placeholder="Жалоба" aria-label="report" />
+                <button type="submit" data-testid="report-send">Пожаловаться</button>
               </form>
             </div>
           </div>
