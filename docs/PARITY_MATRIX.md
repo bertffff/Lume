@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 110 |
+| Done | 111 |
 | Done (needs creds) | 12 |
 | Partial | 8 |
-| Redesign | 5 |
+| Redesign | 4 |
 | Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
@@ -148,7 +148,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F129 | Prometheus metrics | Done (needs creds) | GET /metrics is tested. Events are not uploaded until SENTRY_DSN is set. |
 | F130 | Rate limiting | Done | Every mutating route is limited. Redis is used when REDIS_URL is set, otherwise the same window stays in memory. |
 | F131 | Feature flags | Done | GET /flags lists the product flags, including whether extractors are on. |
-| F132 | Themes | Redesign | Жар and Мел wait for the design pack. Ember and Aurora stay. |
+| F132 | Themes | Done | Cinema and Gruvbox are the two styles, with dark, light, and system. Settings switches them. |
 | F133 | i18n RU/EN | Done | All eight legacy namespaces load in Russian and English. The home line uses common.nav.home. |
 | F134 | Landing page | Done | Signed-out home is the landing. Signed-in home is the session hub. |
 | F135 | Home session hub | Done | Home is the session hub: resume, create, join, open rooms, and friends. |
