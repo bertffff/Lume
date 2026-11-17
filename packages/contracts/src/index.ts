@@ -130,6 +130,7 @@ export {
   favouriteLine,
   needsRange,
   cobaltServices,
+  moderationPresets,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

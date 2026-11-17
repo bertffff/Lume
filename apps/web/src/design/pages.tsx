@@ -268,6 +268,11 @@ export function CreateScreen({ title, onTitle, onSubmit }: { title: string; onTi
           <div className="choice on"><b>По коду</b><p>Кто знает код 7KQ-2M</p></div>
           <div className="choice"><b>Публичная</b><p>Видна в открытых комнатах</p></div>
         </div>
+        <div className="chips">
+          {["Киноночь", "Вечеринка", "Закрытый", "С модерацией"].map((preset) => (
+            <button key={preset} type="button" className="pill" onClick={() => onTitle(preset)}>{preset}</button>
+          ))}
+        </div>
         <label className="choice-label">Права зрителей по умолчанию</label>
         <div className="choices">
           <div className="choice on"><b>Очередь</b><p>Могут добавлять видео</p></div>

@@ -1,3 +1,5 @@
+export const moderationPresets = ["Киноночь", "Вечеринка", "Закрытый", "С модерацией"] as const;
+
 export function cobaltServices(apiUrl: string | undefined): string[] {
   return apiUrl ? ["cobalt"] : [];
 }

@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 99 |
+| Done | 100 |
 | Done (needs creds) | 12 |
 | Partial | 13 |
 | Redesign | 7 |
-| Missing | 6 |
+| Missing | 5 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -106,7 +106,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F087 | Moderation log | Done | The voice panel lists the persisted moderation log for a host or mod. |
 | F088 | Member action sheet | Done | The member row can kick, mute, promote, transfer host, and report. |
 | F089 | Blacklist management | Done | Settings lists blocked people and removes one with the existing friend delete. |
-| F090 | Moderation presets | Missing | No create-wizard presets. |
+| F090 | Moderation presets | Done | Create offers Киноночь, Вечеринка, Закрытый, and С модерацией. |
 | F091 | Voice chat | Partial | LiveKit instead of mediasoup, by product decision. Join, mute, devices. |
 | F092 | Voice preflight | Partial | Mic picker after permission. No speaker test or network score. |
 | F093 | Voice mute broadcast | Partial | voice:state carries muted. No VoiceSession duration. |
