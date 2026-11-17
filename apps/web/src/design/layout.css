@@ -39,6 +39,19 @@ html[data-style="gruvbox"] .design-app .room-grid{grid-template-columns:minmax(0
 .design-app .stage-card .tr-room,.design-app .stage-card .tr-panel{background:transparent;border:0;box-shadow:none;color:#F3EDE6}
 .design-app .modal-input,.design-app input.inbox,.design-app textarea.inbox{width:100%;background:transparent;border:0;color:inherit;font:inherit;outline:none}
 .design-app .screen-scroll{overflow:auto;max-height:calc(100vh - 64px)}
+.design-app .tr-room{background:transparent;min-height:calc(100vh - 64px)}
+.design-app .tr-room-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line, var(--bg2))}
+.design-app .tr-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:calc(100vh - 120px)}
+.design-app .tr-player-slot .tr-panel{background:#000;border-radius:10px;overflow:hidden;margin:12px}
+.design-app .tr-side{background:var(--s1, var(--bg0));border:1px solid var(--line, var(--bg2));border-radius:16px;margin:12px}
+html[data-style="gruvbox"] .design-app .tr-side{border-radius:0}
+.design-app .settings-grid{display:grid;grid-template-columns:220px 1fr;gap:24px}
+.design-app .slink{display:block;padding:8px 10px;border-radius:8px;color:var(--text-2);font-weight:500;text-align:left}
+.design-app .slink.on{background:var(--s1);color:var(--text)}
+.design-app .panel{background:var(--s1);border:1px solid var(--line, var(--bg2));border-radius:16px;padding:20px 22px}
+html[data-style="gruvbox"] .design-app .panel{border-radius:0}
+.design-app .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line, var(--bg2))}
+.design-app .lead{color:var(--text-2);margin-bottom:18px}
 @media (max-width: 800px){
   .design-app .wrap,.design-app .room-grid,.design-app .acts,.design-app .rooms,.design-app .results,.design-app .shop{grid-template-columns:1fr}
   .design-app .search-lg{width:auto;flex:1}

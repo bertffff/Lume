@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { legacyText } from "../i18n/legacy.js";
+import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
@@ -57,8 +58,9 @@ export function DesignApp({
   const text = copy(locale);
   const [path, setPath] = useState(() => window.location.pathname);
   const [shot] = useState(() => new URLSearchParams(window.location.search).get("shot"));
-  const [style, setStyle] = useState<StyleId>(readStoredStyle);
-  const [mode, setMode] = useState<ModeId>(readStoredMode);
+  const params = new URLSearchParams(window.location.search);
+  const [style, setStyle] = useState<StyleId>(params.get("style") === "gruvbox" ? "gruvbox" : readStoredStyle);
+  const [mode, setMode] = useState<ModeId>(params.get("mode") === "light" || params.get("mode") === "system" || params.get("mode") === "dark" ? params.get("mode") as ModeId : readStoredMode);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [code, setCode] = useState("");
@@ -240,6 +242,12 @@ export function DesignApp({
                   <p>{text.createHint}</p>
                   <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />
                   <button type="submit" data-testid="lobby-create">{text.create}</button>
+                  <span className="chips">
+                    <button type="button" className="pill" onClick={() => setTitle("Киноночь")}>Киноночь</button>
+                    <button type="button" className="pill" onClick={() => setTitle("Вечеринка")}>Вечеринка</button>
+                    <button type="button" className="pill" onClick={() => setTitle("Закрытый")}>Закрытый</button>
+                    <button type="button" className="pill" onClick={() => setTitle("С модерацией")}>С модерацией</button>
+                  </span>
                 </form>
                 <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
                   <h3>{text.join}</h3>
@@ -314,22 +322,36 @@ export function DesignApp({
             </form>
           ) : null}
           {view === "settings" ? (
-            <div>
-              <p>{text.style}</p>
-              <div className="seg">
-                <button type="button" className={style === "cinema" ? "on" : ""} onClick={() => void saveAppearance("cinema", mode)}>{text.cinema}</button>
-                <button type="button" className={style === "gruvbox" ? "on" : ""} onClick={() => void saveAppearance("gruvbox", mode)}>{text.gruvbox}</button>
+            <div className="settings-grid">
+              <aside>
+                <div className="slink on">{text.style}</div>
+                <button type="button" className="slink" onClick={() => go("/notifications")}>{text.notifications}</button>
+                <button type="button" className="slink" onClick={() => go("/profile")}>{text.profile}</button>
+              </aside>
+              <div className="panel">
+                <h2>{text.style}</h2>
+                <p className="lead">{locale === "en" ? "Cinema is the main style. Gruvbox is a separate layout." : "Стиль и тема. Основной стиль — Кинозал, Gruvbox подключается отдельно."}</p>
+                <div className="set-row">
+                  <div><b>{text.style}</b><small>{text.cinema} / {text.gruvbox}</small></div>
+                  <div className="seg">
+                    <button type="button" className={style === "cinema" ? "on" : ""} onClick={() => void saveAppearance("cinema", mode)}>{text.cinema}</button>
+                    <button type="button" className={style === "gruvbox" ? "on" : ""} onClick={() => void saveAppearance("gruvbox", mode)}>{text.gruvbox}</button>
+                  </div>
+                </div>
+                <div className="set-row">
+                  <div><b>{text.mode}</b></div>
+                  <div className="seg">
+                    {(["dark", "light", "system"] as const).map((item) => (
+                      <button key={item} type="button" className={mode === item ? "on" : ""} onClick={() => void saveAppearance(style, item)}>{text[item]}</button>
+                    ))}
+                  </div>
+                </div>
+                <p>Telegram: {linked}</p>
+                <button type="button" onClick={onSignOut}>{t("lobby.signOut")}</button>
               </div>
-              <p>{text.mode}</p>
-              <div className="seg">
-                {(["dark", "light", "system"] as const).map((item) => (
-                  <button key={item} type="button" className={mode === item ? "on" : ""} onClick={() => void saveAppearance(style, item)}>{text[item]}</button>
-                ))}
-              </div>
-              <p>Telegram: {linked}</p>
-              <button type="button" onClick={onSignOut}>{t("lobby.signOut")}</button>
             </div>
           ) : null}
+          {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
           {view === "profile" ? (
             <div>
               <h2 className={`nm p-${hue}`}>{session?.user.displayName}</h2>
@@ -351,11 +373,29 @@ export function DesignApp({
           {view === "notifications" ? <ul>{notes.map((note) => <li key={note.id}><b>{note.title}</b> {note.body}</li>)}</ul> : null}
           {view === "onboarding" ? <div className="empty"><h2>{text.onboarding}</h2><p>{text.onboardingBody}</p><button type="button" className="btn btn-primary" onClick={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }}>{text.save}</button></div> : null}
           {view === "auth" ? (
-            <form className="auth-card" onSubmit={(event) => void signIn(event)}>
+            <>
+            <form className="auth-card" onSubmit={(event) => {
+              event.preventDefault();
+              void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) });
+            }}>
               <h2>{text.telegram}</h2>
-              <input className="inbox" data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} />
-              <button className="tg-btn" type="submit">{text.signIn}</button>
+              <button type="button" className="tg-btn" onClick={() => void signIn({ preventDefault() {} } as FormEvent)}>{text.telegram}</button>
+              <div className="or">email</div>
+              <input className="inbox" value={name} onChange={(event) => setName(event.target.value)} placeholder="email" />
+              <button className="btn btn-primary" type="submit">{text.signIn}</button>
             </form>
+            <form className="auth-card" onSubmit={(event) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              void fetch(`${apiUrl}/auth/telegram-widget`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.fromEntries(data.entries())) });
+            }}>
+              <input name="id" placeholder="id" />
+              <input name="auth_date" placeholder="auth_date" />
+              <input name="hash" placeholder="hash" />
+              <input name="first_name" placeholder="first_name" />
+              <button type="submit">Telegram</button>
+            </form>
+            </>
           ) : null}
           {view === "missing" ? <div className="empty"><h2>{text.missing}</h2><button type="button" onClick={() => go("/")}>{text.enter}</button></div> : null}
           {view === "offline" ? <div className="empty"><h2>{text.offline}</h2><button type="button" onClick={() => window.location.reload()}>{text.refresh}</button></div> : null}
