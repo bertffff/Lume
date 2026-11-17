@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 123 |
-| Done (needs creds) | 12 |
-| Partial | 0 |
+| Done | 87 |
+| Done (needs creds) | 13 |
+| Partial | 33 |
 | Redesign | 0 |
-| Missing | 2 |
+| Missing | 4 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -37,35 +37,35 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F018 | Permanent vs temporary host | Done | The returning owner gets «вернулся и забрал хост», covered by the room service test. |
 | F019 | Host succession | Done | Leave promotes a moderator, otherwise the earliest member, and pauses playback when the host leaves. The chat line says the new host took over. |
 | F020 | Resume-last-room snapshot | Done | An empty room stores a snapshot. POST /rooms/resume-last recreates it paused, with the saved time clamped to the duration. Home calls that route. |
-| F021 | Room settings | Done | Room settings edits permissions, slow mode, and sync incidents. |
+| F021 | Room settings | Partial | Room settings saves chat and speak only. Description, member cap, and hide-reactions are not on the live sheet. |
 | F022 | Browse public rooms | Done | GET /rooms accepts a search query and a title sort. The home search box sends that query. |
-| F023 | Live carousel + global stats | Done | Home shows the live room cards, and GET /stats supplies the global ranks. |
+| F023 | Live carousel + global stats | Partial | Home shows room cards. GET /stats is not a live carousel or a global counter strip. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
-| F027 | DB-backed queue reload | Done | Played items are stored in room history and reloaded into the queue column. |
-| F028 | Layout presets × aspect | Done | The room can switch the video between 16:9 and a wider frame. |
-| F029 | Mobile room sheet | Done | On a narrow screen the queue sits in a bottom sheet under the video. |
-| F030 | Session dock | Done | The room header is the session dock: sync, people, and invite stay in that bar. |
-| F031 | Report user/room | Done | POST /reports accepts a reason up to 500 characters and optional details. The people column has a report form. |
+| F027 | DB-backed queue reload | Partial | The queue column prints a history count. It does not reload played items into the live queue. |
+| F028 | Layout presets × aspect | Partial | The live header toggles a number on the layout object. It does not change the player frame. |
+| F029 | Mobile room sheet | Partial | A narrow layout stacks panels. There is no live bottom sheet with queue items. |
+| F030 | Session dock | Partial | The sync pill has a session-dock class. It is not a dock of session controls. |
+| F031 | Report user/room | Partial | POST /reports exists. The preview form sends targetId 'mark'. The live form reports the first member only. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
-| F033 | VK + Rutube embeds | Done | VK and Rutube embeds accept a play command. The command is covered for both sources. |
+| F033 | VK + Rutube embeds | Partial | A helper names vk or rutube. No embed posts that command into the live player. |
 | F034 | Host playback control | Done | Play, pause, seek, and a speed menu from 0.5 to 2. |
 | F035 | NTP clock sync | Done | The room client takes five clock samples, keeps the median offset, and repeats every minute. |
 | F036 | Adaptive drift correction | Done | Followers use the drift plan: soft rate on HTML5, hard seek, anti-loop, and buffer grace. |
 | F037 | Host heartbeats | Done | The host emits playback:heartbeat every second. heartbeatLag is tested. |
 | F038 | Sync indicator | Done | The player shows synced, syncing, lagging, or waiting, and a resync button seeks to the server clock. |
-| F039 | Buffering / ready | Done | Viewer phase is reported. The room waits to start while anyone is buffering, using the tested ready gate. |
+| F039 | Buffering / ready | Partial | The sync line calls the ready gate with the wait flag hard-coded on. Playback is not held. |
 | F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
 | F041 | Video URL refresh | Done | POST /video/refresh keeps the current time and play state. The unavailable card calls it. A scheduled refresher is still not running. |
-| F042 | Player error recovery | Done | When a video fails, the card offers retry, open on the platform, and replace. Retry calls the refresh route and keeps the time. |
+| F042 | Player error recovery | Partial | Retry, open, and replace are on the shot preview, not on a live player error. |
 | F043 | Tap gesture zones | Done | A double tap on the left or right of the player seeks 10 seconds. The zone math is tested. |
 | F044 | Progress, fullscreen, speed | Done | The player has a speed menu from 0.5 to 2. |
 | F045 | Quality selector | Done | Quality can be auto, low, or high. Auto follows the tested network rule and is saved locally. |
 | F046 | Low-bandwidth mode | Done | Low bandwidth is a player switch saved on this browser. |
-| F047 | Floating reactions | Done | Settings can hide other people's floating reactions. |
+| F047 | Floating reactions | Partial | Settings can save hideOtherReactions. The live room never reads it, so floats still show. |
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
-| F049 | Sync telemetry | Done | A sync incident is stored on the room. Settings lists the latest 10. |
+| F049 | Sync telemetry | Partial | Incidents can be stored and listed. The player posts one when adding a queue URL, not on a sync failure. |
 | F050 | Source detection | Done | The detector covers the source list, including YouTube, VK, and Rutube, and the queue shows the result. Extractors that need credentials stay idle until configured. |
 | F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
 | F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |
@@ -74,65 +74,65 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F055 | Twitch GQL | Done (needs creds) | Twitch playback URLs are parsed from a fixture. Live GQL stays off without credentials. |
 | F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
-| F058 | Metadata resolver | Done | A YouTube link in the queue shows its oEmbed endpoint. |
-| F059 | Premium extraction gate | Done | A premium-only link in the queue says that premium is required. |
-| F060 | Stream proxy | Done | GET /video/range proxies a byte range and rejects a request without one. |
-| F061 | HLS/DASH manifest rewrite | Done | Settings explains that HLS manifests are rewritten when extractors are on. |
+| F058 | Metadata resolver | Partial | The queue prints a YouTube oEmbed URL string. It does not resolve title or duration. |
+| F059 | Premium extraction gate | Partial | The premium check calls planPlayback with premium hard-coded false. |
+| F060 | Stream proxy | Partial | GET /video/range rejects a missing Range and blocks localhost. It does not enforce an allowlist, a size cap, or stream the body. |
+| F061 | HLS/DASH manifest rewrite | Partial | Settings has a sentence about HLS. The proxy still requires FF_EXTRACTORS and does not cover every chain. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
 | F064 | SearXNG search | Done (needs creds) | The queue has a search box. It stays empty until SEARXNG_URL is set. |
 | F065 | Cobalt services list | Done | GET /video/services lists Cobalt only when COBALT_API_URL is set. Settings shows that list. |
-| F066 | Video detect endpoint | Done | POST /video/detect classifies a URL. Adding a queue item shows that source. YouTube, VK, and Rutube are covered. |
+| F066 | Video detect endpoint | Partial | The live queue calls POST /video/detect and shows the source. The route forces premium false and there is no integration test. |
 | F067 | Shared queue | Done | Reorder, a pending line, and a duplicate URL rejection are in place. |
-| F068 | Queue history | Done | The queue column reloads room history and shows how many rows came back. |
-| F069 | Queue recommendations | Done | The queue column shows the first discovery suggestion from watch history. |
+| F068 | Queue history | Partial | The queue shows a history count. There is no way to clear history. |
+| F069 | Queue recommendations | Partial | The live queue can show the first discovery title. It does not add that suggestion. |
 | F070 | Auto-advance | Done | When the host's player ends, the next queue item starts. |
 | F071 | Chat text | Done | Chat messages are limited to 500 characters. |
 | F072 | Replies | Done | replyToId is stored and shown. |
 | F073 | Image messages | Done | A chat photo is checked for jpeg, png, gif, or webp and for a 10 MB cap, then stored and posted as an image message. |
 | F074 | Chat reactions max 3 | Done | A fourth distinct emoji from the same person is rejected. |
-| F075 | Emoji picker | Done | Chat quick reactions are grouped into hot, faces, and marks, more than three emoji. A tap floats that emoji. |
+| F075 | Emoji picker | Partial | The live composer sends nine float emoji. There is no category picker, and the test only checks a constant length. |
 | F076 | Pinned message | Done | The pin banner can be cleared. |
 | F077 | Typing indicator | Done | Several typers collapse into one line. typingLine is tested. |
 | F078 | Mentions | Done | A message that mentions your display name is highlighted. There is no autocomplete. |
-| F079 | Unread anchor | Done | The chat column has a jump back to the latest messages. |
+| F079 | Unread anchor | Missing | Jump-to-latest exists only on the room preview, not in the live chat. |
 | F080 | System messages | Done | Join, leave, and host-change lines are written into the chat. |
 | F081 | Slow mode | Done | The composer counts down while slow mode blocks the next message. Hosts are exempt. |
-| F082 | Six member permissions | Done | Room settings shows the six viewer permissions and saves them as the room defaults. |
+| F082 | Six member permissions | Partial | The sheet shows six labels. POST /rooms/:id/defaults accepts and stores only canChat and canSpeak. |
 | F083 | Make host | Done | The host can hand the room to another member. The handoff is tested. |
 | F084 | Kick | Done | Kick still persists leftAt. |
 | F085 | Session / permanent / global ban | Done | Join refuses session, permanent, and blacklist bans. |
 | F086 | Mute and temp-mute | Done | Temp mute is 30s–24h, stored on the member, and blocks join and chat until it expires. |
 | F087 | Moderation log | Done | The voice panel lists the persisted moderation log for a host or mod. |
 | F088 | Member action sheet | Done | The member row can kick, mute, promote, transfer host, and report. |
-| F089 | Blacklist management | Done | Settings lists blocked people and removes one with the existing friend delete. |
-| F090 | Moderation presets | Done | Create offers Киноночь, Вечеринка, Закрытый, and С модерацией. |
+| F089 | Blacklist management | Partial | Settings removes a friend block. A global ban blacklist is a different record and has no management screen. |
+| F090 | Moderation presets | Partial | Create chips only copy a preset into the title. They do not apply privacy or moderation. |
 | F091 | Voice chat | Done | Voice joins, mutes, and lists devices through LiveKit. The room has join and mute controls. |
-| F092 | Voice preflight | Done | The voice card can run a microphone check before joining. |
-| F093 | Voice mute broadcast | Done | The voice card shows mute state and counts seconds while joined. |
+| F092 | Voice preflight | Partial | A test button calls getUserMedia. There is no speaker check or network score. |
+| F093 | Voice mute broadcast | Partial | The card counts local seconds and toggles mute. Mute is not broadcast as a voice-session duration. |
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
-| F095 | TURN/STUN endpoint | Done | The voice card shows the STUN URL from GET /ice-servers. |
-| F096 | Friends | Done | Friends can be searched by name from the home list. |
+| F095 | TURN/STUN endpoint | Partial | The card can show the STUN URL. LiveKit still owns voice ICE. |
+| F096 | Friends | Partial | Home can request a name search. The response is discarded, so nobody is listed. |
 | F097 | Friend presence | Done | A friend row shows the room they are in. |
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |
 | F099 | Watch sessions | Done | Leaving a room records a watch session. The profile lists the longest sessions with friends. |
-| F100 | Watch history | Done | Watch history is stored per video and the profile lists it by source. |
-| F101 | Favourite videos | Done | GET /me/favourites returns videos watched more than once. The profile lists them. |
+| F100 | Watch history | Partial | Studio groups watch history by source. There is no history list, and privacy does not filter it. |
+| F101 | Favourite videos | Partial | GET /me/favourites and the profile fetch exist. Nothing proves a second watch becomes a favourite. |
 | F102 | Discovery feed | Done | Discovery suggestions from watch history show on the queue. |
-| F103 | Public profile + privacy | Done | The profile page is in the cinema layout. Settings can hide friends and watch history. |
+| F103 | Public profile + privacy | Partial | Settings sends isFriendsPublic and isWatchHistoryPublic. No reader honors those flags. |
 | F104 | Bio + current activity | Done | Bio can be edited from the people screen and is stored on the user. |
 | F105 | Avatar upload + crop | Done | An avatar file is cropped to a square on a canvas and saved. |
 | F106 | Profile share + user_ deep link | Done | startapp user_<id> opens that person's name on the people screen. |
-| F107 | In-room profile modal | Done | Clicking a person in the room opens a profile card with their name and level. |
-| F108 | 10 achievements + XP + levels | Done | The ten original achievements, XP, and levels award on create, join, chat, and reaction. The profile shows all ten. |
+| F107 | In-room profile modal | Missing | The profile card exists only in the room preview, not in the live room. |
+| F108 | 10 achievements + XP + levels | Partial | The profile paints all ten achievement icons as earned and hard-codes '3 из 10'. |
 | F109 | Achievement pin slots | Done | Three pin slots can be filled from earned achievements. |
 | F110 | Activity heatmap | Done | The studio returns 365 days and the people screen marks active ones. |
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |
-| F112 | Engagement widget | Done | The profile shows voice and watch seconds next to each friend from the studio totals. |
+| F112 | Engagement widget | Partial | The profile prints partner ids and seconds from studio. It is not an engagement total with voice seconds. |
 | F113 | Host stats | Done | Hosted room count is shown. |
-| F114 | Leaderboards | Done | GET /stats ranks people by XP and lists open rooms. The profile shows that table. |
+| F114 | Leaderboards | Partial | The profile reads GET /stats, which is not the message, reaction, and voice leaderboards, and there is no test. |
 | F115 | In-app notifications | Done | The people screen lists unread notices. |
-| F116 | Telegram bot notify | Done | Settings says whether Telegram notifications are on. |
+| F116 | Telegram bot notify | Done (needs creds) | Telegram sendMessage runs when TELEGRAM_BOT_TOKEN and telegramId are set. Settings only shows a sentence. |
 | F117 | Email notifications | Done (needs creds) | Email send is skipped until SMTP_HOST is set. Documented in docs/CONFIG.md. |
 | F118 | Web push + service worker | Done (needs creds) | The service worker is registered. Push send is skipped until VAPID_PUBLIC_KEY is set. |
 | F119 | Per-channel × type prefs | Done | All 4 channels and 6 notification types are a grid of switches. |
