@@ -4,7 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#100e0c" />
-    <title>TeleRave</title>
+    <title>lume</title>
+    <script>
+      (function () {
+        var style = localStorage.getItem("lume.style") || "cinema";
+        var mode = localStorage.getItem("lume.mode") || "dark";
+        var light = window.matchMedia("(prefers-color-scheme: light)").matches;
+        var theme = mode === "system" ? (light ? "light" : "dark") : mode;
+        document.documentElement.dataset.style = style;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.mode = mode;
+      })();
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>

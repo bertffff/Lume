@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "./api/client.js";
 import { detectLocale, I18nProvider, useI18n } from "./i18n/context.js";
 import { useRoomChannel, type ChannelStatus } from "./realtime/useRoomChannel.js";
+import { DesignApp } from "./design/DesignApp.js";
 import { AdminScreen } from "./screens/AdminScreen.js";
-import { Lobby } from "./screens/Lobby.js";
 import { RoomScreen } from "./screens/RoomScreen.js";
 import { clearSession, loadSession, saveSession, type ClientSession } from "./session.js";
 import { ThemeProvider } from "./theme/ThemeProvider.js";
@@ -127,8 +127,8 @@ export function App() {
         >
           {adminPath && session ? (
             <AdminScreen token={session.accessToken} />
-          ) : screen === "lobby" || !session || !roomId ? (
-            <Lobby
+          ) : (
+            <DesignApp
               session={session}
               onSession={(next) => {
                 saveSession(next);
@@ -136,25 +136,34 @@ export function App() {
                 pulse("light");
               }}
               onSignOut={() => {
+                if (session?.refreshToken) void api.logout(session.refreshToken).catch(() => undefined);
                 clearSession();
                 setSession(null);
                 setRoomId(null);
               }}
+              roomId={roomId}
               onOpen={(id) => {
                 setRoomId(id);
                 pulse("medium");
               }}
-            />
-          ) : (
-            <RoomScreen
-              selfId={session.user.id}
-              live={live}
-              layout={layout}
-              onLayout={setLayout}
               onLeave={() => {
-                void api.leave(session.accessToken, roomId).catch(() => undefined);
+                if (session && roomId) void api.leave(session.accessToken, roomId).catch(() => undefined);
                 setRoomId(null);
               }}
+              room={
+                session && roomId ? (
+                  <RoomScreen
+                    selfId={session.user.id}
+                    live={live}
+                    layout={layout}
+                    onLayout={setLayout}
+                    onLeave={() => {
+                      void api.leave(session.accessToken, roomId).catch(() => undefined);
+                      setRoomId(null);
+                    }}
+                  />
+                ) : null
+              }
             />
           )}
         </Shell>

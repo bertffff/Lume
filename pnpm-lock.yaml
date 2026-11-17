@@ -161,6 +161,15 @@ importers:
       '@fontsource/fraunces':
         specifier: 5.3.0
         version: 5.3.0
+      '@fontsource/geologica':
+        specifier: 5.2.8
+        version: 5.2.8
+      '@fontsource/jetbrains-mono':
+        specifier: 5.2.8
+        version: 5.2.8
+      '@fontsource/onest':
+        specifier: 5.2.8
+        version: 5.2.8
       '@fontsource/outfit':
         specifier: 5.3.0
         version: 5.3.0
@@ -557,6 +566,15 @@ packages:
 
   '@fontsource/fraunces@5.3.0':
     resolution: {integrity: sha512-LEHTOBiZufQzAvnAe2rZ8ZknbDS28Q9kzwb0L+gZJEmjLGr8hhZ/5NuHXwDuHBWhVXYoiGGXmrb0H6Ko/RrHTg==}
+
+  '@fontsource/geologica@5.2.8':
+    resolution: {integrity: sha512-yZKBLK1jdlO5oet8MUXU4Gb5a2q+c70a3mti0w/6tl9uBC9gbb2SMxPWUBukHtnYZOVxQ88mp1/+BXwHQMRrlw==}
+
+  '@fontsource/jetbrains-mono@5.2.8':
+    resolution: {integrity: sha512-6w8/SG4kqvIMu7xd7wt6x3idn1Qux3p9N62s6G3rfldOUYHpWcc2FKrqf+Vo44jRvqWj2oAtTHrZXEP23oSKwQ==}
+
+  '@fontsource/onest@5.2.8':
+    resolution: {integrity: sha512-SblbOjK2hN6SpeCrQ6enB3Gdcs/VWdTBk4U1RO8jhMJ0Z5LeTKWVQCh+clLthgbZYjcBYmM1xJE8dajTG6bKAw==}
 
   '@fontsource/outfit@5.3.0':
     resolution: {integrity: sha512-0AVHzTTVJSxWDOxPKSfMeHhZeBFDU3cmgrcOb76ZEyhGo0+xgyG3GsLF3h9+X8w0IX7G4jzjJgFQEBiWdX6VgA==}
@@ -1693,6 +1711,7 @@ packages:
 
   node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
+    deprecated: This package is no longer needed on supported Node.js versions. Node.js 16+ includes AbortController and AbortSignal as built-in globals. All Node.js versions requiring this polyfill are end-of-life. Use the built-in globals instead.
 
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
@@ -2348,6 +2367,12 @@ snapshots:
       ipaddr.js: 2.5.0
 
   '@fontsource/fraunces@5.3.0': {}
+
+  '@fontsource/geologica@5.2.8': {}
+
+  '@fontsource/jetbrains-mono@5.2.8': {}
+
+  '@fontsource/onest@5.2.8': {}
 
   '@fontsource/outfit@5.3.0': {}
 

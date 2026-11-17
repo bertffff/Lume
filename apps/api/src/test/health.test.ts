@@ -26,6 +26,11 @@ describe("health", () => {
     expect(metrics.body).toContain("lume_up 1");
     expect(metrics.body).toContain("lume_sentry_configured 0");
 
+    const down = await buildApp(loadApiEnv({ NODE_ENV: "production" }));
+    const notReady = await down.inject({ method: "GET", url: "/ready" });
+    expect(notReady.statusCode).toBe(503);
+    await down.close();
+
     expect(ready.json()).toMatchObject({
       status: "ready",
       mode: "config",

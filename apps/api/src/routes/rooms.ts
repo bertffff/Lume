@@ -479,6 +479,21 @@ export function registerRoomRoutes(
     return reply.send({ history: rows });
   });
 
+  app.post("/rooms/:id/defaults", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({ canChat: z.boolean().optional(), canSpeak: z.boolean().optional() }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
+    if (!self || self.role !== "host" || self.leftAt) return reply.code(403).send({ error: "forbidden" });
+    await prisma.room.update({ where: { id: params.id }, data: { defaultPermissions: body.data } });
+    return reply.send({ defaults: body.data });
+  });
+
   app.post("/rooms/:id/sync-incident", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {

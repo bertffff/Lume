@@ -19,7 +19,6 @@ import { hashPassword, verifyPassword } from "../account/passwords.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import { requireUser } from "../auth/guard.js";
 import { issueRefresh } from "../auth/refresh-store.js";
-import { verifyLoginWidget } from "../auth/telegram.js";
 import type { ApiEnv } from "../env.js";
 import type { RoomService } from "../rooms/service.js";
 
@@ -136,6 +135,8 @@ export function registerSocialRoutes(
       bio: z.string().max(100).nullable().optional(),
       avatarUrl: z.string().url().nullable().optional(),
       themeId: z.enum(["ember", "aurora"]).optional(),
+      uiStyle: z.enum(["cinema", "gruvbox"]).optional(),
+      uiMode: z.enum(["dark", "light", "system"]).optional(),
       locale: z.enum(["ru", "en"]).optional(),
       displayName: z.string().trim().min(1).max(100).optional(),
       timezone: z.string().min(1).max(80).optional(),
@@ -700,6 +701,32 @@ export function registerSocialRoutes(
     return reply.send({ ok: true });
   });
 
+  app.get("/stats/leaderboard", async (_request, reply) => {
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const users = await prisma.user.findMany({
+      where: { deletedAt: null },
+      orderBy: { xp: "desc" },
+      take: 20,
+      select: { id: true, displayName: true, xp: true, totalMessages: true, totalReactions: true, totalVoiceSeconds: true },
+    });
+    return reply.send({ users });
+  });
+
+  app.post("/me/voice-seconds", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const body = z.object({ seconds: z.number().int().positive().max(8 * 60 * 60) }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const user = await prisma.user.update({
+      where: { id: actor.userId },
+      data: { totalVoiceSeconds: { increment: body.data.seconds } },
+    });
+    return reply.send({ totalVoiceSeconds: user.totalVoiceSeconds });
+  });
+
   app.get("/admin/audit", async (request, reply) => {
     const actor = await requireAdmin(request, reply, env, prisma);
     if (!actor || !prisma) return;
@@ -748,6 +775,8 @@ async function profileOf(prisma: PrismaClient, userId: string, includePrivate: b
     avatarUrl: user.avatarUrl,
     locale: user.locale,
     themeId: user.themeId,
+    uiStyle: user.uiStyle,
+    uiMode: user.uiMode,
     role: user.role,
     xp: user.xp,
     level: levelFromXp(user.xp),
@@ -758,6 +787,7 @@ async function profileOf(prisma: PrismaClient, userId: string, includePrivate: b
       reactions: user.totalReactions,
       roomsCreated: user.roomsCreated,
       watchTime: user.totalWatchTime,
+      voiceSeconds: user.totalVoiceSeconds,
     },
     achievements: user.achievements.map((row) => ({
       key: row.achievement.key,

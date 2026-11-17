@@ -1,0 +1,46 @@
+
+html[data-style] body{background:var(--bg)!important;color:var(--text)!important;font-size:14px;line-height:20px}
+html[data-style="cinema"] body{font-family:var(--font-ui)!important}
+html[data-style="gruvbox"] body{font-family:var(--font)!important}
+html[data-style] :focus-visible{outline:2px solid var(--accent, var(--yellow));outline-offset:2px}
+@media (prefers-reduced-motion: reduce){html[data-style] *{animation:none!important;transition:none!important}}
+.design-app{min-height:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+html[data-style="cinema"] .design-app{font-family:var(--font-ui)}
+html[data-style="gruvbox"] .design-app{font-family:var(--font)}
+.design-app .nav{height:64px;display:flex;align-items:center;gap:16px;padding:0 28px;border-bottom:1px solid var(--line, var(--bg2))}
+html[data-style="gruvbox"] .design-app .nav{display:none}
+.design-app .logo{font:700 20px/1 var(--font-display, var(--font));letter-spacing:-.02em;display:flex;align-items:center;gap:7px}
+.design-app .logo i.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:block}
+html[data-style="gruvbox"] .design-app .logo i.dot{border-radius:0;background:var(--orange)}
+.design-app .me{display:flex;align-items:center;gap:8px;font-weight:500}
+.design-app .wrap{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:16px 28px 20px}
+.design-app .greet h1{font:600 28px/34px var(--font-display, var(--font));letter-spacing:-.02em}
+.design-app .greet .sub{color:var(--text-2);margin-top:3px}
+.design-app .stories{display:flex;gap:16px;margin:14px 0 16px}
+.design-app .st{display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;font-size:12px;color:var(--text-2);background:none;border:0}
+.design-app .st .ring{width:64px;height:64px;border-radius:50%;padding:3px;background:var(--s3)}
+html[data-style="gruvbox"] .design-app .st .ring{border-radius:0}
+.design-app .st .ring .face{width:100%;height:100%;border-radius:50%;border:3px solid var(--ring-gap, var(--bg));display:grid;place-items:center}
+.design-app .sec{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 10px}
+.design-app .sec h3{font:600 17px/22px var(--font-display, var(--font))}
+.design-app .chips{display:flex;gap:6px}
+.design-app .pill{height:28px;padding:0 10px;border-radius:999px;background:var(--s1);color:var(--text-2);border:1px solid var(--line, transparent)}
+html[data-style="gruvbox"] .design-app .pill{border-radius:0}
+.design-app .pill.on{background:var(--text);color:var(--bg)}
+.design-app .rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.design-app .rc{text-align:left;background:none;border:0;color:inherit}
+.design-app .rc .th{position:relative;height:148px;border-radius:6px;background:linear-gradient(160deg,#2a211c,#0e0c0b);display:flex;align-items:flex-start;padding:8px}
+.design-app .rc .bd{margin-top:8px;display:flex;justify-content:space-between;gap:8px}
+.design-app .side .card{margin-bottom:10px}
+.design-app .fr{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line, var(--bg2))}
+.design-app .room-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;padding:12px 16px 16px;min-height:calc(100vh - 64px)}
+html[data-style="gruvbox"] .design-app .room-grid{grid-template-columns:minmax(0,1fr) 380px;padding:8px;min-height:calc(100vh - 52px)}
+.design-app .stage-card{min-height:280px;background:#000;position:relative}
+.design-app .stage-card .tr-room,.design-app .stage-card .tr-panel{background:transparent;border:0;box-shadow:none;color:#F3EDE6}
+.design-app .modal-input,.design-app input.inbox,.design-app textarea.inbox{width:100%;background:transparent;border:0;color:inherit;font:inherit;outline:none}
+.design-app .screen-scroll{overflow:auto;max-height:calc(100vh - 64px)}
+@media (max-width: 800px){
+  .design-app .wrap,.design-app .room-grid,.design-app .acts,.design-app .rooms,.design-app .results,.design-app .shop{grid-template-columns:1fr}
+  .design-app .search-lg{width:auto;flex:1}
+  .design-app .nav{padding:0 12px;gap:8px}
+}
