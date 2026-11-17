@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 111 |
+| Done | 112 |
 | Done (needs creds) | 12 |
 | Partial | 8 |
-| Redesign | 4 |
+| Redesign | 3 |
 | Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
@@ -45,7 +45,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
 | F027 | DB-backed queue reload | Done | Played items are stored in room history and reloaded into the queue column. |
 | F028 | Layout presets × aspect | Redesign | Resizable panels stay. Enlarged and immersive presets wait for the design pack. |
-| F029 | Mobile room sheet | Redesign | The mobile sheet waits for the design pack. Panels already reflow. |
+| F029 | Mobile room sheet | Done | On a narrow screen the queue sits in a bottom sheet under the video. |
 | F030 | Session dock | Done | The room header is the session dock: sync, people, and invite stay in that bar. |
 | F031 | Report user/room | Done | POST /reports accepts a reason up to 500 characters and optional details. The people column has a report form. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
