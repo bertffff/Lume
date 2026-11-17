@@ -5,6 +5,7 @@ import { legacyText } from "../i18n/legacy.js";
 import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
+import { posterFor } from "./posters.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
 
 type View =
@@ -183,7 +184,7 @@ export function DesignApp({
     });
   }
 
-  const view: View = offline ? "offline" : shot && views.has(shot as View) ? (shot as View) : roomId ? "room" : viewFromPath(path);
+  const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
   const hue = personHue(session?.user.id ?? "me");
   const shownRooms = rooms.filter((roomItem) => {
     const q = query.trim().toLowerCase();
@@ -212,8 +213,9 @@ export function DesignApp({
         </nav>
       )}
       {view === "room" && roomId ? room : null}
+      {view === "room" && !roomId ? <RoomPreview /> : null}
       {view === "home" ? (
-        <div className="wrap screen-scroll">
+        <div className={style === "gruvbox" ? "wrap screen-scroll g-home" : "wrap screen-scroll"}>
           <main>
             <div className="greet">
               <h1>{text.evening}{session ? `, ${session.user.displayName}` : ""}</h1>
@@ -230,7 +232,7 @@ export function DesignApp({
               </form>
             ) : (
               <div className="acts">
-                <button type="button" className="tile resume" onClick={() => {
+                <button type="button" className="tile resume" style={{ background: "url(/dev-seed/desert.jpg) center/cover" }} onClick={() => {
                   void fetch(`${apiUrl}/rooms/resume-last`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })
                     .then((response) => response.json())
                     .then((payload: { room?: { id: string } }) => { if (payload.room) onOpen(payload.room.id); });
@@ -268,7 +270,7 @@ export function DesignApp({
             <div className="rooms">
               {shownRooms.map((item) => (
                 <button key={item.id} type="button" className="rc" onClick={() => { if (!session) return; void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}>
-                  <div className="th"><span className="tag">{item.memberCount ?? 0}</span></div>
+                  <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}><span className="tag">{item.memberCount ?? 0}</span></div>
                   <div className="bd"><b>{item.title}</b><small className="mono">{item.code}</small></div>
                 </button>
               ))}
@@ -432,6 +434,33 @@ export function DesignApp({
         </footer>
       ) : null}
       {error ? <p className="tr-note">{error}</p> : null}
+    </div>
+  );
+}
+
+function RoomPreview() {
+  const gruv = document.documentElement.dataset.style === "gruvbox";
+  return (
+    <div className={gruv ? "g-room" : "cinema-room"}>
+      {gruv ? (
+        <header className="tabline"><span className="brand"><span className="dot" />LUME</span><div className="bufs"><span className="buf on"><span className="nr">1</span>room</span></div></header>
+      ) : (
+        <header className="top"><span className="logo"><i className="dot" />lume</span><div className="crumb"><b>Ночной кинозал</b><span className="slate mono">7KQ-2M</span></div></header>
+      )}
+      <div className="body">
+        <section className="player-col">
+          <div className="stage-card" style={{ background: "url(/dev-seed/desert.jpg) center/cover", minHeight: 320 }} />
+          <div className="low">
+            <div className="card" style={{ minHeight: 120 }} />
+            <div className="card" style={{ display: "flex", gap: 8, padding: 12 }}>
+              <div style={{ width: 140, height: 84, background: "url(/dev-seed/rain.jpg) center/cover" }} />
+              <div style={{ width: 140, height: 84, background: "url(/dev-seed/forest.jpg) center/cover" }} />
+            </div>
+          </div>
+        </section>
+        <aside className={gruv ? "pane irc" : "rail"} style={{ minHeight: 240 }} />
+      </div>
+      {gruv ? <footer className="status"><span className="sl-mode">ROOM</span><span className="sl-mid">:</span></footer> : null}
     </div>
   );
 }

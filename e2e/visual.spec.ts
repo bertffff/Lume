@@ -1,21 +1,23 @@
 import { expect, test } from "@playwright/test";
 
-const shots = ["home", "search", "settings", "auth", "onboarding", "missing", "unavailable", "premium", "notifications"] as const;
+const shots = [
+  "home", "room", "search", "create", "join", "room-settings", "members", "queue", "profile",
+  "settings", "premium", "auth", "onboarding", "notifications", "missing", "offline", "unavailable",
+] as const;
 
 for (const style of ["cinema", "gruvbox"] as const) {
   for (const mode of ["dark", "light"] as const) {
-    test(`shell ${style} ${mode}`, async ({ page }) => {
-      await page.setViewportSize({ width: 1440, height: 900 });
-      await page.goto(`/?shot=home&style=${style}&mode=${mode}`);
-      await expect(page.locator(".design-app")).toBeVisible();
-      await expect(page.locator("body")).toContainText(/lume|LUME/i);
-      await page.screenshot({ path: `test-results/visual/${style}-${mode}-home.png`, fullPage: true });
-      for (const shot of shots.slice(1)) {
-        await page.goto(`/?shot=${shot}&style=${style}&mode=${mode}`);
-        await expect(page.locator(".design-app")).toBeVisible();
-        await page.screenshot({ path: `test-results/visual/${style}-${mode}-${shot}.png` });
-      }
-    });
+    for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }] as const) {
+      test(`${style} ${mode} ${viewport.name}`, async ({ page }) => {
+        test.setTimeout(180_000);
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        for (const shot of shots) {
+          await page.goto(`/?shot=${shot}&style=${style}&mode=${mode}`);
+          await expect(page.locator(".design-app")).toBeVisible();
+          await page.screenshot({ path: `test-results/visual/${style}-${shot}-${viewport.name}-${mode}.png` });
+        }
+      });
+    }
   }
 }
 

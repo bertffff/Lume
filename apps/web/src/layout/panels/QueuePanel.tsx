@@ -1,4 +1,5 @@
 import { moveQueueItem } from "@lume/contracts";
+import { posterFor } from "../../design/posters.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
@@ -91,7 +92,7 @@ export function QueuePanel({
       {pending ? <p data-testid="queue-pending">{pending}</p> : null}
       <ol className="tr-queue">
         {items.map((item) => (
-          <li key={item.id} className={item.id === currentId ? "is-current" : undefined}>
+          <li key={item.id} className={item.id === currentId ? "is-current" : undefined} style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }}>
             {item.thumbnailUrl ? <img className="tr-thumb" src={item.thumbnailUrl} alt="" /> : null}
             <span>{item.id === currentId ? t("queue.nowPlaying") : item.provider}</span>
             {item.title}

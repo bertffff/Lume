@@ -1,4 +1,5 @@
 import { extractTimecodeSeconds, imageKind, mentionsUser, slowRemainingMs, typingLine } from "@lume/contracts";
+import { personHue } from "../../design/theme.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
@@ -124,9 +125,11 @@ export function ChatPanel({
         {messages.map((message) => {
           const timecode = extractTimecodeSeconds(message.body);
           const mentioned = mentionsUser(message.body, null, live?.state.members.find((member) => member.userId === live.selfId)?.displayName ?? "");
+          const hue = personHue(message.userId);
+          const mine = message.userId === live?.selfId;
           return (
-          <p key={message.id} className={mentioned ? "is-mentioned" : undefined}>
-            <strong>{message.displayName}</strong>
+          <p key={message.id} className={`${mentioned ? "is-mentioned" : ""} ${mine ? "mine" : ""} p-${hue}`}>
+            <strong className={`nm p-${hue}`}>{message.displayName}</strong>
             {message.body}
             <span className="tr-inline-actions">
               <button type="button" className="tr-text-button" onClick={() => setReplyToId(message.id)}>

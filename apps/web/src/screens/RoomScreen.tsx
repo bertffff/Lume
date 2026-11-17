@@ -1,7 +1,7 @@
 import { canControlPlayback, playerShortcut, positionAt, sessionSoftWarn, type RoomLayout as RoomLayoutModel } from "@lume/contracts";
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/context.js";
-import { RoomLayoutView } from "../layout/RoomLayout.js";
+import { RoomStage } from "../design/RoomStage.js";
 import { RoomProvider } from "../room/live.js";
 import type { useRoomChannel } from "../realtime/useRoomChannel.js";
 
@@ -108,22 +108,11 @@ export function RoomScreen({
         sendFloat: live.sendFloat,
       }}
     >
-      <section className="tr-room">
-        <div className="tr-room-bar">
-          <div>
-            <strong data-testid="room-title">{live.state.room.title}</strong>
-            <span>
-              {t("room.code")} <b data-testid="room-code">{live.state.room.code}</b>
-            </span>
-          </div>
-          <button type="button" className="tr-text-button" onClick={onLeave}>
-            {t("room.leave")}
-          </button>
-        </div>
+      <>
         {warn ? <p className="tr-banner">{t("room.warnSession")}</p> : null}
         {live.error ? <p className="tr-note">{live.error}</p> : null}
-        <RoomLayoutView layout={layout} synced={live.status === "online"} onLayout={onLayout} />
-      </section>
+        <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} />
+      </>
     </RoomProvider>
   );
 }

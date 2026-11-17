@@ -12,6 +12,7 @@ import "@fontsource/jetbrains-mono/cyrillic-500.css";
 import "./design/cinema.css";
 import "./design/gruvbox.css";
 import "./design/layout.css";
+import "./design/room.css";
 
 const root = document.getElementById("root");
 if (!root) {

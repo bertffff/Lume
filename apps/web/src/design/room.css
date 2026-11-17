@@ -1,0 +1,45 @@
+.cinema-room,.g-room{min-height:calc(100vh - 64px);display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+.cinema-room .top{height:52px;display:flex;align-items:center;gap:16px;padding:0 16px 0 20px;border-bottom:1px solid var(--line)}
+.cinema-room .logo{font:700 19px/1 var(--font-display, var(--font));display:flex;align-items:center;gap:7px;background:none;border:0;color:inherit}
+.cinema-room .logo .dot,.g-room .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block}
+.cinema-room .crumb{display:flex;align-items:center;gap:10px}
+.cinema-room .slate{font:500 12px/22px var(--font-mono);padding:0 8px;border:1px solid var(--line-2);border-radius:4px}
+.cinema-room .spacer,.g-room .spacer{flex:1}
+.cinema-room .sync{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2)}
+.cinema-room .sync .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.cinema-room .who{display:flex}
+.cinema-room .body,.g-room .body{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:0;flex:1}
+.cinema-room .player-col{display:flex;flex-direction:column;gap:12px;padding:16px 20px;min-width:0}
+.cinema-room .stage-card{position:relative;flex:1;min-height:280px;border-radius:10px;overflow:hidden;background:#000}
+.cinema-room .stage-card .tr-player{background:transparent;border:0;height:100%;display:flex;flex-direction:column}
+.cinema-room .stage-card .tr-frame,.cinema-room .stage-card .tr-stage{flex:1;min-height:220px;background:#000 center/cover}
+.cinema-room .low{display:grid;grid-template-columns:1.05fr 1.2fr;gap:12px}
+.cinema-room .card,.g-room .pane{background:var(--s1);border:1px solid var(--line);border-radius:16px;min-width:0}
+.cinema-room .rail{display:flex;flex-direction:column;background:var(--s1);border-left:1px solid var(--line);min-height:0}
+.cinema-room .tabs{display:flex;padding:10px 12px 0;border-bottom:1px solid var(--line)}
+.cinema-room .tab.on{color:var(--text);border-bottom:2px solid var(--accent);padding-bottom:8px}
+.cinema-room .tr-chat-log{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:auto;max-height:46vh}
+.cinema-room .tr-chat-log p{max-width:92%;background:var(--bubble, var(--s2));border-radius:16px 16px 16px 5px;padding:7px 11px;margin:0}
+.cinema-room .tr-chat-log p.mine{align-self:flex-end;background:var(--bubble-mine, #0E6B5C);color:#fff;border-radius:16px 16px 5px 16px}
+.cinema-room .tr-queue{list-style:none;display:flex;gap:10px;padding:0;margin:0;overflow:auto}
+.cinema-room .tr-queue li{min-width:140px;min-height:92px;border-radius:8px;background-size:cover;background-position:center;padding:8px;color:#fff;text-shadow:0 1px 2px #000}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.g-room{min-height:calc(100vh - 28px)}
+.g-room .brand .dot{border-radius:0;background:var(--orange)}
+.g-room .body{grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px}
+.g-room .player-col{display:grid;grid-template-rows:minmax(0,1fr) 210px;gap:10px;min-width:0}
+.g-room .stage-card,.g-room .pane,.g-room .card{border-radius:0;border:1px solid var(--bg2);background:var(--bg0)}
+.g-room .low{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g-room .tr-chat-log p{border-radius:0;background:transparent;border-bottom:1px solid var(--bg1);font-family:var(--font);padding:4px 8px}
+.g-room .tr-chat-log p.mine{align-self:stretch;color:var(--yellow)}
+.g-room .status{display:flex}
+.g-room .status form{display:flex;flex:1;gap:6px;align-items:center}
+.g-room .status input{flex:1;background:transparent;border:0;color:inherit;font:inherit}
+.g-home .acts,.g-home .rooms{gap:10px}
+.g-home .tile,.g-home .rc .th{border-radius:0;border:1px solid var(--bg2)}
+.g-home .tile.create{background:var(--yellow,#fabd2f);color:#1d2021}
+@media (max-width: 800px){
+  .cinema-room .body,.g-room .body,.cinema-room .low,.g-room .low{grid-template-columns:1fr}
+  .cinema-room .rail{border-left:0;border-top:1px solid var(--line)}
+  .cinema-room .queue-card{position:sticky;bottom:0}
+}
