@@ -5,10 +5,10 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 108 |
+| Done | 109 |
 | Done (needs creds) | 12 |
 | Partial | 8 |
-| Redesign | 7 |
+| Redesign | 6 |
 | Missing | 2 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
@@ -46,7 +46,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F027 | DB-backed queue reload | Done | Played items are stored in room history and reloaded into the queue column. |
 | F028 | Layout presets × aspect | Redesign | Resizable panels stay. Enlarged and immersive presets wait for the design pack. |
 | F029 | Mobile room sheet | Redesign | The mobile sheet waits for the design pack. Panels already reflow. |
-| F030 | Session dock | Redesign | The session dock waits for the design pack. The room bar and voice panel stay. |
+| F030 | Session dock | Done | The room header is the session dock: sync, people, and invite stay in that bar. |
 | F031 | Report user/room | Done | POST /reports accepts a reason up to 500 characters and optional details. The people column has a report form. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
 | F033 | VK + Rutube embeds | Done | VK and Rutube embeds accept a play command. The command is covered for both sources. |
