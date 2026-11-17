@@ -118,6 +118,7 @@ export {
   unlinkAllowed,
   linkedLabel,
   scheduledDeletion,
+  clampResumePosition,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

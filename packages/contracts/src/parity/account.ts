@@ -1,3 +1,8 @@
+export function clampResumePosition(positionMs: number, durationMs = Number.POSITIVE_INFINITY): number {
+  const safe = Math.max(0, positionMs);
+  return Number.isFinite(durationMs) ? Math.min(safe, Math.max(0, durationMs)) : safe;
+}
+
 export function scheduledDeletion(nowMs: number): number {
   return nowMs + 30 * 24 * 60 * 60 * 1000;
 }

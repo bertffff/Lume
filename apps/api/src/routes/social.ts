@@ -6,6 +6,7 @@ import {
   passwordIssue,
   registerAvailability,
   resumeCard,
+  clampResumePosition,
   scheduledDeletion,
   tempMuteExpiry,
   type RateBucket,
@@ -529,7 +530,7 @@ export function registerSocialRoutes(
       return;
     }
     const user = await prisma.user.findUnique({ where: { id: actor.userId } });
-    const snapshot = user?.lastRoomSnapshot as { title?: string; isPublic?: boolean; queue?: Array<{ url: string; title?: string }> } | null;
+    const snapshot = user?.lastRoomSnapshot as { title?: string; isPublic?: boolean; positionMs?: number; queue?: Array<{ url: string; title?: string }> } | null;
     if (!snapshot?.title) return reply.code(404).send({ error: "not_found" });
     const created = await service.createRoom(
       { userId: actor.userId, displayName: actor.displayName },
@@ -540,7 +541,7 @@ export function registerSocialRoutes(
         await service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, created.room.id, item.url);
       }
     }
-    return reply.send(created);
+    return reply.send({ ...created, positionMs: clampResumePosition(snapshot.positionMs ?? 0), paused: true });
   });
 
   app.post("/me/export", async (request, reply) => {
