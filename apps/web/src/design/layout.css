@@ -1,5 +1,7 @@
 
 html[data-style] body{background:var(--bg)!important;color:var(--text)!important;font-size:14px;line-height:20px}
+html[data-style="cinema"] .av{border-radius:50%}
+html[data-style="gruvbox"] .av{border-radius:0}
 html[data-style="cinema"] body{font-family:var(--font-ui)!important}
 html[data-style="gruvbox"] body{font-family:var(--font)!important}
 html[data-style] :focus-visible{outline:2px solid var(--accent, var(--yellow));outline-offset:2px}
@@ -9,6 +11,7 @@ html[data-style] :focus-visible{outline:2px solid var(--accent, var(--yellow));o
 .design-app{min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
 html[data-style="cinema"] .design-app{font-family:var(--font-ui)}
 html[data-style="gruvbox"] .design-app{font-family:var(--font)}
+.design-app .search-lg input{border:0;background:transparent;color:inherit;flex:1;min-width:0;outline:none;font:inherit}
 .design-app .nav{height:64px;display:flex;align-items:center;gap:16px;padding:0 28px;border-bottom:1px solid var(--line, var(--bg2))}
 html[data-style="gruvbox"] .design-app .nav{display:none}
 .design-app .logo{font:700 20px/1 var(--font-display, var(--font));letter-spacing:-.02em;display:flex;align-items:center;gap:7px}
@@ -16,6 +19,7 @@ html[data-style="gruvbox"] .design-app .nav{display:none}
 html[data-style="gruvbox"] .design-app .logo i.dot{border-radius:0;background:var(--orange)}
 .design-app .me{display:flex;align-items:center;gap:8px;font-weight:500}
 .design-app .wrap{display:grid;grid-template-columns:1fr 340px;gap:24px;padding:16px 28px 20px}
+.design-app .tile input,.design-app .tile .inbox{width:100%;margin-top:8px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--s2);color:var(--text);padding:0 12px}
 .design-app .greet h1{font:600 28px/34px var(--font-display, var(--font));letter-spacing:-.02em}
 .design-app .greet .sub{color:var(--text-2);margin-top:3px}
 .design-app .stories{display:flex;gap:16px;margin:14px 0 16px}

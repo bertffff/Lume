@@ -17,7 +17,7 @@ export function ThemeProvider({
     for (const [key, value] of Object.entries(vars)) {
       root.style.setProperty(key, value);
     }
-    root.dataset.theme = overrides["--lume-accent"] ? `${theme.id}-adapted` : theme.id;
+    root.dataset.palette = overrides["--lume-accent"] ? `${theme.id}-adapted` : theme.id;
   }, [theme, overrides]);
 
   return children;

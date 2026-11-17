@@ -5,6 +5,7 @@ import { legacyText } from "../i18n/legacy.js";
 import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
+import { demoFriends, demoMessages, demoRooms } from "./fixtures.js";
 import { posterFor } from "./posters.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
 
@@ -60,6 +61,7 @@ export function DesignApp({
   const [path, setPath] = useState(() => window.location.pathname);
   const [shot] = useState(() => new URLSearchParams(window.location.search).get("shot"));
   const params = new URLSearchParams(window.location.search);
+  const demo = params.get("demo") === "1";
   const [style, setStyle] = useState<StyleId>(params.get("style") === "gruvbox" ? "gruvbox" : readStoredStyle);
   const [mode, setMode] = useState<ModeId>(params.get("mode") === "light" || params.get("mode") === "system" || params.get("mode") === "dark" ? params.get("mode") as ModeId : readStoredMode);
   const [name, setName] = useState("");
@@ -208,7 +210,7 @@ export function DesignApp({
           <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}>{mode === "light" ? "☾" : "☀"}</button>
           <button type="button" className="me" onClick={() => go("/profile")}>
             <span className={`av p-${hue}`}>{initials(session?.user.displayName ?? "?")}</span>
-            <span className={`nm p-${hue}`}>{session?.user.displayName ?? text.signIn}</span>
+            <span className={`nm p-${hue}`}>{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
           </button>
         </nav>
       )}
@@ -218,32 +220,56 @@ export function DesignApp({
         <div className={style === "gruvbox" ? "wrap screen-scroll g-home" : "wrap screen-scroll"}>
           <main>
             <div className="greet">
-              <h1>{text.evening}{session ? `, ${session.user.displayName}` : ""}</h1>
-              <p className="sub">{legacyText(locale, "common", "nav.home")} · {text.friendsWatching}</p>
+              <h1>{text.evening}{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1>
+              <p className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : `${legacyText(locale, "common", "nav.home")} · ${text.friendsWatching}`}</p>
             </div>
-            {!session ? (
-              <form className="acts" onSubmit={(event) => void signIn(event)}>
-                <label className="tile">
-                  {text.name}
-                  <input data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} />
-                </label>
-                <button type="submit" className="tile create" data-testid="lobby-sign-in">{text.signIn}</button>
-                <button type="button" className="tile join" onClick={() => go("/auth")}>{text.telegram}</button>
-              </form>
+            {demo ? (
+              <div className="stories">
+                <div className="st new"><div className="ring">+</div>Своя</div>
+                {demoFriends.map((friend) => (
+                  <div className={`st p-${friend.hue}`} key={friend.name}>
+                    <div className="ring"><div className="face"><span className={`av p-${friend.hue}`}>{initials(friend.name)}</span></div></div>
+                    {friend.name}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {!session && !demo ? (
+              <div className="acts">
+                <form className="tile" onSubmit={(event) => void signIn(event)}>
+                  <div className="eyebrow">{text.signIn}</div>
+                  <label>
+                    {text.name}
+                    <input data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} />
+                  </label>
+                  <button type="submit" className="go" data-testid="lobby-sign-in">{text.signIn}</button>
+                </form>
+                <button type="button" className="tile create" onClick={() => document.querySelector<HTMLInputElement>("[data-testid=lobby-name]")?.focus()}>
+                  <h3>{text.create}</h3>
+                  <p>{text.createHint}</p>
+                </button>
+                <form className="tile join" onSubmit={(event) => { event.preventDefault(); go("/auth"); }}>
+                  <h3>{text.join}</h3>
+                  <p>{text.joinHint}</p>
+                  <div className="codein"><i className="blank">·</i><i className="blank">·</i><i className="blank">·</i><span className="dash">–</span><i className="blank">·</i><i className="blank">·</i></div>
+                  <button type="submit" className="go">{text.telegram}</button>
+                </form>
+              </div>
             ) : (
               <div className="acts">
                 <button type="button" className="tile resume" style={{ background: "url(/dev-seed/desert.jpg) center/cover" }} onClick={() => {
+                  if (!session) return;
                   void fetch(`${apiUrl}/rooms/resume-last`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })
                     .then((response) => response.json())
                     .then((payload: { room?: { id: string } }) => { if (payload.room) onOpen(payload.room.id); });
                 }}>
-                  <div className="c"><div className="eyebrow">{text.resume}</div><h2>{resume ?? text.empty}</h2></div>
+                  <div className="c"><div className="eyebrow">{text.resume}</div><h2>{demo ? "Пустая дорога — режиссёрская версия" : resume ?? text.empty}</h2></div>
                 </button>
                 <form className="tile create" onSubmit={(event) => void createRoom(event)}>
                   <h3>{text.create}</h3>
                   <p>{text.createHint}</p>
-                  <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />
-                  <button type="submit" data-testid="lobby-create">{text.create}</button>
+                  {demo ? null : <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />}
+                  {demo ? null : <button type="submit" data-testid="lobby-create">{text.create}</button>}
                   <span className="chips">
                     <button type="button" className="pill" onClick={() => setTitle("Киноночь")}>Киноночь</button>
                     <button type="button" className="pill" onClick={() => setTitle("Вечеринка")}>Вечеринка</button>
@@ -268,7 +294,12 @@ export function DesignApp({
               </div>
             </div>
             <div className="rooms">
-              {shownRooms.map((item) => (
+              {demo ? demoRooms.map((item) => (
+                <button key={item.title} type="button" className="rc">
+                  <div className="th" style={{ backgroundImage: `url(${item.poster})` }}><span className="tag">{item.count}</span></div>
+                  <div className="bd"><div><b>{item.title}</b><small>{item.sub}</small></div></div>
+                </button>
+              )) : shownRooms.map((item) => (
                 <button key={item.id} type="button" className="rc" onClick={() => { if (!session) return; void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}>
                   <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}><span className="tag">{item.memberCount ?? 0}</span></div>
                   <div className="bd"><b>{item.title}</b><small className="mono">{item.code}</small></div>
@@ -279,7 +310,13 @@ export function DesignApp({
           <aside className="side">
             <section className="card">
               <h3>{text.online}</h3>
-              {friends.map((row) => (
+              {demo ? demoFriends.map((row) => (
+                <div className="fr" key={row.name}>
+                  <span className={`av lg p-${row.hue}`}>{initials(row.name)}</span>
+                  <div><div className={`n p-${row.hue}`}>{row.name}</div><small>{row.note}</small></div>
+                  <button type="button" className={row.go ? "mini go" : "mini"}>{row.go ? "Зайти" : "Позвать"}</button>
+                </div>
+              )) : friends.map((row) => (
                 <div className="fr" key={row.id}>
                   <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
                   <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? text.empty}</small></div>
@@ -288,7 +325,7 @@ export function DesignApp({
               ))}
             </section>
             <section className="card">
-              <div className="lvl"><div className="mark">{level}</div><div><b>{text.level} {level}</b></div></div>
+              <div className="lvl"><div className="mark">{demo ? 7 : level}</div><div><b>{text.level} {demo ? 7 : level}</b><small>{demo ? "2 340 XP · до 8-го ещё 660" : ""}</small></div></div>
             </section>
             <section className="card">
               <h3>{text.reminders}</h3>
@@ -297,7 +334,9 @@ export function DesignApp({
             <section className="card heat-wrap heat-compact" aria-label={text.season}>
               <div className="heat-top"><h3>{text.season}</h3></div>
               <div className="heat-grid">
-                {heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 6 ? "a4" : cell.score > 3 ? "a3" : cell.score > 1 ? "a2" : cell.score > 0 ? "a1" : ""} data-tip={cell.day} />)}
+                {(demo ? Array.from({ length: 17 * 7 }, (_, index) => index % 5) : heat.slice(-119).map((cell) => cell.score)).map((score, index) => (
+                  <i key={index} className={score > 3 ? "a4" : score > 2 ? "a3" : score > 1 ? "a2" : score > 0 ? "a1" : ""} />
+                ))}
               </div>
             </section>
           </aside>
@@ -449,16 +488,45 @@ function RoomPreview() {
       )}
       <div className="body">
         <section className="player-col">
-          <div className="stage-card" style={{ background: "url(/dev-seed/desert.jpg) center/cover", minHeight: 320 }} />
+          <div className="stage-card" style={{ background: "url(/dev-seed/desert.jpg) center/cover", minHeight: 280 }} />
+          <div className="ctl">
+            <button type="button" className="play">II</button>
+            <span className="time">01:12:44 <span>/ 02:03:10</span></span>
+            <div className="tlw"><div className="track"><div className="buf" /><div className="prog" /></div><div className="head" /></div>
+            <span className="pill mono">1×</span>
+            <span className="pill">1080p</span>
+          </div>
           <div className="low">
-            <div className="card" style={{ minHeight: 120 }} />
-            <div className="card" style={{ display: "flex", gap: 8, padding: 12 }}>
-              <div style={{ width: 140, height: 84, background: "url(/dev-seed/rain.jpg) center/cover" }} />
-              <div style={{ width: 140, height: 84, background: "url(/dev-seed/forest.jpg) center/cover" }} />
+            <div className="card">
+              <div className="ct">Голосовой</div>
+              <div className="voice">
+                <div className="vp spk"><span className="av p-lisa speak">ЛМ</span><span className="name">Лиза</span></div>
+                <div className="vp"><span className="av p-artem">АТ</span>Артём</div>
+                <div className="vp"><span className="av p-mark">МК</span>Марк</div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="ct">Дальше в очереди</div>
+              <div className="q">
+                <div className="qi"><div className="im" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><b>Город после дождя</b></div>
+                <div className="qi"><div className="im" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }} /><b>Лес, который помнит</b></div>
+              </div>
             </div>
           </div>
         </section>
-        <aside className={gruv ? "pane irc" : "rail"} style={{ minHeight: 240 }} />
+        <aside className={gruv ? "pane irc" : "rail"}>
+          <div className="tabs"><span className="tab on">Чат</span><span className="tab">Люди</span><span className="tab">Очередь</span></div>
+          <div className="log">
+            {demoMessages.map((message, index) => "system" in message && message.system ? (
+              <span className="sys" key={index}>{message.text}</span>
+            ) : (
+              <div className={"mine" in message && message.mine ? "m mine" : "m"} key={index}>
+                {"name" in message ? <span className={`av p-${message.hue}`}>{initials(message.name)}</span> : null}
+                <div className="bu">{"name" in message ? <div className={`n p-${message.hue}`}>{message.name}</div> : null}{"body" in message ? message.body : ""}</div>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
       {gruv ? <footer className="status"><span className="sl-mode">ROOM</span><span className="sl-mid">:</span></footer> : null}
     </div>
