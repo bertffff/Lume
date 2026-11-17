@@ -1,4 +1,4 @@
-import { defaultRoomLayout, type RoomLayout } from "@lume/contracts";
+import { defaultRoomLayout, magicTokenFromSearch, type RoomLayout } from "@lume/contracts";
 import { themeById } from "@lume/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "./api/client.js";
@@ -52,6 +52,17 @@ export function App() {
     webApp?.expand?.();
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+    const magic = magicTokenFromSearch(window.location.search);
+    if (magic) {
+      void api.verifyMagic(magic).then((result) => {
+        const next = { accessToken: result.accessToken, refreshToken: result.refreshToken, user: result.user };
+        saveSession(next);
+        setSession(next);
+        const url = new URL(window.location.href);
+        url.searchParams.delete("magic");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }).catch(() => undefined);
     }
     const start = webApp?.initDataUnsafe?.start_param;
     if (start?.startsWith("room_")) {

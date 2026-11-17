@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 73 |
+| Done | 74 |
 | Done (needs creds) | 12 |
-| Partial | 28 |
+| Partial | 27 |
 | Redesign | 7 |
 | Missing | 17 |
 
@@ -21,7 +21,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F002 | Email + password login | Done | Login is limited to 20 attempts per 15 minutes per email. |
 | F003 | JWT access + rotating refresh | Done | The browser stores the refresh token and retries a 401 once. shouldRefresh covers the decision. |
 | F004 | Logout with server revocation | Done | POST /auth/logout deletes the refresh token. A revoked token cannot rotate. The sign-out button calls it. |
-| F005 | Magic-link login | Partial | The landing page can request a link. It does not sign the browser in when the link returns. |
+| F005 | Magic-link login | Done | A link is issued for 15 minutes and used once. Opening `?magic=` verifies it and stores the session. SMTP is still optional; without it the link is returned to the caller. |
 | F006 | Telegram Mini App auth | Done | initData expires after 300 seconds by default, and a clock more than 30 seconds ahead is rejected. |
 | F007 | Telegram Login Widget | Done | POST /auth/telegram-widget checks the Login Widget hash. The auth screen posts the fields. |
 | F008 | Link / unlink Telegram | Missing | No link routes. |

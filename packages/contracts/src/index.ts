@@ -114,6 +114,7 @@ export {
   allowHit,
   passwordIssue,
   registerAvailability,
+  magicTokenFromSearch,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,

@@ -1,3 +1,8 @@
+export function magicTokenFromSearch(search: string): string | null {
+  const token = new URLSearchParams(search).get("magic");
+  return token && token.length >= 8 ? token : null;
+}
+
 export function registerAvailability(nodeEnv: string, redisConfigured: boolean): "ok" | "redis_unconfigured" {
   return nodeEnv === "production" && !redisConfigured ? "redis_unconfigured" : "ok";
 }

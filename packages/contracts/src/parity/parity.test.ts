@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { levelFromXp, earnedAchievementKeys, xpForKeys } from "./achievements.js";
 import { passwordIssue,
-  registerAvailability, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  registerAvailability,
+  magicTokenFromSearch, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { nextHost, reclaimHost } from "./host.js";
@@ -177,6 +178,8 @@ describe("parity rules", () => {
     expect(passwordIssue("GoodPass1")).toBe(null);
     expect(registerAvailability("production", false)).toBe("redis_unconfigured");
     expect(registerAvailability("development", false)).toBe("ok");
+    expect(magicTokenFromSearch("?magic=abcdef12")).toBe("abcdef12");
+    expect(magicTokenFromSearch("?magic=short")).toBeNull();
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);
