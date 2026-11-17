@@ -1,4 +1,4 @@
-import { detectSource, planPlayback, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
+import { detectSource, planPlayback, refreshKeepsPlayback, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { ApiEnv } from "../env.js";
@@ -14,6 +14,12 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv): void {
     reply.header("accept-ranges", "bytes");
     if (upstream.headers.get("content-range")) reply.header("content-range", upstream.headers.get("content-range") ?? "");
     return reply.code(upstream.status).send(Buffer.from(await upstream.arrayBuffer()));
+  });
+
+  app.post("/video/refresh", async (request, reply) => {
+    const body = z.object({ url: z.string().min(1), positionMs: z.number().optional(), playing: z.boolean().optional() }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    return reply.send({ url: body.data.url, ...refreshKeepsPlayback(body.data.positionMs ?? 0, body.data.playing === true) });
   });
 
   app.post("/video/detect", async (request, reply) => {

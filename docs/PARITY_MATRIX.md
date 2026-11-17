@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 81 |
+| Done | 82 |
 | Done (needs creds) | 12 |
 | Partial | 22 |
 | Redesign | 7 |
-| Missing | 15 |
+| Missing | 14 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -57,7 +57,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F038 | Sync indicator | Done | The player shows synced, syncing, lagging, or waiting, and a resync button seeks to the server clock. |
 | F039 | Buffering / ready | Partial | Viewer phase is reported. No ready gate. |
 | F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
-| F041 | Video URL refresh | Missing | No re-extract path. |
+| F041 | Video URL refresh | Done | POST /video/refresh keeps the current time and play state. The unavailable card calls it. A scheduled refresher is still not running. |
 | F042 | Player error recovery | Partial | Limited-source copy only. |
 | F043 | Tap gesture zones | Done | A double tap on the left or right of the player seeks 10 seconds. The zone math is tested. |
 | F044 | Progress, fullscreen, speed | Done | The player has a speed menu from 0.5 to 2. |

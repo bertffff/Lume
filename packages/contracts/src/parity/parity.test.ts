@@ -8,7 +8,8 @@ import { passwordIssue,
   scheduledDeletion,
   clampResumePosition,
   matchesBrowse,
-  reportIssue, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  reportIssue,
+  refreshKeepsPlayback, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -200,6 +201,8 @@ describe("parity rules", () => {
     expect(reportIssue("спам", "user-1")).toBeNull();
     expect(reportIssue("", "user-1")).toBe("reason");
     expect(reportIssue("спам", "")).toBe("target");
+    expect(refreshKeepsPlayback(1200, true)).toEqual({ positionMs: 1200, status: "playing" });
+    expect(refreshKeepsPlayback(-5, false).positionMs).toBe(0);
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

@@ -1,3 +1,7 @@
+export function refreshKeepsPlayback(positionMs: number, playing: boolean): { positionMs: number; status: "playing" | "paused" } {
+  return { positionMs: Math.max(0, Math.round(positionMs)), status: playing ? "playing" : "paused" };
+}
+
 export function reportIssue(reason: string, targetId: string): "reason" | "target" | null {
   if (!targetId.trim()) return "target";
   const text = reason.trim();

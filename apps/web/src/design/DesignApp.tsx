@@ -497,7 +497,7 @@ function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "
                 <p>Источник не отвечает. Ведущая может обновить ссылку или заменить ролик.</p>
                 <div className="inbox">https://youtu.be/…</div>
                 <button type="button" className="btn btn-outline">Открыть на платформе</button>
-                <button type="button" className="btn btn-primary">Заменить видео</button>
+                <button type="button" className="btn btn-primary" onClick={() => void fetch(`${apiUrl}/video/refresh`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: "https://youtu.be/dQw4w9WgXcQ", positionMs: 4_364_000, playing: true }) })}>Заменить видео</button>
               </div>
             ) : null}
           </div>

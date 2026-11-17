@@ -121,6 +121,7 @@ export {
   clampResumePosition,
   matchesBrowse,
   reportIssue,
+  refreshKeepsPlayback,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,
