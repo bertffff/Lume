@@ -1,3 +1,5 @@
+export const recoveryActions = ["retry", "open", "replace"] as const;
+
 export function refreshKeepsPlayback(positionMs: number, playing: boolean): { positionMs: number; status: "playing" | "paused" } {
   return { positionMs: Math.max(0, Math.round(positionMs)), status: playing ? "playing" : "paused" };
 }

@@ -122,6 +122,7 @@ export {
   matchesBrowse,
   reportIssue,
   refreshKeepsPlayback,
+  recoveryActions,
   resumeCard,
   slowModeAllows,
   tempMuteExpiry,
