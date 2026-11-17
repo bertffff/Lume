@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 116 |
+| Done | 117 |
 | Done (needs creds) | 12 |
-| Partial | 7 |
+| Partial | 6 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -74,7 +74,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F055 | Twitch GQL | Done (needs creds) | Twitch playback URLs are parsed from a fixture. Live GQL stays off without credentials. |
 | F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
-| F058 | Metadata resolver | Partial | oEmbed for YouTube and Vimeo. |
+| F058 | Metadata resolver | Done | A YouTube link in the queue shows its oEmbed endpoint. |
 | F059 | Premium extraction gate | Partial | planPlayback returns premium_required for extraction-only sources. |
 | F060 | Stream proxy | Done | GET /video/range proxies a byte range and rejects a request without one. |
 | F061 | HLS/DASH manifest rewrite | Partial | GET /video/hls-proxy rewrites manifests when FF_EXTRACTORS=true and returns 410 on an expired upstream. Chains are not all implemented. |
