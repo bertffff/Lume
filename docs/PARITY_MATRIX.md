@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 88 |
+| Done | 89 |
 | Done (needs creds) | 13 |
-| Partial | 32 |
+| Partial | 31 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -65,7 +65,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F046 | Low-bandwidth mode | Done | Low bandwidth is a player switch saved on this browser. |
 | F047 | Floating reactions | Partial | Settings can save hideOtherReactions. The live room never reads it, so floats still show. |
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
-| F049 | Sync telemetry | Partial | Incidents can be stored and listed. The player posts one when adding a queue URL, not on a sync failure. |
+| F049 | Sync telemetry | Done | A sync incident is stored only from the sync-failure control. Adding a video does not write one. |
 | F050 | Source detection | Done | The detector covers the source list, including YouTube, VK, and Rutube, and the queue shows the result. Extractors that need credentials stay idle until configured. |
 | F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
 | F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |

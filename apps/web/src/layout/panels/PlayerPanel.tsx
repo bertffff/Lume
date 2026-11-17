@@ -377,13 +377,6 @@ export function PlayerPanel({
         <button type="button" className="tr-text-button" onClick={() => {
           const next = window.prompt(t("queue.url"));
           if (next) live?.addQueue(next);
-          if (live) {
-            void fetch(`${apiUrl}/rooms/${live.state.room.id}/sync-incident`, {
-              method: "POST",
-              headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
-              body: JSON.stringify({ note: "player" }),
-            });
-          }
         }}>{t("queue.add")}</button>
         {(["👍", "❤️", "😂", "🔥"] as const).map((emoji) => (
           <button key={emoji} type="button" className="tr-text-button" onClick={() => live?.sendFloat(emoji)}>

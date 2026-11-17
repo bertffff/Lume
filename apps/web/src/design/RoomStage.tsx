@@ -115,7 +115,9 @@ export function RoomStage({
             <button type="button" className="logo" onClick={onLeave}><i />lume</button>
             <div className="crumb"><b data-testid="room-title">{room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
             <span className="spacer" />
-            <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span></div>
+            <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
+              <button type="button" data-testid="sync-incident" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) })}>Сбой</button>
+            </div>
             <div className="who">
               <div className="stack">
                 {members.slice(0, 4).map((member) => (
