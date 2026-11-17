@@ -441,6 +441,7 @@ export function DesignApp({
 
 function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "people" | "queue"; unavailable?: boolean }) {
   const gruv = document.documentElement.dataset.style === "gruvbox";
+  const [person, setPerson] = useState<string | null>(null);
   return (
     <div className={gruv ? "g-room" : "cinema-room"}>
       {gruv ? (
@@ -537,7 +538,7 @@ function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "
           {rail === "people" ? (
             <div className="rail-list">
               <div className="eyebrow">Ведущая</div>
-              <div className="row"><span className="av p-lisa">ЛМ</span><div><b className="n p-lisa">Лиза</b><small>говорит · ведущая</small></div></div>
+              <button type="button" className="row" onClick={() => setPerson("Лиза")}><span className="av p-lisa">ЛМ</span><div><b className="n p-lisa">Лиза</b><small>говорит · ведущая</small></div></button>
               <div className="eyebrow">В комнате</div>
               <div className="row"><span className="av p-me">АВ</span><div><b className="n p-me">Альберт</b><small>вы · в голосе</small></div></div>
               <div className="row"><span className="av p-artem">АТ</span><div><b className="n p-artem">Артём</b><small>в голосе</small></div></div>
@@ -583,6 +584,7 @@ function RoomPreview({ rail = "chat", unavailable = false }: { rail?: "chat" | "
           </> : null}
         </aside>}
       </div>
+      {person ? <div className="overlay docked" role="dialog"><div className="modal"><div className="mh"><h2>{person}</h2><button type="button" onClick={() => setPerson(null)}>×</button></div><div className="mb"><p>Уровень 7 · в голосе</p></div></div></div> : null}
       {gruv ? <footer className="status"><span className="sl-mode">ROOM</span><span className="sl-mid">:</span></footer> : null}
     </div>
   );
