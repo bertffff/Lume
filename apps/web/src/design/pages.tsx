@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { linkedLabel } from "@lume/contracts";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -24,7 +25,7 @@ export function SettingsScreen({
     void fetch(`${apiUrl}/auth/linked-accounts`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { email?: boolean; telegram?: boolean }) => {
-        setLinked([payload.email ? "почта" : null, payload.telegram ? "Telegram" : null].filter(Boolean).join(" · ") || "нет");
+        setLinked(linkedLabel({ email: Boolean(payload.email), telegram: Boolean(payload.telegram) }));
       })
       .catch(() => setLinked("нет"));
   }, [token, apiUrl]);

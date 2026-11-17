@@ -1,3 +1,8 @@
+export function linkedLabel(accounts: { email: boolean; telegram: boolean }): string {
+  const parts = [accounts.email ? "почта" : null, accounts.telegram ? "Telegram" : null].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "нет";
+}
+
 export function unlinkAllowed(hasEmail: boolean): boolean {
   return hasEmail;
 }

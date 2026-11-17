@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 75 |
+| Done | 76 |
 | Done (needs creds) | 12 |
-| Partial | 26 |
+| Partial | 27 |
 | Redesign | 7 |
-| Missing | 17 |
+| Missing | 15 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -25,7 +25,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F006 | Telegram Mini App auth | Done | initData expires after 300 seconds by default, and a clock more than 30 seconds ahead is rejected. |
 | F007 | Telegram Login Widget | Done | POST /auth/telegram-widget checks the Login Widget hash. The auth screen posts the fields. |
 | F008 | Link / unlink Telegram | Done | Settings can link a numeric Telegram id and unlink it. Unlink is refused without an email. A Telegram id already on another account returns 409. |
-| F009 | Linked accounts status | Missing | No endpoint. |
+| F009 | Linked accounts status | Done | GET /auth/linked-accounts returns email and Telegram flags. Settings shows them as «почта · Telegram». |
 | F010 | Dev auth bypass | Done | ALLOW_STUB_AUTH guest JWT. |
 | F011 | Post-auth pending room | Done | A room code from the Telegram start param or ?code= is filled into the join field. |
 | F012 | Onboarding | Done | Three onboarding lines show once, then the flag is saved on the account. |
