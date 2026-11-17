@@ -220,7 +220,7 @@ export function NotificationsScreen() {
 
 export function CreateScreen({ title, onTitle, onSubmit }: { title: string; onTitle: (value: string) => void; onSubmit: (event: FormEvent) => void }) {
   return (
-    <div className="overlay"><form className="modal lg" onSubmit={onSubmit}>
+    <div className="overlay docked"><form className="modal lg" onSubmit={onSubmit}>
       <div className="mh"><h2>Создать комнату</h2><span className="sp" /></div>
       <div className="mb">
         <div className="steps"><span className="on" /><span className="on" /><span /></div>
@@ -244,7 +244,7 @@ export function CreateScreen({ title, onTitle, onSubmit }: { title: string; onTi
 export function JoinScreen({ code, onCode, onSubmit }: { code: string; onCode: (value: string) => void; onSubmit: (event: FormEvent) => void }) {
   const cells = (code || "7KQ-2M").replace("-", "").padEnd(6, " ").slice(0, 6).split("");
   return (
-    <div className="overlay"><form className="modal" onSubmit={onSubmit}>
+    <div className="overlay docked"><form className="modal" onSubmit={onSubmit}>
       <div className="mh"><h2>Войти по коду</h2></div>
       <div className="mb">
         <div className="codein">{cells.slice(0, 3).map((cell, index) => <i key={index}>{cell}</i>)}<span className="dash">–</span>{cells.slice(3).map((cell, index) => <i key={index} className={cell === " " ? "blank" : ""}>{cell.trim() || "·"}</i>)}</div>
@@ -257,7 +257,7 @@ export function JoinScreen({ code, onCode, onSubmit }: { code: string; onCode: (
 
 export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   return (
-    <div className="overlay"><div className="modal">
+    <div className="overlay docked"><div className="modal">
       <div className="mh"><h2>Добро пожаловать в lume</h2><span>1 / 3</span></div>
       <div className="mb">
         <div className="steps"><span className="on" /><span /><span /></div>

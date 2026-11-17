@@ -116,6 +116,7 @@ html[data-style="gruvbox"] .design-app .panel{border-radius:0}
 .cinema-room .unavail h2{color:#F3EDE6}
 .cinema-room .rail-list{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .design-app{position:relative}
+.design-app .overlay.docked{inset:64px 0 0 0}
 .design-app.is-narrow .tabbar button{background:none;border:0;color:var(--text-2);font-size:12px}
 @media (max-width: 800px){
   .design-app .wrap,.design-app .room-grid,.design-app .acts,.design-app .rooms,.design-app .results,.design-app .shop,.design-app .page-screen{grid-template-columns:1fr}
