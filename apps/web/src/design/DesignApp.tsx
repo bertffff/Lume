@@ -209,7 +209,7 @@ export function DesignApp({
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
           {demo ? (
-            <div className="search-lg"><Icon name="search" />Найти видео или комнату<span className="kbd">/</span></div>
+            <div className="search-lg"><i className="ph ph-magnifying-glass" />Найти видео или комнату<span className="kbd">/</span></div>
           ) : (
             <label className="search-lg">
               <input aria-label={text.search} placeholder={text.search} value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => go("/search")} />
@@ -217,8 +217,8 @@ export function DesignApp({
             </label>
           )}
           <div style={{ flex: 1 }} />
-          <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><Icon name="bell" /><span className="badge-dot" /></button>
-          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><Icon name="sun" /><Icon name="moon" /></button>
+          <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><i className="ph ph-bell" /><span className="badge-dot" /></button>
+          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><i className="ph ph-sun" /><i className="ph ph-moon" /></button>
           <button type="button" className="me" onClick={() => go("/profile")}>
             <span className="av p-me">{demo ? "АВ" : initials(session?.user.displayName ?? "?")}</span>
             <span className="nm p-me">{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
@@ -329,9 +329,9 @@ export function DesignApp({
           <aside className="side">
             <section className="card">
               <h3>Друзья онлайн <span>14</span></h3>
-              <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }); }}>
+              {demo ? null : <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }); }}>
                 <input name="q" placeholder="Найти человека" aria-label="friend search" />
-              </form>
+              </form>}
               {demo ? (
                 <>
                   <div className="fr"><span className="av lg p-lisa">ЛМ<span className="pres" /></span><div><div className="n p-lisa">Лиза</div><div className="s">ведёт «Ночной кинозал»</div></div><button type="button" className="mini go">Зайти</button></div>
