@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 90 |
+| Done | 91 |
 | Done (needs creds) | 13 |
-| Partial | 30 |
+| Partial | 29 |
 | Redesign | 0 |
 | Missing | 4 |
 
@@ -112,7 +112,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F093 | Voice mute broadcast | Partial | The card counts local seconds and toggles mute. Mute is not broadcast as a voice-session duration. |
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
 | F095 | TURN/STUN endpoint | Partial | The card can show the STUN URL. LiveKit still owns voice ICE. |
-| F096 | Friends | Partial | Home can request a name search. The response is discarded, so nobody is listed. |
+| F096 | Friends | Done | Home search renders the people returned by GET /users/search, excluding the caller. |
 | F097 | Friend presence | Done | A friend row shows the room they are in. |
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |
 | F099 | Watch sessions | Done | Leaving a room records a watch session. The profile lists the longest sessions with friends. |

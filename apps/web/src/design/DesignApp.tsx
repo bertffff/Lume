@@ -86,6 +86,7 @@ export function DesignApp({
   }, []);
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
+  const [people, setPeople] = useState<Array<{ id: string; displayName: string }>>([]);
   const [ice, setIce] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [linked, setLinked] = useState<string>("off");
@@ -329,9 +330,11 @@ export function DesignApp({
           <aside className="side">
             <section className="card">
               <h3>Друзья онлайн <span>14</span></h3>
-              {demo ? null : <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }); }}>
-                <input name="q" placeholder="Найти человека" aria-label="friend search" />
+              {demo ? null : <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()).then((payload: { users?: Array<{ id: string; displayName: string }> }) => setPeople(payload.users ?? [])); }}>
+                <input data-testid="friend-search" name="q" placeholder="Найти человека" aria-label="friend search" />
+                <button type="submit" data-testid="friend-search-go">Найти</button>
               </form>}
+              {people.map((person) => <p key={person.id} data-testid="friend-result">{person.displayName}</p>)}
               {demo ? (
                 <>
                   <div className="fr"><span className="av lg p-lisa">ЛМ<span className="pres" /></span><div><div className="n p-lisa">Лиза</div><div className="s">ведёт «Ночной кинозал»</div></div><button type="button" className="mini go">Зайти</button></div>
