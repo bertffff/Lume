@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 115 |
+| Done | 116 |
 | Done (needs creds) | 12 |
-| Partial | 8 |
+| Partial | 7 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -63,7 +63,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F044 | Progress, fullscreen, speed | Done | The player has a speed menu from 0.5 to 2. |
 | F045 | Quality selector | Done | Quality can be auto, low, or high. Auto follows the tested network rule and is saved locally. |
 | F046 | Low-bandwidth mode | Done | Low bandwidth is a player switch saved on this browser. |
-| F047 | Floating reactions | Partial | Floats can be hidden for other people or for the whole room. Own reactions stay visible when only the personal switch is on. |
+| F047 | Floating reactions | Done | Settings can hide other people's floating reactions. |
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
 | F049 | Sync telemetry | Done | A sync incident is stored on the room. Settings lists the latest 10. |
 | F050 | Source detection | Done | The detector covers the source list, including YouTube, VK, and Rutube, and the queue shows the result. Extractors that need credentials stay idle until configured. |

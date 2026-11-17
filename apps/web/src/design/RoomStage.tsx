@@ -1,4 +1,4 @@
-import { emojiCategories, historyLabel, shouldHoldForReady, type RoomLayout } from "@lume/contracts";
+import { emojiCategories, historyLabel, oEmbedEndpoint, planPlayback, shouldHoldForReady, type ParsedEmbed, type RoomLayout } from "@lume/contracts";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -37,6 +37,8 @@ export function RoomStage({
   const [detected, setDetected] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; title: string | null }>>([]);
   const [tip, setTip] = useState<string | null>(null);
+  const [iceUrl, setIceUrl] = useState<string | null>(null);
+  const [voiceSeconds, setVoiceSeconds] = useState(0);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -57,6 +59,7 @@ export function RoomStage({
         .then((payload: { items?: Array<{ title: string | null; url: string }> }) => setTip(payload.items?.[0]?.title ?? payload.items?.[0]?.url ?? null))
         .catch(() => setTip(null));
     }
+    void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIceUrl(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIceUrl(null));
     const onResize = () => setNarrow(window.innerWidth < 800);
     window.addEventListener("resize", onResize);
     return () => {
@@ -64,6 +67,11 @@ export function RoomStage({
       window.removeEventListener("resize", onResize);
     };
   }, []);
+  useEffect(() => {
+    if (!voice.joined) return;
+    const timer = window.setInterval(() => setVoiceSeconds((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [voice.joined]);
   if (!live) return null;
   const room = live.state.room;
   const members = live.state.members;
@@ -158,7 +166,7 @@ export function RoomStage({
           <div className={narrow ? "sheet" : "low"}>
             {narrow ? <button type="button" className="sheet-tab" onClick={() => setSheet((value) => !value)}>Очередь</button> : null}
             <div className="card voice-card">
-              <div className="ct">Голосовой {voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{voice.joined ? "в эфире" : ""}</small>}</div>
+              <div className="ct">Голосовой {voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{voice.joined ? `в эфире ${voiceSeconds}с` : iceUrl}</small>}</div>
               <div className="voice">
                 <ul className="voice" data-testid="member-list">
                   {members.map((member) => (
@@ -190,6 +198,8 @@ export function RoomStage({
                 <form className="qi add" onSubmit={addUrl}>
                   <input data-testid="queue-input" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
                   {detected ? <small>{detected}</small> : null}
+                  {detected === "youtube" ? <small>{oEmbedEndpoint({ provider: "youtube", externalId: "video", url: url || "https://youtu.be/video", titleHint: "video" })}</small> : null}
+                  {url && planPlayback({ url, premium: false }).type === "error" ? <small>Нужен премиум</small> : null}
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                 </form>
               </div>

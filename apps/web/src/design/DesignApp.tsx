@@ -329,6 +329,9 @@ export function DesignApp({
           <aside className="side">
             <section className="card">
               <h3>Друзья онлайн <span>14</span></h3>
+              <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }); }}>
+                <input name="q" placeholder="Найти человека" aria-label="friend search" />
+              </form>
               {demo ? (
                 <>
                   <div className="fr"><span className="av lg p-lisa">ЛМ<span className="pres" /></span><div><div className="n p-lisa">Лиза</div><div className="s">ведёт «Ночной кинозал»</div></div><button type="button" className="mini go">Зайти</button></div>

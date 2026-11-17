@@ -100,6 +100,9 @@ export function SettingsScreen({
         </div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
         <div className="set-row"><div><b>Сервисы извлечения</b><small>{services.length === 0 ? "Cobalt не задан" : services.join(", ")}</small></div></div>
+        <div className="set-row"><div><b>HLS</b><small>Манифест переписывается, когда извлечения включены.</small></div></div>
+        <div className="set-row"><div><b>Реакции</b><button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: true }) }); }}>Скрыть чужие</button></div></div>
+        <div className="set-row"><div><b>Telegram</b><small>{linked.includes("Telegram") ? "Уведомления бота включены" : "Бот молчит, пока Telegram не привязан"}</small></div></div>
         <div className="set-row"><div><b>Плеер</b><small>Качество 1080p, скорость 1×</small></div></div>
         <div className="set-row">
           <div><b>Удаление аккаунта</b><small>30 дней на восстановление. Подтверждение — DELETE.</small></div>
