@@ -51,8 +51,9 @@ export const api = {
       body: { displayName },
     });
   },
-  listRooms() {
-    return request<{ rooms: RoomSummary[] }>("/rooms");
+  listRooms(query = "") {
+    const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+    return request<{ rooms: RoomSummary[] }>(`/rooms${suffix}`);
   },
   createRoom(token: string, title: string, isPublic: boolean) {
     return request<{ room: RoomSummary } & Record<string, unknown>>("/rooms", {

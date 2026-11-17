@@ -1,4 +1,4 @@
-import { createRoomSchema, joinRoomSchema } from "@lume/contracts";
+import { createRoomSchema, joinRoomSchema, matchesBrowse } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { allowsModeration, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
@@ -58,7 +58,7 @@ export function registerRoomRoutes(
     const query = z.object({ q: z.string().optional(), sort: z.enum(["new", "title"]).optional() }).safeParse(request.query);
     let rooms = await service.listPublic();
     const q = query.success ? query.data.q?.trim().toLowerCase() : undefined;
-    if (q) rooms = rooms.filter((room) => room.title.toLowerCase().includes(q) || room.code.includes(q));
+    if (q) rooms = rooms.filter((room) => matchesBrowse(room.title, room.code, q));
     if (query.success && query.data.sort === "title") rooms = [...rooms].sort((left, right) => left.title.localeCompare(right.title, "ru"));
     return { rooms };
   });

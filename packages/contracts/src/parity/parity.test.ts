@@ -6,7 +6,8 @@ import { passwordIssue,
   unlinkAllowed,
   linkedLabel,
   scheduledDeletion,
-  clampResumePosition, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
+  clampResumePosition,
+  matchesBrowse, allowHit, tempMuteExpiry, slowModeAllows, resumeCard } from "./account.js";
 import { clockSample, median, pushWindow, smoothRtt } from "./clock.js";
 import { planDrift } from "./drift.js";
 import { hostLeavePauses, nextHost, reclaimHost } from "./host.js";
@@ -193,6 +194,8 @@ describe("parity rules", () => {
     expect(scheduledDeletion(0)).toBe(30 * 24 * 60 * 60 * 1000);
     expect(clampResumePosition(-10, 1000)).toBe(0);
     expect(clampResumePosition(5000, 1000)).toBe(1000);
+    expect(matchesBrowse("Ночной кинозал", "7KQ2M", "кино")).toBe(true);
+    expect(matchesBrowse("Ночной кинозал", "7KQ2M", "zzz")).toBe(false);
     const first = allowHit({ hits: [] }, 0, 2, 1_000);
     const second = allowHit(first.bucket, 10, 2, 1_000);
     const third = allowHit(second.bucket, 20, 2, 1_000);

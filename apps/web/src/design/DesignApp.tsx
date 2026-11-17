@@ -110,9 +110,9 @@ export function DesignApp({
   }, []);
 
   useEffect(() => {
-    void api.listRooms().then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
+    void api.listRooms(query).then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
     void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIce(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIce(null));
-  }, []);
+  }, [query]);
 
   useEffect(() => {
     if (!session) return;

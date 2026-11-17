@@ -1,3 +1,8 @@
+export function matchesBrowse(title: string, code: string, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  return needle.length === 0 || title.toLowerCase().includes(needle) || code.toLowerCase().includes(needle);
+}
+
 export function clampResumePosition(positionMs: number, durationMs = Number.POSITIVE_INFINITY): number {
   const safe = Math.max(0, positionMs);
   return Number.isFinite(durationMs) ? Math.min(safe, Math.max(0, durationMs)) : safe;
