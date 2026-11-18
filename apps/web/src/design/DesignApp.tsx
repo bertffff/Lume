@@ -394,7 +394,7 @@ export function DesignApp({
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} /> : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} /> : null}
           {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
-          {view === "profile" ? <ProfileScreen token={session?.accessToken} apiUrl={apiUrl} /> : null}
+          {view === "profile" ? <ProfileScreen token={session?.accessToken} apiUrl={apiUrl} userId={session?.user.id} /> : null}
           {view === "premium" ? <PremiumScreen /> : null}
           {view === "notifications" ? <NotificationsScreen /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}

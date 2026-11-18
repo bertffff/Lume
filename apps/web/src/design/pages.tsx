@@ -114,8 +114,9 @@ export function SettingsScreen({
   );
 }
 
-export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: string } = {}) {
+export function ProfileScreen({ token, apiUrl, userId }: { token?: string; apiUrl?: string; userId?: string } = {}) {
   const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null; watchCount: number }>>([]);
+  const [history, setHistory] = useState<Array<{ url: string; title: string | null; watchCount: number; lastWatchedAt: string }>>([]);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number }>>([]);
@@ -133,7 +134,12 @@ export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: stri
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number }> }) => setFavourites(payload.items ?? []))
       .catch(() => setFavourites([]));
-  }, [token, apiUrl]);
+    if (!userId) return;
+    void fetch(`${apiUrl}/users/${userId}/watch-history`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number; lastWatchedAt: string }> }) => setHistory(payload.items ?? []))
+      .catch(() => setHistory([]));
+  }, [token, apiUrl, userId]);
   return (
     <div className="profile-wrap">
       <aside className="side-p">
@@ -169,6 +175,14 @@ export function ProfileScreen({ token, apiUrl }: { token?: string; apiUrl?: stri
         <h3>Таблица</h3>
         {ranks.length === 0 ? <p>Пока пусто</p> : ranks.map((row) => <p key={row.id}>{row.displayName} · {row.xp}</p>)}
         <h3>История просмотров</h3>
+        <ul data-testid="profile-history">
+          {history.length === 0 ? <li>Пока пусто</li> : history.map((item) => (
+            <li key={item.url} data-testid="profile-history-item" data-url={item.url} data-watch-count={item.watchCount}>
+              {item.title || item.url} · {item.watchCount} · {new Date(item.lastWatchedAt).toLocaleDateString("ru-RU")}
+            </li>
+          ))}
+        </ul>
+        <h3>Платформы</h3>
         {platforms.length === 0 ? <p>Пока пусто</p> : platforms.map((item) => <p key={item.source}>{item.source} · {item.count}</p>)}
         <h3>Сеансы с друзьями</h3>
         {friendsWatch.length === 0 ? <p>Пока пусто</p> : friendsWatch.map((item) => <p key={item.partnerId}>{item.partnerId} · {item.seconds} с</p>)}

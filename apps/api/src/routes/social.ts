@@ -12,6 +12,7 @@ import {
   type RateBucket,
   type ResumeSnapshot,
 } from "@lume/contracts";
+import { verifyAccessToken } from "@lume/contracts/node";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -36,6 +37,18 @@ function hourInZone(timeZone: string): number {
 
 async function audit(prisma: PrismaClient, actorId: string, action: string, subjectKind: string, subjectId: string, detail?: string) {
   await prisma.auditLog.create({ data: { actorId, action, subjectKind, subjectId, ...(detail ? { detail } : {}) } });
+}
+
+async function optionalViewer(request: { headers: { authorization?: string } }, env: ApiEnv): Promise<string | null> {
+  const header = request.headers.authorization;
+  if (!env.JWT_SECRET || !header?.startsWith("Bearer ")) {
+    return null;
+  }
+  try {
+    return (await verifyAccessToken(env.JWT_SECRET, header.slice("Bearer ".length))).userId;
+  } catch {
+    return null;
+  }
 }
 
 export async function prepareSocial(prisma: PrismaClient): Promise<void> {
@@ -225,6 +238,32 @@ export function registerSocialRoutes(
       avatarUrl: user.avatarUrl,
       roomId: seat && seat.room.status !== "ended" ? seat.roomId : null,
       roomTitle: seat && seat.room.status !== "ended" ? seat.room.title : null,
+    });
+  });
+
+  app.get("/users/:id/watch-history", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const target = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
+    if (!target) return reply.code(404).send({ error: "not_found" });
+    const viewerId = await optionalViewer(request, env);
+    if (viewerId !== target.id && !target.isWatchHistoryPublic) {
+      return reply.code(403).send({ error: "watch_history_private" });
+    }
+    const rows = await prisma.watchHistory.findMany({
+      where: { userId: target.id },
+      orderBy: { lastWatchedAt: "desc" },
+      take: 50,
+    });
+    return reply.send({
+      items: rows.map((row) => ({
+        url: row.videoUrl,
+        title: row.title,
+        thumbnail: row.thumbnail,
+        source: row.source,
+        watchCount: row.watchCount,
+        lastWatchedAt: row.lastWatchedAt.toISOString(),
+      })),
     });
   });
 
