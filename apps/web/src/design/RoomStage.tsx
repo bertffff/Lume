@@ -1,4 +1,4 @@
-import { emojiCategories, getNextRoomPanel, historyLabel, layoutAspectGroup, oEmbedEndpoint, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
+import { emojiCategories, getNextRoomPanel, layoutAspectGroup, oEmbedEndpoint, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -38,7 +38,7 @@ export function RoomStage({
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   const [url, setUrl] = useState("");
   const [detected, setDetected] = useState<string | null>(null);
-  const [history, setHistory] = useState<Array<{ id: string; title: string | null }>>([]);
+  const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }>>([]);
   const [tip, setTip] = useState<string | null>(null);
   const [iceUrl, setIceUrl] = useState<string | null>(null);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
@@ -66,10 +66,6 @@ export function RoomStage({
     const room = live?.state.room.id;
     const token = live?.accessToken;
     if (room && token) {
-      void fetch(`${apiUrl}/rooms/${room}/history`, { headers: { authorization: `Bearer ${token}` } })
-        .then((response) => response.json())
-        .then((payload: { history?: Array<{ id: string; title: string | null }> }) => setHistory(payload.history ?? []))
-        .catch(() => setHistory([]));
       void fetch(`${apiUrl}/rooms/${room}/settings`, { headers: { authorization: `Bearer ${token}` } })
         .then((response) => response.json())
         .then((payload: RoomSettings) => {
@@ -107,6 +103,23 @@ export function RoomStage({
     const timer = window.setInterval(() => setVoiceSeconds((value) => value + 1), 1000);
     return () => window.clearInterval(timer);
   }, [voice.joined]);
+  useEffect(() => {
+    const room = live?.state.room.id;
+    const token = live?.accessToken;
+    if (!room || !token) return;
+    let stopped = false;
+    void fetch(`${apiUrl}/rooms/${room}/history`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { history?: Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }> }) => {
+        if (!stopped) setHistory(payload.history ?? []);
+      })
+      .catch(() => {
+        if (!stopped) setHistory([]);
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
   useEffect(() => {
     if (!live || seenReady.current) return;
     seenReady.current = true;
@@ -159,6 +172,17 @@ export function RoomStage({
       .then((payload: { source?: string | null; plan?: { type?: string } }) => setDetected(`${payload.source ?? "unknown"}${payload.plan?.type ? `:${payload.plan.type}` : ""}`))
       .catch(() => setDetected(null));
     setUrl("");
+  }
+
+  async function clearHistory() {
+    if (!live) return;
+    const response = await fetch(`${apiUrl}/rooms/${room.id}/history`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${live.accessToken}` },
+    }).catch(() => null);
+    if (response?.ok) {
+      setHistory([]);
+    }
   }
 
   function sendChat(event: FormEvent) {
@@ -310,7 +334,7 @@ export function RoomStage({
               </div>
             </div>
             <div className="card queue-card">
-              <div className="ct">Дальше в очереди <small>{queue.length}</small>{historyLabel(history.length) ? <small>{historyLabel(history.length)}</small> : null}{tip ? <small>ещё: {tip}</small> : null}{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
+              <div className="ct">Дальше в очереди <small>{queue.length}</small>{tip ? <small>ещё: {tip}</small> : null}{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
               <div className="q">
                 <ol className="tr-queue q">
                   {queue.slice(0, 2).map((item) => (
@@ -328,6 +352,24 @@ export function RoomStage({
                   {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                 </form>
+              </div>
+              <div className="queue-history" data-testid="queue-history">
+                <div className="ct">
+                  История <small data-testid="queue-history-count">{history.length}</small>
+                  {live.state.self.role === "host" && history.length > 0 ? (
+                    <button type="button" data-testid="history-clear" onClick={() => void clearHistory()}>Очистить историю</button>
+                  ) : null}
+                </div>
+                {history.length === 0 ? <p className="tr-empty">История пуста</p> : (
+                  <ol className="tr-queue history-list">
+                    {history.map((item) => (
+                      <li key={item.id} data-testid="queue-history-item" data-url={item.url}>
+                        <b>{item.title ?? item.url}</b>
+                        <small>{item.source}</small>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </div>
               {live.canControl ? (
                 <form data-testid="room-defaults" onSubmit={(event) => {

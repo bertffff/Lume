@@ -532,6 +532,19 @@ export function registerRoomRoutes(
     return reply.send({ history: rows });
   });
 
+  app.delete("/rooms/:id/history", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
+    if (!self || self.role !== "host" || self.leftAt) return reply.code(403).send({ error: "forbidden" });
+    const deleted = await prisma.roomHistoryItem.deleteMany({ where: { roomId: params.id } });
+    return reply.send({ ok: true, cleared: deleted.count });
+  });
+
   app.post("/rooms/:id/defaults", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {

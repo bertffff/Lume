@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 103 |
+| Done | 104 |
 | Done (needs creds) | 13 |
-| Partial | 19 |
+| Partial | 18 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -84,7 +84,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F065 | Cobalt services list | Done | GET /video/services lists Cobalt only when COBALT_API_URL is set. Settings shows that list. |
 | F066 | Video detect endpoint | Done | POST /video/detect uses the caller's saved premium flag. The live queue shows source and plan. |
 | F067 | Shared queue | Done | Reorder, a pending line, and a duplicate URL rejection are in place. |
-| F068 | Queue history | Partial | The queue shows a history count. There is no way to clear history. |
+| F068 | Queue history | Done | The live queue shows the last played items from the persisted history, reloads after the host advances, and the host can clear it. GET and DELETE /rooms/:id/history cap the list at 50 and delete only for the host. |
 | F069 | Queue recommendations | Partial | The live queue can show the first discovery title. It does not add that suggestion. |
 | F070 | Auto-advance | Done | When the host's player ends, the next queue item starts. |
 | F071 | Chat text | Done | Chat messages are limited to 500 characters. |
