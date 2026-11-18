@@ -1,7 +1,7 @@
-import { defaultRoomLayout, magicTokenFromSearch, type RoomLayout } from "@lume/contracts";
+import { defaultRoomLayout, layoutAspectGroup, magicTokenFromSearch, parseStoredLayouts, ROOM_LAYOUT_STORAGE_KEY, serializeStoredLayouts, storeLayoutForAspect, type RoomLayout } from "@lume/contracts";
 import { themeById } from "@lume/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { api } from "./api/client.js";
+import { api, apiUrl } from "./api/client.js";
 import { detectLocale, I18nProvider, useI18n } from "./i18n/context.js";
 import { useRoomChannel, type ChannelStatus } from "./realtime/useRoomChannel.js";
 import { DesignApp } from "./design/DesignApp.js";
@@ -28,7 +28,10 @@ export function App() {
   const [session, setSession] = useState<ClientSession | null>(() => loadSession());
   const [roomId, setRoomId] = useState<string | null>(null);
   const [adminPath, setAdminPath] = useState(() => window.location.pathname.startsWith("/admin"));
-  const [layout, setLayout] = useState<RoomLayout>(defaultRoomLayout);
+  const [layout, setLayout] = useState<RoomLayout>(() => {
+    const stored = parseStoredLayouts(window.localStorage.getItem(ROOM_LAYOUT_STORAGE_KEY));
+    return stored[layoutAspectGroup(defaultRoomLayout.videoAspect)];
+  });
   const [haptic, setHaptic] = useState<string | null>(null);
   const live = useRoomChannel(
     session && roomId ? { token: session.accessToken, roomId, selfId: session.user.id } : null,
@@ -106,6 +109,33 @@ export function App() {
     }
   }, [live.error]);
 
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== ROOM_LAYOUT_STORAGE_KEY) return;
+      setLayout((current) => parseStoredLayouts(event.newValue)[layoutAspectGroup(current.videoAspect)]);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  function updateLayout(next: RoomLayout) {
+    const group = layoutAspectGroup(next.videoAspect);
+    const stored = parseStoredLayouts(window.localStorage.getItem(ROOM_LAYOUT_STORAGE_KEY));
+    const resolved = group === layoutAspectGroup(layout.videoAspect)
+      ? next
+      : { ...stored[group], videoAspect: next.videoAspect };
+    const updated = storeLayoutForAspect(stored, resolved);
+    window.localStorage.setItem(ROOM_LAYOUT_STORAGE_KEY, serializeStoredLayouts(updated));
+    setLayout(resolved);
+    if (roomId && session) {
+      void fetch(`${apiUrl}/rooms/${roomId}/layout`, {
+        method: "PATCH",
+        headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" },
+        body: JSON.stringify(resolved),
+      }).catch(() => undefined);
+    }
+  }
+
   function pulse(style: "light" | "medium") {
     const delivered = hapticImpact(inTelegram ? webApp : null, style);
     if (!delivered && preview) {
@@ -167,7 +197,7 @@ export function App() {
                     selfId={session.user.id}
                     live={live}
                     layout={layout}
-                    onLayout={setLayout}
+                    onLayout={updateLayout}
                     onLeave={() => {
                       void api.leave(session.accessToken, roomId).catch(() => undefined);
                       setRoomId(null);

@@ -2,12 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   clientEventSchema,
   defaultRoomLayout,
+  layoutAspectGroup,
+  parseStoredLayouts,
   premiumEntitlementSchema,
+  ROOM_LAYOUT_STORAGE_KEY,
   roomLayoutSchema,
   roomSchema,
+  serializeStoredLayouts,
+  storeLayoutForAspect,
   telegramAuthPayloadSchema,
   themeSchema,
   userSchema,
+  withLayoutPreset,
+  withVideoAspect,
 } from "./index.js";
 
 const theme = {
@@ -60,6 +67,19 @@ describe("contracts", () => {
       playerRatio: 0.1,
     });
     expect(parsed.success).toBe(false);
+  });
+
+  it("stores a layout per aspect group under the legacy key", () => {
+    expect(ROOM_LAYOUT_STORAGE_KEY).toBe("telerave-room-layout-v1");
+    expect(layoutAspectGroup(16 / 9)).toBe("horizontal");
+    expect(layoutAspectGroup(9 / 16)).toBe("vertical");
+    const vertical = withVideoAspect(withLayoutPreset(defaultRoomLayout, "immersive"), 9 / 16);
+    const stored = storeLayoutForAspect(parseStoredLayouts(null), vertical);
+    expect(stored.vertical.preset).toBe("immersive");
+    expect(stored.horizontal.preset).toBe("theater");
+    const reloaded = parseStoredLayouts(serializeStoredLayouts(stored));
+    expect(reloaded.vertical.videoAspect).toBe(9 / 16);
+    expect(withLayoutPreset(defaultRoomLayout, "enlarged").playerRatio).toBeGreaterThan(defaultRoomLayout.playerRatio);
   });
 
   it("parses theme, entitlement, telegram payload, and socket events", () => {

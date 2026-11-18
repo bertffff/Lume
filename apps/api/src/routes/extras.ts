@@ -6,6 +6,7 @@ import {
   innertubeFromFixture,
   levelFromXp,
   planPlayback,
+  roomLayoutSchema,
   yearHeatmap,
   rutubeFromFixture,
   runExtractorChain,
@@ -237,6 +238,33 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
       hideReactions: room.hideReactions,
       defaults: room.defaultPermissions ?? null,
     });
+  });
+
+  app.get("/rooms/:id/layout", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const room = await prisma.room.findUnique({ where: { id: params.id } });
+    if (!room) return reply.code(404).send({ error: "not_found" });
+    return reply.send({ layout: roomLayoutSchema.safeParse(room.layout).success ? room.layout : null });
+  });
+
+  app.patch("/rooms/:id/layout", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const body = roomLayoutSchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const member = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
+    if (!member || member.leftAt) return reply.code(403).send({ error: "forbidden" });
+    await prisma.room.update({ where: { id: params.id }, data: { layout: body.data, videoAspect: body.data.videoAspect } });
+    return reply.send({ layout: body.data });
   });
 
   app.post("/rooms/:id/queue/order", async (request, reply) => {

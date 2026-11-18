@@ -6,12 +6,22 @@ export {
 } from "./user.js";
 export {
   defaultRoomLayout,
+  layoutAspectGroup,
   panelIdSchema,
+  parseStoredLayouts,
+  ROOM_LAYOUT_STORAGE_KEY,
   roomLayoutSchema,
+  serializeStoredLayouts,
   sidePanelIdSchema,
+  storeLayoutForAspect,
+  withLayoutPreset,
+  withVideoAspect,
+  type LayoutAspectGroup,
   type PanelId,
   type RoomLayout,
+  type RoomLayoutPreset,
   type SidePanelId,
+  type StoredRoomLayouts,
 } from "./layout.js";
 export {
   createRoomSchema,

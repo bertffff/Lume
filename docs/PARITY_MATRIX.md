@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 98 |
+| Done | 99 |
 | Done (needs creds) | 13 |
-| Partial | 24 |
+| Partial | 23 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -44,7 +44,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
 | F027 | DB-backed queue reload | Partial | The queue column prints a history count. It does not reload played items into the live queue. |
-| F028 | Layout presets × aspect | Partial | The live header toggles a number on the layout object. It does not change the player frame. |
+| F028 | Layout presets × aspect | Done | The live header applies Обычный, Шире, and Погружение presets and switches 16:9 or 9:16. The player frame changes size, the layout is stored per aspect under `telerave-room-layout-v1`, synced across tabs, and saved on the room. |
 | F029 | Mobile room sheet | Partial | A narrow layout stacks panels. There is no live bottom sheet with queue items. |
 | F030 | Session dock | Partial | The sync pill has a session-dock class. It is not a dock of session controls. |
 | F031 | Report user/room | Done | POST /reports stores the selected member. The live room reports that person, and the preview no longer sends targetId mark. |

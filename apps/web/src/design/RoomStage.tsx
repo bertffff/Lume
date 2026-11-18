@@ -1,5 +1,5 @@
-import { emojiCategories, historyLabel, oEmbedEndpoint, planPlayback, shouldHoldForReady, type ParsedEmbed, type RoomLayout } from "@lume/contracts";
-import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import { emojiCategories, historyLabel, layoutAspectGroup, oEmbedEndpoint, planPlayback, shouldHoldForReady, withLayoutPreset, withVideoAspect, type ParsedEmbed, type RoomLayout } from "@lume/contracts";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
@@ -176,15 +176,26 @@ export function RoomStage({
               </div>
               смотрят
             </div>
-            <button type="button" className="btn btn-outline" onClick={() => onLayout({ ...layout, videoAspect: 16 / 9 })}>16:9</button>
-            <button type="button" className="btn btn-outline" onClick={() => onLayout({ ...layout, videoAspect: layout.videoAspect > 2 ? 16 / 9 : 2.2 })}>Шире</button>
+            <div className="layout-switch" role="group" aria-label="layout presets">
+              <button type="button" className={layout.preset === "theater" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-theater" onClick={() => onLayout(withLayoutPreset(layout, "theater"))}>Обычный</button>
+              <button type="button" className={layout.preset === "enlarged" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-enlarged" onClick={() => onLayout(withLayoutPreset(layout, "enlarged"))}>Шире</button>
+              <button type="button" className={layout.preset === "immersive" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-immersive" onClick={() => onLayout(withLayoutPreset(layout, "immersive"))}>Погружение</button>
+              <button type="button" className={layoutAspectGroup(layout.videoAspect) === "horizontal" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-horizontal" onClick={() => onLayout(withVideoAspect(layout, 16 / 9))}>16:9</button>
+              <button type="button" className={layoutAspectGroup(layout.videoAspect) === "vertical" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-vertical" onClick={() => onLayout(withVideoAspect(layout, 9 / 16))}>9:16</button>
+            </div>
             <button type="button" className="btn btn-outline">Позвать</button>
           </>
         )}
       </header>
       <div className="body">
         <section className="player-col">
-          <div className="stage-card stage-root">
+          <div
+            className="stage-card stage-root"
+            data-testid="player-frame"
+            data-preset={layout.preset}
+            data-aspect={layoutAspectGroup(layout.videoAspect)}
+            style={{ "--player-aspect": layout.videoAspect } as CSSProperties}
+          >
             {room.nowPlaying ? <div className="top-ov"><span className="pill">{room.nowPlaying.title}</span></div> : null}
             <PlayerPanel bare aspect={layout.videoAspect} synced={synced} onError={(url) => setPlayerError(url || "error")} onAspect={(videoAspect) => onLayout({ ...layout, videoAspect })} />
             {playerError ? (

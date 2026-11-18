@@ -12,6 +12,13 @@
 .cinema-room .body,.g-room .body{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:0;flex:1}
 .cinema-room .player-col{display:flex;flex-direction:column;gap:12px;padding:16px 20px;min-width:0}
 .cinema-room .stage-card{position:relative;flex:1;min-height:220px;border-radius:10px;overflow:hidden;background:#000 url(/dev-seed/desert.jpg) center/cover}
+.cinema-room .stage-card[data-preset="enlarged"],
+.cinema-room .stage-card[data-preset="immersive"]{flex:0 0 auto;align-self:center;width:min(100%,calc((100vh - 250px) * var(--player-aspect, 1.7778)));aspect-ratio:var(--player-aspect, 1.7778)}
+.cinema-room .stage-card[data-preset="immersive"]{border-radius:0}
+.cinema-room .stage-card[data-aspect="vertical"]{flex:0 0 auto;align-self:center;width:min(100%,calc((100vh - 250px) * var(--player-aspect, 0.5625)));aspect-ratio:var(--player-aspect, 0.5625)}
+.cinema-room:has(.stage-card[data-preset="immersive"]) .low{display:none}
+.cinema-room .layout-switch{display:flex;gap:6px}
+.cinema-room .layout-switch .on{border-color:var(--accent);color:var(--accent-text);background:var(--accent-soft)}
 .cinema-room .bare-stage{position:absolute;inset:0}
 .cinema-room .bare-stage .tr-embed,.cinema-room .bare-stage .tr-empty{width:100%;height:100%}
 .cinema-room.is-narrow{height:auto;min-height:100vh;display:flex;flex-direction:column}
