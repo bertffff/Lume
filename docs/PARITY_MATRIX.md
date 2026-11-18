@@ -5,11 +5,11 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 95 |
+| Done | 96 |
 | Done (needs creds) | 13 |
 | Partial | 25 |
 | Redesign | 0 |
-| Missing | 4 |
+| Missing | 3 |
 
 A row is Done only when the API or socket, the UI, and a test all exist. A tested rule with no screen stays Partial. Partial means a slice exists and the rest is still open. Missing means Lume has no user-facing behaviour for it.
 
@@ -95,7 +95,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F076 | Pinned message | Done | The pin banner can be cleared. |
 | F077 | Typing indicator | Done | Several typers collapse into one line. typingLine is tested. |
 | F078 | Mentions | Done | A message that mentions your display name is highlighted. There is no autocomplete. |
-| F079 | Unread anchor | Missing | Jump-to-latest exists only on the room preview, not in the live chat. |
+| F079 | Unread anchor | Done | The live chat counts messages that arrive after join, marks the first unread line, and jumps to it from the «К новым» anchor. |
 | F080 | System messages | Done | Join, leave, and host-change lines are written into the chat. |
 | F081 | Slow mode | Done | The composer counts down while slow mode blocks the next message. Hosts are exempt. |
 | F082 | Six member permissions | Done | POST /rooms/:id/defaults stores canChat, canQueue, canSpeak, canReact, canSeek, and canInvite. The live room edits those checkboxes. |

@@ -1,5 +1,5 @@
 import { emojiCategories, historyLabel, oEmbedEndpoint, planPlayback, shouldHoldForReady, type ParsedEmbed, type RoomLayout } from "@lume/contracts";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
@@ -45,6 +45,9 @@ export function RoomStage({
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
+  const [seenCount, setSeenCount] = useState(0);
+  const seenReady = useRef(false);
+  const chatRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setStyle(document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema");
@@ -81,6 +84,11 @@ export function RoomStage({
     const timer = window.setInterval(() => setVoiceSeconds((value) => value + 1), 1000);
     return () => window.clearInterval(timer);
   }, [voice.joined]);
+  useEffect(() => {
+    if (!live || seenReady.current) return;
+    seenReady.current = true;
+    setSeenCount(live.state.messages.length);
+  }, [live?.state.messages.length]);
   if (!live) return null;
   const room = live.state.room;
   const members = live.state.members;
@@ -90,13 +98,21 @@ export function RoomStage({
   const bufferingCount = live.state.viewers.filter((viewer) => viewer.phase === "buffering").length;
   const waiting = shouldHoldForReady(bufferingCount > 0, bufferingCount);
   const status = waiting ? "Ждём готовности" : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
+  const unread = Math.max(0, live.state.messages.length - seenCount);
+  const firstUnreadIndex = Math.min(seenCount, live.state.messages.length);
+
+  function jumpToUnread() {
+    const anchor = chatRef.current?.querySelector<HTMLElement>('[data-unread="true"]');
+    anchor?.scrollIntoView({ block: "center" });
+    setSeenCount(live?.state.messages.length ?? 0);
+  }
 
   function addUrl(event: FormEvent) {
     event.preventDefault();
     const next = url.trim();
     if (!next) return;
     live?.addQueue(next);
-    void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
+    void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { authorization: `Bearer ${live?.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
       .then((response) => response.json())
       .then((payload: { source?: string | null; plan?: { type?: string } }) => setDetected(`${payload.source ?? "unknown"}${payload.plan?.type ? `:${payload.plan.type}` : ""}`))
       .catch(() => setDetected(null));
@@ -279,19 +295,33 @@ export function RoomStage({
             <span className="tab on">Чат <span className="n">{live.state.messages.length}</span></span>
             <span className="tab">Люди <span className="n">{members.length}</span></span>
             <span className="tab">Очередь <span className="n">{queue.length}</span></span>
+            {unread > 0 ? (
+              <button type="button" className="unread-anchor" data-testid="unread-anchor" onClick={jumpToUnread}>
+                К новым · {unread}
+              </button>
+            ) : null}
           </div>
-          <div className="log" data-testid="chat-log">
-            {live.state.messages.map((message) => {
+          <div className="log" data-testid="chat-log" ref={chatRef}>
+            {live.state.messages.map((message, index) => {
               const mine = message.userId === live.selfId;
               const hue = personHue(message.userId);
               return (
-                <div key={message.id} className={mine ? "m mine" : "m"}>
-                  {mine ? null : <span className={`av p-${hue}`}>{initials(message.displayName)}</span>}
-                  <div className="bu">
-                    {mine ? null : <div className={`n p-${hue}`}>{message.displayName}</div>}
-                    {message.body}
+                <Fragment key={message.id}>
+                  {index === firstUnreadIndex && unread > 0 ? (
+                    <span className="unread-divider" data-testid="unread-divider">Непрочитанные</span>
+                  ) : null}
+                  <div
+                    className={mine ? "m mine" : "m"}
+                    data-testid="chat-message"
+                    data-unread={index >= firstUnreadIndex && unread > 0 ? "true" : "false"}
+                  >
+                    {mine ? null : <span className={`av p-${hue}`}>{initials(message.displayName)}</span>}
+                    <div className="bu">
+                      {mine ? null : <div className={`n p-${hue}`}>{message.displayName}</div>}
+                      {message.body}
+                    </div>
                   </div>
-                </div>
+                </Fragment>
               );
             })}
           </div>

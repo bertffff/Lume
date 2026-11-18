@@ -36,6 +36,8 @@
 .cinema-room .rail{display:flex;flex-direction:column;background:var(--s1);border-left:1px solid var(--line);min-height:0}
 .cinema-room .tabs{display:flex;padding:10px 12px 0;border-bottom:1px solid var(--line)}
 .cinema-room .tab.on{color:var(--text);border-bottom:2px solid var(--accent);padding-bottom:8px}
+.cinema-room .unread-anchor{margin-left:auto;align-self:center;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent-text);border-radius:999px;padding:2px 9px;font:600 11.5px/18px var(--font-ui);cursor:pointer}
+.cinema-room .unread-divider{align-self:center;color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:3px 10px;font:600 11px/16px var(--font-ui)}
 .cinema-room .log{flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-end;gap:7px}
 .cinema-room .sys{align-self:center;background:color-mix(in srgb,var(--text) 7%,transparent);color:var(--text-2);font-size:12px;padding:4px 10px;border-radius:999px}
 .cinema-room .m{display:flex;gap:8px;align-items:flex-end;max-width:92%}
