@@ -7,10 +7,10 @@ test("the live room reads hideOtherReactions back from the profile", async ({ pa
   await page.getByTestId("lobby-title").fill("Реакции");
   await page.getByTestId("lobby-create").click();
   await expect(page.getByTestId("room-title")).toHaveText("Реакции", { timeout: 20_000 });
-  const saved = page.waitForResponse((response) => new URL(response.url()).pathname === "/me" && response.request().method() === "GET");
+  const saved = page.waitForResponse((response) => new URL(response.url()).pathname === "/me" && response.request().method() === "PATCH");
   await page.getByTestId("hide-other-reactions").click();
   const profile = await saved;
   expect(profile.status()).toBe(200);
-  expect((await profile.json()).hideOtherReactions).toBe(true);
+  expect(profile.request().postDataJSON()).toMatchObject({ hideOtherReactions: true });
   await expect(page.getByTestId("float-log")).toHaveAttribute("data-hide-other", "true");
 });
