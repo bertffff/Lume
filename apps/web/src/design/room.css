@@ -52,6 +52,14 @@
 .g-room .session-dock-bar .spacer{flex:1}
 .g-room .session-dock-bar button{border:1px solid var(--line);background:var(--s2);color:var(--text);padding:1px 8px}
 .g-room .session-dock-bar small{color:var(--accent-text)}
+.g-room .emoji-picker{display:flex;flex-direction:column;gap:6px;max-height:220px;padding:6px;border-top:1px solid var(--line);background:var(--s2)}
+.g-room .emoji-tabs{display:flex;gap:4px;overflow-x:auto}
+.g-room .emoji-tabs button{border:1px solid var(--line);background:var(--s1);color:var(--text-2);padding:1px 7px;font-size:11px;white-space:nowrap}
+.g-room .emoji-tabs button.on{border-color:var(--accent);color:var(--accent-text)}
+.g-room .emoji-picker input{border:1px solid var(--line);background:var(--s1);color:var(--text);padding:3px 7px}
+.g-room .emoji-grid{display:flex;flex-wrap:wrap;gap:3px;overflow-y:auto}
+.g-room .emoji-grid button{border:0;background:none;font-size:18px;padding:3px;cursor:pointer}
+.g-room .comp .emoji-toggle{border:0;background:none;font-size:18px;cursor:pointer}
 .g-room .body{display:grid;grid-template-columns:1.4fr .8fr;min-height:0}
 .g-room .player-col,.g-room .irc{min-height:0;overflow:auto;border:1px solid var(--line)}
 .g-room .status{display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--s1);border-top:1px solid var(--line)}
@@ -92,6 +100,16 @@
 .cinema-room .tr-chat-log{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:auto;max-height:46vh}
 .cinema-room .tr-chat-log p{max-width:92%;background:var(--bubble, var(--s2));border-radius:16px 16px 16px 5px;padding:7px 11px;margin:0}
 .cinema-room .tr-chat-log p.mine{align-self:flex-end;background:var(--bubble-mine, #0E6B5C);color:#fff;border-radius:16px 16px 5px 16px}
+.cinema-room .emoji-picker{border-top:1px solid var(--line);background:var(--s2);padding:8px 10px;display:flex;flex-direction:column;gap:6px;max-height:230px}
+.cinema-room .emoji-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px}
+.cinema-room .emoji-tabs button{border:1px solid var(--line);background:var(--s1);color:var(--text-2);border-radius:999px;padding:2px 9px;font:600 11px/16px var(--font-ui);white-space:nowrap;cursor:pointer}
+.cinema-room .emoji-tabs button.on{border-color:var(--accent);color:var(--accent-text);background:var(--accent-soft)}
+.cinema-room .emoji-picker input{border:1px solid var(--line);background:var(--s1);color:var(--text);border-radius:8px;padding:4px 8px;font:500 12px/18px var(--font-ui)}
+.cinema-room .emoji-grid{display:flex;flex-wrap:wrap;gap:3px;overflow-y:auto}
+.cinema-room .emoji-grid button{border:0;background:none;font-size:18px;line-height:1;padding:4px;border-radius:6px;cursor:pointer}
+.cinema-room .emoji-grid button:hover{background:var(--s1)}
+.cinema-room .emoji-grid .tr-empty{margin:2px 0;font-size:12px;color:var(--text-2)}
+.cinema-room .comp .emoji-toggle{border:0;background:none;font-size:18px;line-height:1;padding:0 2px;cursor:pointer}
 .cinema-room .queue-history{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .cinema-room .queue-history .ct button{border:1px solid var(--line);background:var(--s2);color:var(--text);border-radius:999px;padding:2px 9px;font:500 11px/16px var(--font-ui);cursor:pointer}
 .cinema-room .history-list{flex-direction:column;gap:5px;max-height:150px}

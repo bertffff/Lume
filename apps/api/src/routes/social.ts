@@ -128,6 +128,23 @@ export function registerSocialRoutes(
     return reply.send(await profileOf(prisma, actor.userId, true));
   });
 
+  app.post("/me/recent-emojis", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const body = z.object({ emoji: z.string().trim().min(1).max(16) }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const user = await prisma.user.findUnique({ where: { id: actor.userId }, select: { recentEmojis: true } });
+    const current = Array.isArray(user?.recentEmojis)
+      ? user.recentEmojis.filter((item): item is string => typeof item === "string")
+      : [];
+    const recentEmojis = [body.data.emoji, ...current.filter((item) => item !== body.data.emoji)].slice(0, 12);
+    await prisma.user.update({ where: { id: actor.userId }, data: { recentEmojis } });
+    return reply.send({ recentEmojis });
+  });
+
   app.patch("/me", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {
@@ -785,6 +802,9 @@ async function profileOf(prisma: PrismaClient, userId: string, includePrivate: b
     level: levelFromXp(user.xp),
     isPremium: user.isPremium,
     hideOtherReactions: user.hideOtherReactions,
+    recentEmojis: Array.isArray(user.recentEmojis)
+      ? user.recentEmojis.filter((item): item is string => typeof item === "string")
+      : [],
     stats: {
       parties: user.totalParties,
       messages: user.totalMessages,

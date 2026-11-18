@@ -32,6 +32,79 @@ export const emojiCategories = {
   marks: ["👍", "👎", "✨"],
 } as const;
 
+/** Category tabs for the chat emoji picker. Quick reactions stay in emojiCategories. */
+export const emojiPickerCategories = {
+  faces: ["😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😎", "🤔", "😮", "😢", "😭"],
+  gestures: ["👍", "👎", "👏", "🙌", "🤝", "✌️", "🤞", "👌"],
+  hearts: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💔", "💯"],
+  animals: ["🐶", "🐱", "🦊", "🐻", "🐼", "🦁", "🐸", "🐵"],
+  food: ["🍕", "🍔", "🌮", "🍣", "🍿", "🍩", "🍎", "🍺"],
+  symbols: ["🔥", "✨", "🎉", "🎬", "🎵", "⚡", "💫", "✅"],
+} as const;
+
+export const emojiKeywords: Record<string, readonly string[]> = {
+  "😀": ["улыбка", "смех", "smile"],
+  "😁": ["ухмылка", "grin"],
+  "😂": ["смех", "слёзы", "laugh"],
+  "🤣": ["ржу", "laugh"],
+  "😊": ["улыбка", "blush"],
+  "😍": ["любовь", "heart-eyes"],
+  "😘": ["поцелуй", "kiss"],
+  "😎": ["круто", "sunglasses"],
+  "🤔": ["думаю", "think"],
+  "😮": ["удивление", "wow"],
+  "😢": ["грусть", "слеза", "sad"],
+  "😭": ["плач", "cry"],
+  "👍": ["лайк", "палец", "up"],
+  "👎": ["дислайк", "down"],
+  "👏": ["аплодисменты", "clap"],
+  "🙌": ["руки", "celebrate"],
+  "🤝": ["рукопожатие", "handshake"],
+  "✌️": ["мир", "peace"],
+  "🤞": ["удача", "luck"],
+  "👌": ["ок", "ok"],
+  "❤️": ["сердце", "love"],
+  "🧡": ["оранжевое", "heart"],
+  "💛": ["жёлтое", "yellow"],
+  "💚": ["зелёное", "green"],
+  "💙": ["синее", "blue"],
+  "💜": ["фиолетовое", "purple"],
+  "🖤": ["чёрное", "black"],
+  "💔": ["разбитое", "broken"],
+  "💯": ["сто", "процентов", "hundred"],
+  "🐶": ["собака", "dog"],
+  "🐱": ["кошка", "cat"],
+  "🦊": ["лиса", "fox"],
+  "🐻": ["медведь", "bear"],
+  "🐼": ["панда", "panda"],
+  "🦁": ["лев", "lion"],
+  "🐸": ["жаба", "frog"],
+  "🐵": ["обезьяна", "monkey"],
+  "🍕": ["пицца", "pizza"],
+  "🍔": ["бургер", "burger"],
+  "🌮": ["тако", "taco"],
+  "🍣": ["суши", "sushi"],
+  "🍿": ["попкорн", "popcorn"],
+  "🍩": ["пончик", "donut"],
+  "🍎": ["яблоко", "apple"],
+  "🍺": ["пиво", "beer"],
+  "🔥": ["огонь", "fire"],
+  "✨": ["блеск", "sparkles"],
+  "🎉": ["праздник", "party"],
+  "🎬": ["кино", "movie"],
+  "🎵": ["музыка", "music"],
+  "⚡": ["молния", "lightning"],
+  "💫": ["звезда", "star"],
+  "✅": ["галочка", "check"],
+};
+
+export type EmojiPickerCategory = keyof typeof emojiPickerCategories;
+
+export const emojiPickerCategoryIds = [
+  "recent",
+  ...(Object.keys(emojiPickerCategories) as EmojiPickerCategory[]),
+] as const;
+
 export const roomSheetPanels = ["chat", "members", "queue"] as const;
 export type RoomSheetPanel = (typeof roomSheetPanels)[number];
 

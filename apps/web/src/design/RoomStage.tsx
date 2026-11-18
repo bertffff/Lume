@@ -5,6 +5,7 @@ import { useI18n } from "../i18n/context.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
 import { useRoomActions } from "../room/live.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
+import { EmojiPicker } from "./EmojiPicker.js";
 import { posterFor } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
 import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
@@ -47,6 +48,8 @@ export function RoomStage({
   const [hideOther, setHideOther] = useState(false);
   const [premium, setPremium] = useState(false);
   const [premiumBlocked, setPremiumBlocked] = useState(false);
+  const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -82,13 +85,15 @@ export function RoomStage({
     if (token) {
       void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
         .then((response) => response.json())
-        .then((payload: { hideOtherReactions?: boolean; isPremium?: boolean }) => {
+        .then((payload: { hideOtherReactions?: boolean; isPremium?: boolean; recentEmojis?: string[] }) => {
           setHideOther(Boolean(payload.hideOtherReactions));
           setPremium(Boolean(payload.isPremium));
+          setRecentEmojis(Array.isArray(payload.recentEmojis) ? payload.recentEmojis : []);
         })
         .catch(() => {
           setHideOther(false);
           setPremium(false);
+          setRecentEmojis([]);
         });
     }
     const onResize = () => setNarrow(window.innerWidth < 800);
@@ -183,6 +188,21 @@ export function RoomStage({
     if (response?.ok) {
       setHistory([]);
     }
+  }
+
+  function pickEmoji(emoji: string) {
+    setDraft((value) => `${value}${emoji}`);
+    if (!live) return;
+    void fetch(`${apiUrl}/me/recent-emojis`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
+      body: JSON.stringify({ emoji }),
+    })
+      .then((response) => response.json())
+      .then((payload: { recentEmojis?: string[] }) => {
+        if (Array.isArray(payload.recentEmojis)) setRecentEmojis(payload.recentEmojis);
+      })
+      .catch(() => undefined);
   }
 
   function sendChat(event: FormEvent) {
@@ -446,7 +466,17 @@ export function RoomStage({
             })}
           </div>
           <div className="quick">{Object.values(emojiCategories).flat().map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)}>{emoji}</button>)}</div>
+          {emojiOpen ? <EmojiPicker recent={recentEmojis} onPick={pickEmoji} /> : null}
           <form className="comp" onSubmit={sendChat}>
+            <button
+              type="button"
+              className="emoji-toggle"
+              data-testid="emoji-picker-toggle"
+              aria-expanded={emojiOpen}
+              onClick={() => setEmojiOpen((value) => !value)}
+            >
+              😊
+            </button>
             <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder="Написать в комнату…" />
             <button type="submit" className="send" data-testid="chat-send">{t("chat.send")}</button>
           </form>

@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 104 |
+| Done | 105 |
 | Done (needs creds) | 13 |
-| Partial | 18 |
+| Partial | 17 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -91,7 +91,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F072 | Replies | Done | replyToId is stored and shown. |
 | F073 | Image messages | Done | A chat photo is checked for jpeg, png, gif, or webp and for a 10 MB cap, then stored and posted as an image message. |
 | F074 | Chat reactions max 3 | Done | A fourth distinct emoji from the same person is rejected. |
-| F075 | Emoji picker | Partial | The live composer sends nine float emoji. There is no category picker, and the test only checks a constant length. |
+| F075 | Emoji picker | Done | The live composer opens a picker with recent, faces, gestures, hearts, animals, food, and symbols tabs, a search field, and insertion into the draft. Recents are capped at 12 and stored per account on User.recentEmojis. |
 | F076 | Pinned message | Done | The pin banner can be cleared. |
 | F077 | Typing indicator | Done | Several typers collapse into one line. typingLine is tested. |
 | F078 | Mentions | Done | A message that mentions your display name is highlighted. There is no autocomplete. |
