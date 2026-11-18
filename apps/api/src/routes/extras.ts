@@ -5,6 +5,7 @@ import {
   imageKind,
   innertubeFromFixture,
   levelFromXp,
+  memberFlagsFromDefaults,
   planPlayback,
   roomLayoutSchema,
   yearHeatmap,
@@ -230,6 +231,12 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
         ...(body.data.defaults === undefined ? {} : { defaultPermissions: body.data.defaults }),
       },
     });
+    if (body.data.defaults !== undefined) {
+      await prisma.roomMember.updateMany({
+        where: { roomId: params.id, permissionsOverridden: false },
+        data: memberFlagsFromDefaults(body.data.defaults),
+      });
+    }
     return reply.send({
       title: room.title,
       description: room.description ?? "",
@@ -293,6 +300,10 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
     const room = await prisma.room.findUnique({ where: { id: params.id } });
     if (!room) return reply.code(404).send({ error: "not_found" });
+    const member = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
+    if (member && member.role !== "host" && member.canInvite === false) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
     await notifyUser(prisma, {
       userId: body.data.userId,
       kind: "ROOM_INVITE",

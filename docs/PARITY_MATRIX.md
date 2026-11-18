@@ -37,7 +37,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F018 | Permanent vs temporary host | Done | The returning owner gets «вернулся и забрал хост», covered by the room service test. |
 | F019 | Host succession | Done | Leave promotes a moderator, otherwise the earliest member, and pauses playback when the host leaves. The chat line says the new host took over. |
 | F020 | Resume-last-room snapshot | Done | An empty room stores a snapshot. POST /rooms/resume-last recreates it paused, with the saved time clamped to the duration. Home calls that route. |
-| F021 | Room settings | Done | The live room has a settings sheet for title, description, public/private, the member cap, hide-reactions, and the six viewer defaults. Esc closes it, and the cap is enforced on join. |
+| F021 | Room settings | Done | The live room has a settings sheet for title, description, public/private, the member cap, hide-reactions, and the six viewer defaults. Esc closes it. The defaults are projected onto every member without personal overrides on join and again when the host changes them, and chat, reactions, queue adds, invites, seeking, and voice joining consult them. The cap is enforced on join. |
 | F022 | Browse public rooms | Done | GET /rooms accepts a search query and a title sort. The home search box sends that query. |
 | F023 | Live carousel + global stats | Partial | Home shows room cards. GET /stats is not a live carousel or a global counter strip. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |

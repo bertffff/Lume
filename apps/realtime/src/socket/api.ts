@@ -8,7 +8,21 @@ export class ApiFailure extends Error {
 
 export interface RoomSession {
   room: RoomSummary & { nowPlaying: QueueItem | null };
-  self: { role: MemberRole; muted: boolean };
+  self: {
+    role: MemberRole;
+    muted: boolean;
+    permissions: {
+      canChat: boolean;
+      canSpeak: boolean;
+      canReact: boolean;
+      canSeek: boolean;
+      canInvite: boolean;
+      canControlVideo: boolean;
+      canAddToQueue: boolean;
+      canRemoveFromQueue: boolean;
+      canReorderQueue: boolean;
+    };
+  };
   members: Array<{ userId: string; displayName: string; role: MemberRole; muted: boolean }>;
   messages: ChatMessage[];
   queue: QueueItem[];

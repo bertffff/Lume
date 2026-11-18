@@ -18,6 +18,56 @@ export const defaultViewerPermissions: ViewerPermissions = {
   canReorderQueue: false,
 };
 
+/** The six host-editable defaults from the room settings sheet. */
+export interface ViewerDefaultFlags {
+  canChat: boolean;
+  canQueue: boolean;
+  canSpeak: boolean;
+  canReact: boolean;
+  canSeek: boolean;
+  canInvite: boolean;
+}
+
+/** Every per-member flag stored on RoomMember. */
+export interface MemberPermissionFlags {
+  canChat: boolean;
+  canSpeak: boolean;
+  canReact: boolean;
+  canSeek: boolean;
+  canInvite: boolean;
+  canControlVideo: boolean;
+  canAddToQueue: boolean;
+  canRemoveFromQueue: boolean;
+  canReorderQueue: boolean;
+}
+
+export const defaultViewerFlags: ViewerDefaultFlags = {
+  canChat: true,
+  canQueue: true,
+  canSpeak: true,
+  canReact: true,
+  canSeek: false,
+  canInvite: true,
+};
+
+/**
+ * Projects the six room defaults onto a member that has no personal overrides.
+ * `canQueue` becomes the stored `canAddToQueue`; the remaining keys keep their name.
+ */
+export function memberFlagsFromDefaults(
+  defaults: Partial<ViewerDefaultFlags> | null | undefined,
+): Pick<MemberPermissionFlags, "canChat" | "canSpeak" | "canReact" | "canSeek" | "canInvite" | "canAddToQueue"> {
+  const merged = { ...defaultViewerFlags, ...(defaults ?? {}) };
+  return {
+    canChat: merged.canChat,
+    canSpeak: merged.canSpeak,
+    canReact: merged.canReact,
+    canSeek: merged.canSeek,
+    canInvite: merged.canInvite,
+    canAddToQueue: merged.canQueue,
+  };
+}
+
 export type RoomAction =
   | "playback"
   | "refreshUrl"

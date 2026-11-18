@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("the live room settings sheet saves description, cap, visibility, and hide-reactions", async ({ page }) => {
+test("the live room settings sheet saves description, cap, visibility, and hide-reactions", async ({ page, browser }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("Аня");
   await page.getByTestId("lobby-sign-in").click();
@@ -19,6 +19,7 @@ test("the live room settings sheet saves description, cap, visibility, and hide-
   await page.getByTestId("settings-max-members").fill("4");
   await page.getByTestId("settings-hide-reactions").check();
   await page.getByTestId("settings-default-canSeek").check();
+  await page.getByTestId("settings-default-canChat").uncheck();
   await page.getByTestId("room-settings-save").click();
   const response = await saved;
   expect(response.status()).toBe(200);
@@ -28,7 +29,7 @@ test("the live room settings sheet saves description, cap, visibility, and hide-
     isPublic: true,
     maxMembers: 4,
     hideReactions: true,
-    defaults: { canSeek: true },
+    defaults: { canSeek: true, canChat: false },
   });
 
   await expect(page.getByTestId("room-settings-sheet")).toHaveCount(0);
@@ -39,6 +40,29 @@ test("the live room settings sheet saves description, cap, visibility, and hide-
   await expect(page.getByTestId("settings-description")).toHaveValue("Смотрим вместе");
   await expect(page.getByTestId("settings-max-members")).toHaveValue("4");
   await expect(page.getByTestId("settings-hide-reactions")).toBeChecked();
+  await expect(page.getByTestId("settings-default-canSeek")).toBeChecked();
+  await expect(page.getByTestId("settings-default-canChat")).not.toBeChecked();
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("room-settings-sheet")).toHaveCount(0);
+
+  // A viewer joining after the save inherits the defaults: queueing works, chat is refused.
+  const code = (await page.getByTestId("room-code").innerText()).trim();
+  const guestContext = await browser.newContext();
+  const guest = await guestContext.newPage();
+  await guest.goto("/");
+  await guest.getByTestId("lobby-name").fill("Марк");
+  await guest.getByTestId("lobby-sign-in").click();
+  await guest.getByTestId("lobby-code").fill(code);
+  await guest.getByTestId("lobby-join").click();
+  await expect(guest.getByTestId("room-title")).toHaveText("Ночной зал", { timeout: 20_000 });
+
+  await guest.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  await guest.getByTestId("queue-add").click();
+  await expect(page.locator(".tr-queue li")).toHaveCount(1, { timeout: 15_000 });
+
+  await guest.getByTestId("chat-input").fill("привет из чата");
+  await guest.getByTestId("chat-send").click();
+  await page.waitForTimeout(1500);
+  await expect(page.getByTestId("chat-log")).not.toContainText("привет из чата");
+  await guestContext.close();
 });

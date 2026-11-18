@@ -119,10 +119,10 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
       void onDisconnect(io, redis, socket);
     });
     socket.on("playback:play", (payload: unknown) => {
-      void control(io, redis, socket, payload, { type: "play" });
+      void control(io, api, redis, socket, payload, { type: "play" });
     });
     socket.on("playback:pause", (payload: unknown) => {
-      void control(io, redis, socket, payload, { type: "pause" });
+      void control(io, api, redis, socket, payload, { type: "pause" });
     });
     socket.on("playback:seek", (payload: unknown) => {
       const parsed = playbackSeekSchema.safeParse(payload);
@@ -130,7 +130,7 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
         fail(socket, { code: "invalid_payload", message: "playback:seek" });
         return;
       }
-      void control(io, redis, socket, payload, { type: "seek", positionMs: parsed.data.positionMs });
+      void control(io, api, redis, socket, payload, { type: "seek", positionMs: parsed.data.positionMs });
     });
     socket.on("playback:sync", (payload: unknown) => {
       void sync(redis, socket, payload);
@@ -294,6 +294,7 @@ async function join(
 
 async function control(
   io: Server,
+  api: RoomApi,
   redis: RedisPair | null,
   socket: Socket,
   payload: unknown,
@@ -313,6 +314,18 @@ async function control(
   if (!role || !canControlPlayback(role)) {
     fail(socket, { code: "forbidden", message: "only the host or a mod moves playback" });
     return;
+  }
+  if (op.type === "seek" && role !== "host") {
+    try {
+      const session = await api.session(actor.token, parsed.data.roomId);
+      if (session.self.permissions.canSeek === false) {
+        fail(socket, { code: "forbidden", message: "viewer defaults do not allow seeking" });
+        return;
+      }
+    } catch (error) {
+      fail(socket, { code: mapFailure(error), message: "playback:seek" });
+      return;
+    }
   }
   const viewers = await listViewerPhases(redis.pub, parsed.data.roomId);
   const buffering = viewers.filter((viewer) => viewer.phase === "buffering").length;

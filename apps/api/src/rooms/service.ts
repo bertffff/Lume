@@ -4,12 +4,14 @@ import {
   canControlPlayback,
   canToggleReaction,
   duplicateQueue,
+  memberFlagsFromDefaults,
   nextHost,
   mediaFallbackTitle,
   parseEmbedInput,
   roomOverMemberCap,
   FREE_ROOM_MEMBER_CAP,
   type ChatMessage,
+  type MemberPermissionFlags,
   type MemberRole,
   type ParsedEmbed,
   type QueueItem,
@@ -35,7 +37,7 @@ export interface Actor {
 
 export interface RoomDetail {
   room: RoomSummary & { nowPlaying: QueueItem | null };
-  self: { role: MemberRole; muted: boolean };
+  self: { role: MemberRole; muted: boolean; permissions: MemberPermissionFlags };
   members: Array<{
     userId: string;
     displayName: string;
@@ -81,6 +83,21 @@ function toMessage(message: MessageRecord): ChatMessage {
     replyToId: message.replyToId,
     createdAt: message.createdAt,
     reactions: message.reactions,
+  };
+}
+
+/** Falls back to the schema defaults when an older row has no stored flags. */
+function memberPermissions(member: MemberRecord): MemberPermissionFlags {
+  return {
+    canChat: member.canChat ?? true,
+    canSpeak: member.canSpeak ?? true,
+    canReact: member.canReact ?? true,
+    canSeek: member.canSeek ?? false,
+    canInvite: member.canInvite ?? true,
+    canControlVideo: member.canControlVideo ?? false,
+    canAddToQueue: member.canAddToQueue ?? true,
+    canRemoveFromQueue: member.canRemoveFromQueue ?? false,
+    canReorderQueue: member.canReorderQueue ?? false,
   };
 }
 
@@ -157,6 +174,7 @@ export class RoomService {
         await this.repo.saveMember({ ...currentHost, role: "viewer" });
       }
     }
+    const projected = existing?.permissionsOverridden ? {} : memberFlagsFromDefaults(room.defaultPermissions);
     await this.repo.saveMember({
       roomId: room.id,
       userId: actor.userId,
@@ -164,6 +182,8 @@ export class RoomService {
       role: reclaim ? "host" : (existing?.role === "host" ? "viewer" : existing?.role ?? "viewer"),
       muted: existing?.muted ?? false,
       leftAt: null,
+      permissionsOverridden: existing?.permissionsOverridden ?? false,
+      ...projected,
     });
     if (!existing || existing.leftAt !== null) {
       await this.repo.insertMessage({
@@ -401,7 +421,7 @@ export class RoomService {
     const nowPlaying = queue.find((item) => item.id === room.nowPlayingId) ?? null;
     return {
       room: { ...this.summarize(room, present.length), nowPlaying: nowPlaying ? toQueueItem(nowPlaying) : null },
-      self: { role: self.role, muted: self.muted },
+      self: { role: self.role, muted: self.muted, permissions: memberPermissions(self) },
       members: present.map((member) => ({
         userId: member.userId,
         displayName: member.displayName,

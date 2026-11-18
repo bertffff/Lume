@@ -16,6 +16,7 @@ function mapRoom(room: {
   status: "open" | "live" | "ended";
   isPublic: boolean;
   maxMembers: number;
+  defaultPermissions: unknown;
   createdAt: Date;
   nowPlayingId: string | null;
 }): RoomRecord {
@@ -28,6 +29,10 @@ function mapRoom(room: {
     status: room.status,
     isPublic: room.isPublic,
     maxMembers: room.maxMembers,
+    defaultPermissions:
+      room.defaultPermissions && typeof room.defaultPermissions === "object"
+        ? (room.defaultPermissions as Record<string, boolean>)
+        : null,
     createdAt: room.createdAt.toISOString(),
     nowPlayingId: room.nowPlayingId,
   };
@@ -91,6 +96,16 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
         muted: row.muted,
         leftAt: row.leftAt ? row.leftAt.toISOString() : null,
         joinedAt: row.joinedAt.toISOString(),
+        permissionsOverridden: row.permissionsOverridden,
+        canChat: row.canChat,
+        canSpeak: row.canSpeak,
+        canReact: row.canReact,
+        canSeek: row.canSeek,
+        canInvite: row.canInvite,
+        canControlVideo: row.canControlVideo,
+        canAddToQueue: row.canAddToQueue,
+        canRemoveFromQueue: row.canRemoveFromQueue,
+        canReorderQueue: row.canReorderQueue,
       }));
     },
     async findMember(roomId, userId) {
@@ -108,6 +123,16 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
         role: row.role,
         muted: row.muted,
         leftAt: row.leftAt ? row.leftAt.toISOString() : null,
+        permissionsOverridden: row.permissionsOverridden,
+        canChat: row.canChat,
+        canSpeak: row.canSpeak,
+        canReact: row.canReact,
+        canSeek: row.canSeek,
+        canInvite: row.canInvite,
+        canControlVideo: row.canControlVideo,
+        canAddToQueue: row.canAddToQueue,
+        canRemoveFromQueue: row.canRemoveFromQueue,
+        canReorderQueue: row.canReorderQueue,
       };
     },
     async saveMember(member) {
@@ -115,6 +140,16 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
         role: member.role,
         muted: member.muted,
         leftAt: member.leftAt ? new Date(member.leftAt) : null,
+        ...(member.permissionsOverridden === undefined ? {} : { permissionsOverridden: member.permissionsOverridden }),
+        ...(member.canChat === undefined ? {} : { canChat: member.canChat }),
+        ...(member.canSpeak === undefined ? {} : { canSpeak: member.canSpeak }),
+        ...(member.canReact === undefined ? {} : { canReact: member.canReact }),
+        ...(member.canSeek === undefined ? {} : { canSeek: member.canSeek }),
+        ...(member.canInvite === undefined ? {} : { canInvite: member.canInvite }),
+        ...(member.canControlVideo === undefined ? {} : { canControlVideo: member.canControlVideo }),
+        ...(member.canAddToQueue === undefined ? {} : { canAddToQueue: member.canAddToQueue }),
+        ...(member.canRemoveFromQueue === undefined ? {} : { canRemoveFromQueue: member.canRemoveFromQueue }),
+        ...(member.canReorderQueue === undefined ? {} : { canReorderQueue: member.canReorderQueue }),
       };
       await prisma.roomMember.upsert({
         where: { roomId_userId: { roomId: member.roomId, userId: member.userId } },

@@ -45,6 +45,9 @@ export function registerVoiceRoutes(app: FastifyInstance, env: ApiEnv, service: 
     if (!detail) {
       return;
     }
+    if (detail.self.role !== "host" && detail.self.permissions.canSpeak === false) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
     const token = await mintLiveKitToken({
       apiKey: env.LIVEKIT_API_KEY ?? "",
       apiSecret: env.LIVEKIT_API_SECRET ?? "",

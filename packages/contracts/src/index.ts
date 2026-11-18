@@ -159,9 +159,13 @@ export { rewriteHlsManifest } from "./parity/manifest.js";
 export {
   allowsAction,
   allowsModeration,
+  defaultViewerFlags,
   defaultViewerPermissions,
+  memberFlagsFromDefaults,
+  type MemberPermissionFlags,
   type ModerationActionName,
   type RoomAction,
+  type ViewerDefaultFlags,
   type ViewerPermissions,
 } from "./parity/permissions.js";
 export { buildDigest, inQuietHours, nextDigestAt, type DigestMode } from "./parity/quiet.js";

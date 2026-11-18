@@ -185,6 +185,9 @@ model RoomMember {
   mutedUntil DateTime?
   canChat  Boolean    @default(true)
   canSpeak Boolean    @default(true)
+  canReact Boolean    @default(true)
+  canSeek  Boolean    @default(false)
+  canInvite Boolean   @default(true)
   canControlVideo Boolean @default(false)
   canAddToQueue Boolean @default(true)
   canRemoveFromQueue Boolean @default(false)

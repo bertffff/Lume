@@ -1,7 +1,7 @@
 import { createRoomSchema, joinRoomSchema, lastIncidents, matchesBrowse } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { allowsModeration, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
+import { allowsModeration, memberFlagsFromDefaults, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
 import type { PrismaClient } from "@lume/db";
 import { banBlocksJoin } from "../access/gates.js";
 import { trackStat } from "../account/awards.js";
@@ -243,6 +243,9 @@ export function registerRoomRoutes(
       if (member?.mutedUntil && member.mutedUntil.getTime() > Date.now()) {
         return reply.code(403).send({ error: "muted" });
       }
+      if (member && member.role !== "host" && member.canChat === false) {
+        return reply.code(403).send({ error: "forbidden" });
+      }
       if (room && member && member.role !== "host") {
         const previous = await prisma.message.findFirst({
           where: { roomId: room.id, userId: actor.userId, type: "text" },
@@ -282,6 +285,14 @@ export function registerRoomRoutes(
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
+    if (prisma) {
+      const member = await prisma.roomMember.findUnique({
+        where: { roomId_userId: { roomId: params.data.id, userId: actor.userId } },
+      });
+      if (member && member.role !== "host" && member.canReact === false) {
+        return reply.code(403).send({ error: "forbidden" });
+      }
+    }
     return run(reply, async () => {
       const message = await service.react(
         { userId: actor.userId, displayName: actor.displayName },
@@ -308,6 +319,14 @@ export function registerRoomRoutes(
     const body = z.object({ url: z.string().trim().min(1).max(2000) }).safeParse(request.body);
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });
+    }
+    if (prisma) {
+      const member = await prisma.roomMember.findUnique({
+        where: { roomId_userId: { roomId: params.data.id, userId: actor.userId } },
+      });
+      if (member && member.role !== "host" && member.canAddToQueue === false) {
+        return reply.code(403).send({ error: "forbidden" });
+      }
     }
     return run(reply, () =>
       service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, body.data.url),
@@ -497,8 +516,14 @@ export function registerRoomRoutes(
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
     const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
     if (!self || self.role !== "host" || self.leftAt) return reply.code(403).send({ error: "forbidden" });
-    await prisma.room.update({ where: { id: params.id }, data: { defaultPermissions: body.data } });
-    return reply.send({ defaults: body.data });
+    const room = await prisma.room.findUnique({ where: { id: params.id } });
+    const merged = { ...((room?.defaultPermissions as Record<string, boolean> | null) ?? {}), ...body.data };
+    await prisma.room.update({ where: { id: params.id }, data: { defaultPermissions: merged } });
+    await prisma.roomMember.updateMany({
+      where: { roomId: params.id, permissionsOverridden: false },
+      data: memberFlagsFromDefaults(merged),
+    });
+    return reply.send({ defaults: merged });
   });
 
   app.post("/rooms/:id/sync-incident", async (request, reply) => {

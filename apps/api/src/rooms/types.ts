@@ -9,6 +9,7 @@ export interface RoomRecord {
   status: "open" | "live" | "ended";
   isPublic: boolean;
   maxMembers: number;
+  defaultPermissions?: Record<string, boolean> | null;
   createdAt: string;
   nowPlayingId: string | null;
 }
@@ -21,6 +22,16 @@ export interface MemberRecord {
   muted: boolean;
   leftAt: string | null;
   joinedAt?: string;
+  permissionsOverridden?: boolean;
+  canChat?: boolean;
+  canSpeak?: boolean;
+  canReact?: boolean;
+  canSeek?: boolean;
+  canInvite?: boolean;
+  canControlVideo?: boolean;
+  canAddToQueue?: boolean;
+  canRemoveFromQueue?: boolean;
+  canReorderQueue?: boolean;
 }
 
 export interface MessageRecord {
