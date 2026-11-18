@@ -139,6 +139,35 @@ export function registerRoomRoutes(
     return run(reply, () => service.detailFor(actor.userId, params.data.id));
   });
 
+  app.get("/rooms/:id/session", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_body" });
+    const room = await prisma.room.findUnique({
+      where: { id: params.data.id },
+      select: { id: true, slug: true, title: true, createdAt: true },
+    });
+    if (!room) return reply.code(404).send({ error: "not_found" });
+    const self = await prisma.roomMember.findUnique({
+      where: { roomId_userId: { roomId: room.id, userId: actor.userId } },
+    });
+    if (!self || self.leftAt) return reply.code(403).send({ error: "not_member" });
+    const memberCount = await prisma.roomMember.count({ where: { roomId: room.id, leftAt: null } });
+    return reply.send({
+      roomId: room.id,
+      code: room.slug,
+      title: room.title,
+      startedAt: room.createdAt.toISOString(),
+      elapsedSeconds: Math.max(0, Math.floor((Date.now() - room.createdAt.getTime()) / 1000)),
+      memberCount,
+      role: self.role,
+    });
+  });
+
   app.post("/rooms/:id/leave", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !service) {

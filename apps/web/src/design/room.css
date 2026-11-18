@@ -1,4 +1,11 @@
-.cinema-room{height:100vh;display:grid;grid-template-rows:52px 1fr;background:var(--bg);color:var(--text);overflow:hidden}
+.cinema-room{height:100vh;display:grid;grid-template-rows:52px auto 1fr;background:var(--bg);color:var(--text);overflow:hidden}
+.cinema-room .session-dock-bar{display:flex;align-items:center;gap:10px;min-height:36px;padding:4px 20px;border-bottom:1px solid var(--line);background:var(--s1);font:500 12px/20px var(--font-ui);color:var(--text-2)}
+.cinema-room .session-dock-bar b{color:var(--text)}
+.cinema-room .session-dock-bar .session-dock-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.cinema-room .session-dock-bar button{border:1px solid var(--line);background:var(--s2);color:var(--text);border-radius:999px;padding:2px 10px;font:500 11.5px/18px var(--font-ui);cursor:pointer}
+.cinema-room .session-dock-bar button:disabled{opacity:.55;cursor:default}
+.cinema-room .session-dock-bar small{color:var(--accent-text);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
+.cinema-room.is-narrow .session-dock-bar{overflow-x:auto;padding:4px 12px;white-space:nowrap}
 .g-room{min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
 .cinema-room .top{height:52px;display:flex;align-items:center;gap:16px;padding:0 16px 0 20px;border-bottom:1px solid var(--line)}
 .cinema-room .logo{font:700 19px/1 var(--font-display, var(--font));display:flex;align-items:center;gap:7px;background:none;border:0;color:inherit}
@@ -40,7 +47,11 @@
 .mobile-sheet-queue{display:flex;flex-direction:column;gap:8px;padding:10px 12px}
 .mobile-sheet-queue li{min-height:44px;border-radius:8px;background:var(--s2);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
 .mobile-sheet-queue li small{color:var(--text-2)}
-.g-room{height:100vh;display:grid;grid-template-rows:32px 1fr 24px;background:var(--bg);color:var(--text)}
+.g-room{height:100vh;display:grid;grid-template-rows:32px auto 1fr 24px;background:var(--bg);color:var(--text)}
+.g-room .session-dock-bar{display:flex;align-items:center;gap:10px;padding:4px 8px;background:var(--s1);border-bottom:1px solid var(--line);font-size:12px;color:var(--text-2)}
+.g-room .session-dock-bar .spacer{flex:1}
+.g-room .session-dock-bar button{border:1px solid var(--line);background:var(--s2);color:var(--text);padding:1px 8px}
+.g-room .session-dock-bar small{color:var(--accent-text)}
 .g-room .body{display:grid;grid-template-columns:1.4fr .8fr;min-height:0}
 .g-room .player-col,.g-room .irc{min-height:0;overflow:auto;border:1px solid var(--line)}
 .g-room .status{display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--s1);border-top:1px solid var(--line)}

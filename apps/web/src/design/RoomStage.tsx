@@ -8,6 +8,7 @@ import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { posterFor } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
 import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
+import { SessionDock } from "./SessionDock.js";
 import { initials, personHue } from "./theme.js";
 
 function clock(ms: number): string {
@@ -164,7 +165,7 @@ export function RoomStage({
             <button type="button" className="logo" onClick={onLeave}><i />lume</button>
             <div className="crumb"><b data-testid="room-title">{roomTitle ?? room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
             <span className="spacer" />
-            <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
+            <div className="sync sync-pill"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
               <button type="button" data-testid="sync-incident" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) })}>Сбой</button>
               <button type="button" data-testid="report-buffering" onClick={() => live.reportViewer("buffering")}>Буфер</button>
               <button type="button" data-testid="hide-other-reactions" onClick={() => {
@@ -193,10 +194,24 @@ export function RoomStage({
               <button type="button" className={layoutAspectGroup(layout.videoAspect) === "horizontal" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-horizontal" onClick={() => onLayout(withVideoAspect(layout, 16 / 9))}>16:9</button>
               <button type="button" className={layoutAspectGroup(layout.videoAspect) === "vertical" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-vertical" onClick={() => onLayout(withVideoAspect(layout, 9 / 16))}>9:16</button>
             </div>
-            <button type="button" className="btn btn-outline">Позвать</button>
           </>
         )}
       </header>
+      <SessionDock
+        roomId={room.id}
+        token={live.accessToken}
+        memberCount={members.length}
+        voiceCount={live.state.voice.length}
+        voiceEnabled={voice.enabled === true}
+        voiceJoined={voice.joined}
+        voiceMuted={voice.muted}
+        canSettings={live.state.self.role === "host"}
+        onVoiceJoin={() => void voice.join()}
+        onVoiceLeave={() => void voice.leave()}
+        onVoiceMute={() => void voice.toggleMute()}
+        onSettings={() => setSettingsOpen(true)}
+        onLeave={onLeave}
+      />
       <div className="body">
         <section className="player-col">
           <div
