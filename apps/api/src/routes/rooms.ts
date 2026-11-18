@@ -1,4 +1,4 @@
-import { createRoomSchema, joinRoomSchema, lastIncidents, matchesBrowse } from "@lume/contracts";
+import { createRoomSchema, detectSource, joinRoomSchema, lastIncidents, matchesBrowse, planPlayback } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { allowsModeration, memberFlagsFromDefaults, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
@@ -355,6 +355,11 @@ export function registerRoomRoutes(
       });
       if (member && member.role !== "host" && member.canAddToQueue === false) {
         return reply.code(403).send({ error: "forbidden" });
+      }
+      const account = await prisma.user.findUnique({ where: { id: actor.userId }, select: { isPremium: true } });
+      const plan = planPlayback({ url: body.data.url, premium: Boolean(account?.isPremium) });
+      if (plan.type === "error" && plan.code === "premium_required") {
+        return reply.code(403).send({ error: "premium_required", source: detectSource(body.data.url)?.id ?? null });
       }
     }
     return run(reply, () =>

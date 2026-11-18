@@ -15,6 +15,7 @@ import {
   vkFromFixture,
   type MagicRow,
 } from "@lume/contracts";
+import { verifyAccessToken } from "@lume/contracts/node";
 import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
@@ -75,9 +76,20 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
   });
 
   app.post("/video/resolve", async (request, reply) => {
-    const body = z.object({ url: z.string().min(1), premium: z.boolean().optional() }).safeParse(request.body);
+    const body = z.object({ url: z.string().min(1) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const plan = planPlayback({ url: body.data.url, premium: body.data.premium === true });
+    let premium = false;
+    const header = request.headers.authorization;
+    if (prisma && env.JWT_SECRET && header?.startsWith("Bearer ")) {
+      try {
+        const actor = await verifyAccessToken(env.JWT_SECRET, header.slice("Bearer ".length));
+        const account = await prisma.user.findUnique({ where: { id: actor.userId }, select: { isPremium: true } });
+        premium = Boolean(account?.isPremium);
+      } catch {
+        premium = false;
+      }
+    }
+    const plan = planPlayback({ url: body.data.url, premium });
     if (plan.type === "error") return reply.send(plan);
     if (env.FF_EXTRACTORS !== "true") return reply.send({ ...plan, extraction: "disabled" });
     const extracted = runExtractorChain([

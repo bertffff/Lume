@@ -45,6 +45,8 @@ export function RoomStage({
   const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [hideOther, setHideOther] = useState(false);
+  const [premium, setPremium] = useState(false);
+  const [premiumBlocked, setPremiumBlocked] = useState(false);
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -84,8 +86,14 @@ export function RoomStage({
     if (token) {
       void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
         .then((response) => response.json())
-        .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions)))
-        .catch(() => setHideOther(false));
+        .then((payload: { hideOtherReactions?: boolean; isPremium?: boolean }) => {
+          setHideOther(Boolean(payload.hideOtherReactions));
+          setPremium(Boolean(payload.isPremium));
+        })
+        .catch(() => {
+          setHideOther(false);
+          setPremium(false);
+        });
     }
     const onResize = () => setNarrow(window.innerWidth < 800);
     window.addEventListener("resize", onResize);
@@ -124,6 +132,8 @@ export function RoomStage({
   const status = waiting ? "Ждём готовности" : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
   const unread = Math.max(0, live.state.messages.length - seenCount);
   const firstUnreadIndex = Math.min(seenCount, live.state.messages.length);
+  const pendingPlan = url ? planPlayback({ url, premium }) : null;
+  const premiumUrl = pendingPlan?.type === "error" && pendingPlan.code === "premium_required";
 
   function jumpToUnread() {
     const anchor = chatRef.current?.querySelector<HTMLElement>('[data-unread="true"]');
@@ -135,6 +145,14 @@ export function RoomStage({
     event.preventDefault();
     const next = url.trim();
     if (!next) return;
+    const plan = planPlayback({ url: next, premium });
+    if (plan.type === "error" && plan.code === "premium_required") {
+      setPremiumBlocked(true);
+      setDetected(null);
+      setUrl("");
+      return;
+    }
+    setPremiumBlocked(false);
     live?.addQueue(next);
     void fetch(`${apiUrl}/video/detect`, { method: "POST", headers: { authorization: `Bearer ${live?.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ url: next }) })
       .then((response) => response.json())
@@ -303,10 +321,11 @@ export function RoomStage({
                   ))}
                 </ol>
                 <form className="qi add" onSubmit={addUrl}>
-                  <input data-testid="queue-input" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
+                  <input data-testid="queue-input" value={url} onChange={(event) => { setUrl(event.target.value); setPremiumBlocked(false); }} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
                   {detected ? <small>{detected}</small> : null}
                   {detected === "youtube" ? <small>{oEmbedEndpoint({ provider: "youtube", externalId: "video", url: url || "https://youtu.be/video", titleHint: "video" })}</small> : null}
-                  {url && planPlayback({ url, premium: false }).type === "error" ? <small>Нужен премиум</small> : null}
+                  {premiumUrl ? <small data-testid="premium-gate">Нужен Premium для этой платформы</small> : null}
+                  {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                 </form>
               </div>

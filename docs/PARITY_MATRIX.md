@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 102 |
+| Done | 103 |
 | Done (needs creds) | 13 |
-| Partial | 20 |
+| Partial | 19 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -75,7 +75,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
 | F058 | Metadata resolver | Partial | The queue prints a YouTube oEmbed URL string. It does not resolve title or duration. |
-| F059 | Premium extraction gate | Partial | The premium check calls planPlayback with premium hard-coded false. |
+| F059 | Premium extraction gate | Done | The live queue reads isPremium from /me and blocks the 13 extraction-only platforms with a Premium notice. POST /rooms/:id/queue and /video/resolve read the saved isPremium flag, so the socket path is gated too and a client cannot claim premium in the body. |
 | F060 | Stream proxy | Partial | GET /video/range rejects a missing Range and blocks localhost. It does not enforce an allowlist, a size cap, or stream the body. |
 | F061 | HLS/DASH manifest rewrite | Partial | Settings has a sentence about HLS. The proxy still requires FF_EXTRACTORS and does not cover every chain. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
