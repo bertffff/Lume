@@ -6,6 +6,7 @@ import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
 import { useRoomActions } from "../room/live.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { posterFor } from "./posters.js";
+import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
 import { initials, personHue } from "./theme.js";
 
 function clock(ms: number): string {
@@ -48,6 +49,7 @@ export function RoomStage({
   const [seenCount, setSeenCount] = useState(0);
   const seenReady = useRef(false);
   const chatRef = useRef<HTMLDivElement>(null);
+  const [profile, setProfile] = useState<InRoomProfile | null>(null);
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setStyle(document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema");
@@ -218,9 +220,16 @@ export function RoomStage({
               <div className="voice">
                 <ul className="voice" data-testid="member-list">
                   {members.map((member) => (
-                    <li key={member.userId} className="vp">
-                      <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
-                      {member.displayName}
+                    <li key={member.userId}>
+                      <button
+                        type="button"
+                        className="vp"
+                        data-testid={`member-${member.userId}`}
+                        onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}
+                      >
+                        <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
+                        {member.displayName}
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -340,6 +349,15 @@ export function RoomStage({
         </aside>
       </div>
       {narrow && sheet ? <div className="sheet-open">{queue.map((item) => <p key={item.id}>{item.title}</p>)}</div> : null}
+      {profile ? (
+        <RoomProfileModal
+          member={profile}
+          roomId={room.id}
+          token={live.accessToken}
+          selfId={live.selfId}
+          onClose={() => setProfile(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -56,6 +56,8 @@
 .cinema-room .q{display:flex;gap:10px}
 .cinema-room .qi .im{height:72px;border-radius:8px;background-size:cover;background-position:center}
 .cinema-room .voice{display:flex;align-items:flex-end;gap:10px}
+.cinema-room .voice>li{display:flex}
+.cinema-room button.vp{border:0;background:none;color:inherit;padding:0;cursor:pointer}
 .cinema-room .vp{display:flex;flex-direction:column;align-items:center;gap:5px;width:56px;font-size:11.5px;color:var(--text-2)}
 .cinema-room .tr-chat-log{display:flex;flex-direction:column;gap:8px;padding:10px 12px;overflow:auto;max-height:46vh}
 .cinema-room .tr-chat-log p{max-width:92%;background:var(--bubble, var(--s2));border-radius:16px 16px 16px 5px;padding:7px 11px;margin:0}
