@@ -18,9 +18,13 @@ export async function createPlayerAdapter(
     const { createTwitchAdapter } = await import("./twitch.js");
     return createTwitchAdapter(item.externalId, mount, parentHost);
   }
-  if (kind === "vk" || kind === "rutube") {
-    const { createLimitedEmbedAdapter } = await import("./limited.js");
-    return createLimitedEmbedAdapter(kind, item.externalId, mount, parentHost);
+  if (kind === "vk") {
+    const { createVkAdapter } = await import("./vk.js");
+    return createVkAdapter(item.externalId, mount, parentHost);
+  }
+  if (kind === "rutube") {
+    const { createRutubeAdapter } = await import("./rutube.js");
+    return createRutubeAdapter(item.externalId, mount, parentHost);
   }
   if (kind === "dash") {
     const { createDashAdapter } = await import("./dash.js");

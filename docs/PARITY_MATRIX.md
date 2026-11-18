@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 101 |
+| Done | 102 |
 | Done (needs creds) | 13 |
-| Partial | 21 |
+| Partial | 20 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -49,7 +49,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F030 | Session dock | Done | The live room has a session dock bar with the persisted session timer, live member and voice counts, invite-link copy, a stored reminder, voice join/mute/leave, settings, and leave. GET /rooms/:id/session reads the room and membership rows. |
 | F031 | Report user/room | Done | POST /reports stores the selected member. The live room reports that person, and the preview no longer sends targetId mark. |
 | F032 | Multi-source playback | Done | A .mpd URL mounts the DASH adapter. playerKind covers it. |
-| F033 | VK + Rutube embeds | Partial | A helper names vk or rutube. No embed posts that command into the live player. |
+| F033 | VK + Rutube embeds | Done | The live player mounts VK with js_api=1 and hide_logo=1 and Rutube with controls=false. Both adapters translate postMessage commands and ready, playing, buffering, time, duration, ended, and error events. The queue persists provider and externalId. |
 | F034 | Host playback control | Done | Play, pause, seek, and a speed menu from 0.5 to 2. |
 | F035 | NTP clock sync | Done | The room client takes five clock samples, keeps the median offset, and repeats every minute. |
 | F036 | Adaptive drift correction | Done | Followers use the drift plan: soft rate on HTML5, hard seek, anti-loop, and buffer grace. |

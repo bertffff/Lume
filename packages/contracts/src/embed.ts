@@ -147,10 +147,10 @@ export function embedSrc(
       return `https://www.youtube.com/embed/${encodeURIComponent(item.externalId)}?enablejsapi=1`;
     case "vk": {
       const [oid, id] = item.externalId.split("_");
-      return `https://vk.com/video_ext.php?oid=${oid ?? ""}&id=${id ?? ""}&hd=2`;
+      return `https://vk.com/video_ext.php?oid=${oid ?? ""}&id=${id ?? ""}&hd=2&js_api=1&hide_logo=1`;
     }
     case "rutube":
-      return `https://rutube.ru/play/embed/${encodeURIComponent(item.externalId)}`;
+      return `https://rutube.ru/play/embed/${encodeURIComponent(item.externalId)}?controls=false`;
     case "twitch":
       if (item.externalId.startsWith("video:")) {
         return `https://player.twitch.tv/?video=${encodeURIComponent(item.externalId.slice(6))}&parent=${parent}`;
@@ -161,6 +161,93 @@ export function embedSrc(
     case "direct":
       return item.externalId;
   }
+}
+
+export type EmbedControl =
+  | { type: "play" }
+  | { type: "pause" }
+  | { type: "seek"; positionMs: number };
+
+export type EmbedEvent =
+  | { kind: "ready" }
+  | { kind: "playing" }
+  | { kind: "buffering" }
+  | { kind: "ended" }
+  | { kind: "error" }
+  | { kind: "time"; positionMs: number }
+  | { kind: "duration"; durationMs: number };
+
+/**
+ * VK video_ext and Rutube play/embed speak JSON over postMessage. The two
+ * protocols use different keys, so the live adapters share this translation.
+ */
+export function embedCommand(provider: "vk" | "rutube", command: EmbedControl): string {
+  if (provider === "vk") {
+    if (command.type === "seek") {
+      return JSON.stringify({ method: "seek", seek: Math.max(0, command.positionMs) / 1000 });
+    }
+    return JSON.stringify({ method: command.type });
+  }
+  if (command.type === "seek") {
+    return JSON.stringify({ type: "player:seek", time: Math.max(0, command.positionMs) / 1000 });
+  }
+  return JSON.stringify({ type: `player:${command.type}` });
+}
+
+function numeric(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function parseEmbedEvent(provider: "vk" | "rutube", raw: unknown): EmbedEvent | null {
+  let payload: Record<string, unknown> | null = null;
+  if (typeof raw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      payload = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  } else if (raw && typeof raw === "object") {
+    payload = raw as Record<string, unknown>;
+  }
+  if (!payload) {
+    return null;
+  }
+  const name = String(payload.event ?? payload.type ?? "").toLowerCase();
+  if (provider === "rutube") {
+    if (name === "player:ready" || name === "ready") return { kind: "ready" };
+    if (name === "playing" || name === "player:playing") return { kind: "playing" };
+    if (name === "waiting" || name === "buffering" || name === "player:waiting") return { kind: "buffering" };
+    if (name === "ended" || name === "player:ended") return { kind: "ended" };
+    if (name === "error" || name === "player:error") return { kind: "error" };
+    if (name === "timeupdate" || name === "currenttime" || name === "player:timeupdate") {
+      const seconds = numeric(payload.currentTime ?? payload.time ?? payload.position);
+      return seconds === null ? null : { kind: "time", positionMs: Math.max(0, seconds * 1000) };
+    }
+    if (name === "durationchange" || name === "player:durationchange") {
+      const seconds = numeric(payload.duration ?? payload.durationMs);
+      return seconds === null ? null : { kind: "duration", durationMs: Math.max(0, seconds * 1000) };
+    }
+    return null;
+  }
+  if (name === "ready") return { kind: "ready" };
+  if (name === "playing") return { kind: "playing" };
+  if (name === "buffering") return { kind: "buffering" };
+  if (name === "ended") return { kind: "ended" };
+  if (name === "error") return { kind: "error" };
+  if (name === "timeupdate") {
+    const seconds = numeric(payload.time ?? payload.currentTime ?? payload.position);
+    return seconds === null ? null : { kind: "time", positionMs: Math.max(0, seconds * 1000) };
+  }
+  if (name === "durationchange") {
+    const seconds = numeric(payload.duration ?? payload.durationMs);
+    return seconds === null ? null : { kind: "duration", durationMs: Math.max(0, seconds * 1000) };
+  }
+  return null;
 }
 
 export function oEmbedEndpoint(item: ParsedEmbed): string | null {

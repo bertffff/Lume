@@ -95,6 +95,36 @@ export function PlayerPanel({
   const onBlocked = useCallback(() => setBlocked(true), []);
   const playbackStatusRef = useRef(playback?.status);
   playbackStatusRef.current = playback?.status;
+  const playbackRef = useRef(playback);
+  playbackRef.current = playback;
+  const offsetRef = useRef(live?.offsetMs ?? 0);
+  offsetRef.current = live?.offsetMs ?? 0;
+  const lastHostCommand = useRef("");
+
+  const applyHostPlayback = useCallback((adapter: PlayerAdapter) => {
+    const snapshot = playbackRef.current;
+    if (!snapshot) return;
+    const target = Math.max(
+      0,
+      Math.round(
+        positionAt(
+          {
+            status: snapshot.status,
+            anchorPositionMs: snapshot.anchorPositionMs,
+            anchorServerTimeMs: snapshot.anchorServerTimeMs,
+            version: snapshot.version,
+            updatedBy: snapshot.updatedBy,
+          },
+          Date.now() + offsetRef.current,
+        ),
+      ),
+    );
+    if (snapshot.status === "playing") {
+      void adapter.seek(target).then(() => adapter.play()).catch(() => undefined);
+    } else {
+      void adapter.pause().then(() => adapter.seek(target)).catch(() => undefined);
+    }
+  }, []);
   const onAspectRef = useRef(onAspect);
   onAspectRef.current = onAspect;
   const onErrorRef = useRef(onError);
@@ -133,6 +163,9 @@ export function PlayerPanel({
         }
         adapterRef.current = adapter;
         setLimited(adapter.limited);
+        if (canControlRef.current) {
+          applyHostPlayback(adapter);
+        }
         adapter.onState((state) => {
           phaseRef.current = state.phase;
           if (state.phase === "error") onErrorRef.current?.(nowPlaying?.url ?? "");
@@ -167,7 +200,15 @@ export function PlayerPanel({
       adapterRef.current?.destroy();
       adapterRef.current = null;
     };
-  }, [nowPlaying]);
+  }, [applyHostPlayback, nowPlaying]);
+
+  useEffect(() => {
+    if (!live?.canControl || !playback || !nowPlaying) return;
+    const key = `${nowPlaying.id}:${playback.version}:${playback.status}`;
+    if (lastHostCommand.current === key) return;
+    lastHostCommand.current = key;
+    if (adapterRef.current) applyHostPlayback(adapterRef.current);
+  }, [applyHostPlayback, live?.canControl, nowPlaying, playback]);
 
   useFollowSync({
     enabled: Boolean(live && !live.canControl && playback),

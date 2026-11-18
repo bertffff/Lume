@@ -296,7 +296,7 @@ export function RoomStage({
               <div className="q">
                 <ol className="tr-queue q">
                   {queue.slice(0, 2).map((item) => (
-                    <li key={item.id} className="qi">
+                    <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider}>
                       <div className="im" style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }} />
                       <b>{item.title}</b>
                     </li>

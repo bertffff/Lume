@@ -70,13 +70,17 @@ export {
 } from "./playback.js";
 export { decideCas } from "./decide-cas.js";
 export {
+  embedCommand,
   embedProviderSchema,
   embedSrc,
   isHlsUrl,
   mediaFallbackTitle,
   oEmbedEndpoint,
+  parseEmbedEvent,
   parseEmbedInput,
   playerKind,
+  type EmbedControl,
+  type EmbedEvent,
   type EmbedProvider,
   type ParsedEmbed,
   type PlayerKind,
