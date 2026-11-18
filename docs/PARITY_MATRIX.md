@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 108 |
+| Done | 109 |
 | Done (needs creds) | 13 |
-| Partial | 14 |
+| Partial | 13 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -124,7 +124,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F105 | Avatar upload + crop | Done | An avatar file is cropped to a square on a canvas and saved. |
 | F106 | Profile share + user_ deep link | Done | startapp user_<id> opens that person's name on the people screen. |
 | F107 | In-room profile modal | Done | A member row in the live room opens a profile card. Esc closes it, and the card can send a real friend request or a report. |
-| F108 | 10 achievements + XP + levels | Partial | The profile paints all ten achievement icons as earned and hard-codes '3 из 10'. |
+| F108 | 10 achievements + XP + levels | Done | GET /me/achievements and /users/:id/achievements return all ten definitions with earned flags, totalXp, level from XP, and nextLevelXp. The live profile renders all ten icons and highlights only earned ones, with a dynamic N из 10 count. |
 | F109 | Achievement pin slots | Done | Three pin slots can be filled from earned achievements. |
 | F110 | Activity heatmap | Done | The studio returns 365 days and the people screen marks active ones. |
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |

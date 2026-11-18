@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { favouriteLine, linkedLabel, partyAchievements, viewerPermissionKeys } from "@lume/contracts";
+import { favouriteLine, linkedLabel, viewerPermissionKeys } from "@lume/contracts";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -150,9 +150,14 @@ export function SettingsScreen({
   );
 }
 
-export function ProfileScreen({ token, apiUrl, userId }: { token?: string; apiUrl?: string; userId?: string } = {}) {
+export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: string; apiUrl?: string; userId?: string; displayName?: string } = {}) {
   const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null; watchCount: number }>>([]);
   const [history, setHistory] = useState<Array<{ url: string; title: string | null; watchCount: number; lastWatchedAt: string }>>([]);
+  const [achievements, setAchievements] = useState<Array<{ key: string; title: string; icon: string; earned: boolean }>>([]);
+  const [level, setLevel] = useState(1);
+  const [totalXp, setTotalXp] = useState(0);
+  const [nextLevelXp, setNextLevelXp] = useState(0);
+  const [totalAchievements, setTotalAchievements] = useState(0);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number }>>([]);
@@ -170,25 +175,50 @@ export function ProfileScreen({ token, apiUrl, userId }: { token?: string; apiUr
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number }> }) => setFavourites(payload.items ?? []))
       .catch(() => setFavourites([]));
+    void fetch(`${apiUrl}/me/achievements`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: {
+        all?: Array<{ key: string; title: string; icon: string; earned: boolean }>;
+        level?: number;
+        totalXp?: number;
+        nextLevelXp?: number;
+        total?: number;
+      }) => {
+        if (Array.isArray(payload.all)) setAchievements(payload.all);
+        if (typeof payload.level === "number") setLevel(payload.level);
+        if (typeof payload.totalXp === "number") setTotalXp(payload.totalXp);
+        if (typeof payload.nextLevelXp === "number") setNextLevelXp(payload.nextLevelXp);
+        if (typeof payload.total === "number") setTotalAchievements(payload.total);
+      })
+      .catch(() => undefined);
     if (!userId) return;
     void fetch(`${apiUrl}/users/${userId}/watch-history`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number; lastWatchedAt: string }> }) => setHistory(payload.items ?? []))
       .catch(() => setHistory([]));
   }, [token, apiUrl, userId]);
+  const earnedCount = achievements.filter((item) => item.earned).length;
   return (
     <div className="profile-wrap">
       <aside className="side-p">
         <div className="card" style={{ textAlign: "center" }}>
-          <span className="av p-me ring" style={{ width: 80, height: 80, fontSize: 26, margin: "0 auto 10px" }}>АВ</span>
-          <b className="nm p-me" style={{ display: "block", font: "600 18px/22px var(--font-display)" }}>Альберт Вопилов</b>
-          <div style={{ color: "var(--text-2)", fontSize: 13, marginTop: 4 }}>уровень 7 · 14 друзей</div>
-          <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 10 }}>«Смотрю кино, как будто в одном зале.»</p>
+          <span className="av p-me ring" style={{ width: 80, height: 80, fontSize: 26, margin: "0 auto 10px" }}>{(displayName ?? "Вы").slice(0, 2).toUpperCase()}</span>
+          <b className="nm p-me" style={{ display: "block", font: "600 18px/22px var(--font-display)" }}>{displayName ?? "Вы"}</b>
+          <div style={{ color: "var(--text-2)", fontSize: 13, marginTop: 4 }}>
+            <span data-testid="profile-level">Уровень {level}</span> · <span data-testid="profile-xp">{totalXp} XP</span>
+          </div>
+          <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 6 }} data-testid="profile-next-level">до следующего уровня {Math.max(0, nextLevelXp - totalXp)} XP</p>
         </div>
         <div className="card">
           <h3>Достижения</h3>
-          <div className="ach">{partyAchievements.map((item) => <span key={item.key} className="got" title={item.titleRu}>{item.icon}</span>)}</div>
-          <div className="dim">3 из 10 открыто · 3 слота для значков</div>
+          <div className="ach" data-testid="profile-achievements">
+            {achievements.map((item) => (
+              <span key={item.key} className={item.earned ? "got" : ""} title={item.title} data-testid="profile-achievement" data-key={item.key} data-earned={String(item.earned)}>
+                {item.icon}
+              </span>
+            ))}
+          </div>
+          <div className="dim" data-testid="profile-achievements-count">{earnedCount} из {totalAchievements} открыто · 3 слота для значков</div>
         </div>
         <div className="card">
           <h3>Друзья</h3>

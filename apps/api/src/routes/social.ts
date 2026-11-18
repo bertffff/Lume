@@ -3,6 +3,8 @@ import {
   decideFriendRequest,
   isFavourite,
   levelFromXp,
+  nextLevelXp,
+  partyAchievements,
   passwordIssue,
   registerAvailability,
   resumeCard,
@@ -117,6 +119,46 @@ async function topFriendsOf(prisma: PrismaClient, userId: string) {
   }));
 }
 
+async function achievementsOf(prisma: PrismaClient, userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { achievements: { include: { achievement: true } } },
+  });
+  if (!user) {
+    return null;
+  }
+  const owned = new Map(user.achievements.map((row) => [row.achievement.key, row]));
+  const english = user.locale === "en";
+  return {
+    unlocked: user.achievements.map((row) => ({
+      key: row.achievement.key,
+      title: english ? row.achievement.titleEn : row.achievement.titleRu,
+      description: english ? row.achievement.descriptionEn : row.achievement.descriptionRu,
+      icon: row.achievement.icon,
+      xpReward: row.achievement.xpReward,
+      unlockedAt: row.awardedAt.toISOString(),
+      pinSlot: row.pinSlot,
+    })),
+    total: partyAchievements.length,
+    totalXp: user.xp,
+    level: levelFromXp(user.xp),
+    nextLevelXp: nextLevelXp(user.xp),
+    all: partyAchievements.map((definition) => {
+      const row = owned.get(definition.key);
+      return {
+        key: definition.key,
+        title: english ? definition.titleEn : definition.titleRu,
+        description: english ? definition.descriptionEn : definition.descriptionRu,
+        icon: definition.icon,
+        xpReward: definition.xpReward,
+        earned: Boolean(row),
+        unlockedAt: row?.awardedAt.toISOString() ?? null,
+        pinSlot: row?.pinSlot ?? null,
+      };
+    }),
+  };
+}
+
 export async function prepareSocial(prisma: PrismaClient): Promise<void> {
   await seedPartyAchievements(prisma);
 }
@@ -207,6 +249,15 @@ export function registerSocialRoutes(
     return reply.send(await profileOf(prisma, actor.userId, true));
   });
 
+  app.get("/me/achievements", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    return reply.send(await achievementsOf(prisma, actor.userId));
+  });
+
   app.post("/me/recent-emojis", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {
@@ -287,6 +338,14 @@ export function registerSocialRoutes(
     });
   });
 
+  app.get("/users/:id/achievements", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const target = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
+    if (!target) return reply.code(404).send({ error: "not_found" });
+    return reply.send(await achievementsOf(prisma, target.id));
+  });
+
   app.get("/users/profile/:id", async (request, reply) => {
     const params = z.object({ id: z.string() }).parse(request.params);
     if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
@@ -320,6 +379,8 @@ export function registerSocialRoutes(
       avatarUrl: target.avatarUrl,
       xp: target.xp,
       level: levelFromXp(target.xp),
+      nextLevelXp: nextLevelXp(target.xp),
+      totalAchievements: partyAchievements.length,
       isPremium: target.isPremium,
       privacy: {
         isFriendsPublic: target.isFriendsPublic,
@@ -993,6 +1054,8 @@ async function profileOf(prisma: PrismaClient, userId: string, includePrivate: b
     role: user.role,
     xp: user.xp,
     level: levelFromXp(user.xp),
+    nextLevelXp: nextLevelXp(user.xp),
+    totalAchievements: partyAchievements.length,
     isPremium: user.isPremium,
     hideOtherReactions: user.hideOtherReactions,
     isFriendsPublic: user.isFriendsPublic,
