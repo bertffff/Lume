@@ -1,4 +1,4 @@
-import { emojiCategories, historyLabel, layoutAspectGroup, oEmbedEndpoint, planPlayback, shouldHoldForReady, withLayoutPreset, withVideoAspect, type ParsedEmbed, type RoomLayout } from "@lume/contracts";
+import { emojiCategories, getNextRoomPanel, historyLabel, layoutAspectGroup, oEmbedEndpoint, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type ParsedEmbed, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -47,6 +47,7 @@ export function RoomStage({
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<RoomSheetPanel>("chat");
   const [seenCount, setSeenCount] = useState(0);
   const seenReady = useRef(false);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -102,11 +103,20 @@ export function RoomStage({
     seenReady.current = true;
     setSeenCount(live.state.messages.length);
   }, [live?.state.messages.length]);
+  useEffect(() => {
+    if (!sheet) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSheet(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheet]);
   if (!live) return null;
   const room = live.state.room;
   const members = live.state.members;
   const playing = live.state.playback.status === "playing";
   const queue = live.state.queue.filter((item) => item.id !== room.nowPlaying?.id);
+  const sheetItems = room.nowPlaying ? [room.nowPlaying, ...queue] : queue;
   const gruv = style === "gruvbox";
   const bufferingCount = live.state.viewers.filter((viewer) => viewer.phase === "buffering").length;
   const waiting = shouldHoldForReady(bufferingCount > 0, bufferingCount);
@@ -239,7 +249,7 @@ export function RoomStage({
             <span className="pill">1080p</span>
           </div>
           <div className={narrow ? "sheet" : "low"}>
-            {narrow ? <button type="button" className="sheet-tab" onClick={() => setSheet((value) => !value)}>Очередь</button> : null}
+            {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Панели</button> : null}
             <div className="card voice-card">
               <div className="ct">Голосовой {voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{voice.joined ? `в эфире ${voiceSeconds}с` : iceUrl}</small>}</div>
               <div className="voice">
@@ -373,7 +383,71 @@ export function RoomStage({
           ) : null}
         </aside>
       </div>
-      {narrow && sheet ? <div className="sheet-open">{queue.map((item) => <p key={item.id}>{item.title}</p>)}</div> : null}
+      {narrow ? (
+        <div className={sheet ? "mobile-sheet is-open" : "mobile-sheet"} data-testid="mobile-sheet" data-open={sheet ? "true" : "false"}>
+          <div
+            className="mobile-sheet-tabs"
+            role="tablist"
+            onKeyDown={(event) => {
+              if (event.key === "ArrowRight") setMobilePanel(getNextRoomPanel(mobilePanel, 1));
+              if (event.key === "ArrowLeft") setMobilePanel(getNextRoomPanel(mobilePanel, -1));
+            }}
+          >
+            {roomSheetPanels.map((panel) => (
+              <button
+                key={panel}
+                type="button"
+                role="tab"
+                aria-selected={mobilePanel === panel && sheet}
+                className={mobilePanel === panel && sheet ? "on" : ""}
+                data-testid={`mobile-sheet-tab-${panel}`}
+                onClick={() => {
+                  setMobilePanel(panel);
+                  setSheet(true);
+                }}
+              >
+                {panel === "chat" ? "Чат" : panel === "members" ? "Люди" : "Очередь"}
+              </button>
+            ))}
+            <button type="button" className="mobile-sheet-close" data-testid="mobile-sheet-close" onClick={() => setSheet(false)}>×</button>
+          </div>
+          {sheet ? (
+            <div className="mobile-sheet-panel" data-testid="mobile-sheet-panel" data-panel={mobilePanel}>
+              {mobilePanel === "chat" ? (
+                <div className="log" data-testid="mobile-sheet-chat">
+                  {live.state.messages.length === 0 ? <p className="tr-empty">Пока пусто</p> : null}
+                  {live.state.messages.slice(-12).map((message) => (
+                    <div key={message.id} className="m"><div className="bu"><div className="n">{message.displayName}</div>{message.body}</div></div>
+                  ))}
+                </div>
+              ) : null}
+              {mobilePanel === "members" ? (
+                <ul className="mobile-sheet-list" data-testid="mobile-sheet-members">
+                  {members.map((member) => (
+                    <li key={member.userId}>
+                      <button type="button" onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}>
+                        <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
+                        {member.displayName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {mobilePanel === "queue" ? (
+                <ol className="tr-queue mobile-sheet-queue" data-testid="mobile-sheet-queue">
+                  {sheetItems.length === 0 ? <li className="empty">Очередь пуста</li> : null}
+                  {sheetItems.map((item) => (
+                    <li key={item.id}>
+                      <b>{item.title}</b>
+                      <small>{item.id === room.nowPlaying?.id ? "сейчас" : item.provider}</small>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {profile ? (
         <RoomProfileModal
           member={profile}

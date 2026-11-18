@@ -32,6 +32,15 @@ export const emojiCategories = {
   marks: ["👍", "👎", "✨"],
 } as const;
 
+export const roomSheetPanels = ["chat", "members", "queue"] as const;
+export type RoomSheetPanel = (typeof roomSheetPanels)[number];
+
+export function getNextRoomPanel(current: RoomSheetPanel, direction: 1 | -1 = 1): RoomSheetPanel {
+  const index = roomSheetPanels.indexOf(current);
+  const next = (index + direction + roomSheetPanels.length) % roomSheetPanels.length;
+  return roomSheetPanels[next] ?? "chat";
+}
+
 export function lastIncidents<T>(items: readonly T[], limit = 10): T[] {
   return items.slice(0, limit);
 }
