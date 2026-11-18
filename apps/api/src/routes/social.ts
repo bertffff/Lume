@@ -576,7 +576,16 @@ export function registerSocialRoutes(
       return;
     }
     const rows = await prisma.watchHistory.findMany({ where: { userId: actor.userId, watchCount: { gt: 1 } }, orderBy: { watchCount: "desc" }, take: 20 });
-    return reply.send({ items: rows.filter((row) => isFavourite(row.watchCount)).map((row) => ({ url: row.videoUrl, title: row.title, watchCount: row.watchCount })) });
+    return reply.send({
+      items: rows.filter((row) => isFavourite(row.watchCount)).map((row) => ({
+        url: row.videoUrl,
+        title: row.title,
+        thumbnail: row.thumbnail,
+        source: row.source,
+        watchCount: row.watchCount,
+        lastWatchedAt: row.lastWatchedAt.toISOString(),
+      })),
+    });
   });
 
   app.post("/rooms/resume-last", async (request, reply) => {

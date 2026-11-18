@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 106 |
+| Done | 107 |
 | Done (needs creds) | 13 |
-| Partial | 16 |
+| Partial | 15 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -117,7 +117,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |
 | F099 | Watch sessions | Done | Leaving a room records a watch session. The profile lists the longest sessions with friends. |
 | F100 | Watch history | Done | GET /users/:id/watch-history returns the persisted rows newest-first with replay counts, and refuses other readers when isWatchHistoryPublic is off. The live profile lists that history. |
-| F101 | Favourite videos | Partial | GET /me/favourites and the profile fetch exist. Nothing proves a second watch becomes a favourite. |
+| F101 | Favourite videos | Done | A second watch of the same URL increments WatchHistory.watchCount. GET /me/favourites returns those rows with counts and timestamps, and the live profile lists them. |
 | F102 | Discovery feed | Done | Discovery suggestions from watch history show on the queue. |
 | F103 | Public profile + privacy | Partial | Settings sends isFriendsPublic and isWatchHistoryPublic. Watch history honors its flag now; the friends and public-profile readers still do not. |
 | F104 | Bio + current activity | Done | Bio can be edited from the people screen and is stored on the user. |

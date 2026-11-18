@@ -187,7 +187,13 @@ export function ProfileScreen({ token, apiUrl, userId }: { token?: string; apiUr
         <h3>Сеансы с друзьями</h3>
         {friendsWatch.length === 0 ? <p>Пока пусто</p> : friendsWatch.map((item) => <p key={item.partnerId}>{item.partnerId} · {item.seconds} с</p>)}
         <h3>Избранное</h3>
-        {favourites.length === 0 ? <p>Пока пусто</p> : favourites.map((item) => <p key={item.url}>{favouriteLine(item.title, item.watchCount)}</p>)}
+        <div data-testid="profile-favourites">
+          {favourites.length === 0 ? <p>Пока пусто</p> : favourites.map((item) => (
+            <p key={item.url} data-testid="profile-favourite" data-url={item.url} data-watch-count={item.watchCount}>
+              {favouriteLine(item.title, item.watchCount)}
+            </p>
+          ))}
+        </div>
         <h3>Недавние комнаты</h3>
         <div className="rooms">
           <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }} /><div className="bd"><b>Ночной кинозал</b><small>Пустая дорога</small></div></div>
