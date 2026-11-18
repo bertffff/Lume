@@ -1,4 +1,4 @@
-import { emojiCategories, getNextRoomPanel, historyLabel, layoutAspectGroup, oEmbedEndpoint, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type ParsedEmbed, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
+import { emojiCategories, getNextRoomPanel, historyLabel, layoutAspectGroup, oEmbedEndpoint, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";

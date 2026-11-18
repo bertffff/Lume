@@ -1,29 +1,32 @@
 import { expect, test } from "@playwright/test";
 
 test("the live room opens a member profile card with friend and report actions", async ({ browser }) => {
+  const stamp = Date.now().toString(36);
+  const hostName = `Аня ${stamp}`;
+  const guestName = `Марк ${stamp}`;
   const hostContext = await browser.newContext();
   const guestContext = await browser.newContext();
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
 
   await host.goto("/");
-  await host.getByTestId("lobby-name").fill("Аня");
+  await host.getByTestId("lobby-name").fill(hostName);
   await host.getByTestId("lobby-sign-in").click();
-  await host.getByTestId("lobby-title").fill("Профили");
+  await host.getByTestId("lobby-title").fill(`Профили ${stamp}`);
   await host.getByTestId("lobby-create").click();
-  await expect(host.getByTestId("room-title")).toHaveText("Профили", { timeout: 20_000 });
+  await expect(host.getByTestId("room-title")).toHaveText(`Профили ${stamp}`, { timeout: 20_000 });
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
-  await guest.getByTestId("lobby-name").fill("Марк");
+  await guest.getByTestId("lobby-name").fill(guestName);
   await guest.getByTestId("lobby-sign-in").click();
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();
-  await expect(guest.getByTestId("room-title")).toHaveText("Профили", { timeout: 20_000 });
+  await expect(guest.getByTestId("room-title")).toHaveText(`Профили ${stamp}`, { timeout: 20_000 });
 
-  await host.locator('button[data-testid^="member-"]').filter({ hasText: "Марк" }).click();
+  await host.locator('button[data-testid^="member-"]').filter({ hasText: guestName }).click();
   await expect(host.getByTestId("profile-modal")).toBeVisible();
-  await expect(host.getByTestId("profile-modal-name")).toHaveText("Марк");
+  await expect(host.getByTestId("profile-modal-name")).toHaveText(guestName);
 
   const friended = host.waitForResponse((response) => new URL(response.url()).pathname === "/friends/request" && response.request().method() === "POST");
   await host.getByTestId("profile-add-friend").click();
