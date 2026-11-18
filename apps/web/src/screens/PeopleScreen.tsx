@@ -16,6 +16,7 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
   const [hostRooms, setHostRooms] = useState(0);
   const [achievements, setAchievements] = useState<Array<{ key: string; title: string; pinSlot: number | null }>>([]);
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
   const [topFriends, setTopFriends] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   const [digestCount, setDigestCount] = useState(0);
   const [bio, setBio] = useState("");
@@ -78,6 +79,18 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
     } catch (caught) {
       setError(caught instanceof ClientError ? caught.code : "request_failed");
     }
+  }
+
+  async function openPublicProfile(userId: string) {
+    setError(null);
+    const response = await fetch(`${apiUrl}/users/profile/${userId}`, {
+      headers: { authorization: `Bearer ${session.accessToken}` },
+    });
+    if (!response.ok) {
+      setError(response.status === 403 ? "private" : "request_failed");
+      return;
+    }
+    setPublicProfile((await response.json()) as PublicProfile);
   }
 
   return (
@@ -250,12 +263,45 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
         {found.map((user) => (
           <li key={user.id}>
             {user.displayName}{" "}
+            <button type="button" className="tr-text-button" data-testid="people-open-profile" onClick={() => void openPublicProfile(user.id)}>
+              {t("people.profile")}
+            </button>
             <button type="button" className="tr-text-button" onClick={() => void api.requestFriend(session.accessToken, user.id).then(reload)}>
               {t("people.request")}
             </button>
           </li>
         ))}
       </ul>
+      {publicProfile ? (
+        <section className="card" data-testid="public-profile">
+          <h3 data-testid="public-profile-name">{publicProfile.displayName}</h3>
+          <p data-testid="public-profile-level">
+            {t("people.level")} {publicProfile.level}
+            {publicProfile.username ? ` · ${publicProfile.username}` : ""}
+          </p>
+          {publicProfile.bio ? <p>{publicProfile.bio}</p> : null}
+          <div data-testid="public-profile-history">
+            <b>{t("people.history")}</b>
+            {publicProfile.watchHistory === null ? <p>{t("people.hidden")}</p> : publicProfile.watchHistory.length === 0 ? <p>{t("people.empty")}</p> : (
+              <ul>
+                {publicProfile.watchHistory.map((item) => (
+                  <li key={item.url} data-testid="public-profile-history-item" data-url={item.url}>
+                    {item.title || item.url} · {item.watchCount}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div data-testid="public-profile-friends">
+            <b>{t("people.friendsLabel")}</b>
+            {publicProfile.friends === null ? <p>{t("people.hidden")}</p> : publicProfile.friends.length === 0 ? <p>{t("people.empty")}</p> : (
+              <ul>
+                {publicProfile.friends.map((friend) => <li key={friend.id}>{friend.displayName}</li>)}
+              </ul>
+            )}
+          </div>
+        </section>
+      ) : null}
       <h3>{t("people.incoming")}</h3>
       {incoming.length === 0 ? <p className="tr-empty">{t("people.none")}</p> : null}
       <ul>
@@ -293,6 +339,16 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
       </ul>
     </section>
   );
+}
+
+interface PublicProfile {
+  id: string;
+  displayName: string;
+  username: string | null;
+  bio: string | null;
+  level: number;
+  watchHistory: Array<{ url: string; title: string | null; watchCount: number }> | null;
+  friends: Array<{ id: string; displayName: string }> | null;
 }
 
 async function cropAndUpload(file: File, token: string) {

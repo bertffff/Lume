@@ -51,6 +51,72 @@ async function optionalViewer(request: { headers: { authorization?: string } }, 
   }
 }
 
+async function friendsOf(prisma: PrismaClient, userId: string) {
+  const rows = await prisma.friendship.findMany({
+    where: { status: "accepted", OR: [{ requesterId: userId }, { addresseeId: userId }] },
+    include: {
+      requester: { select: { id: true, displayName: true, avatarUrl: true } },
+      addressee: { select: { id: true, displayName: true, avatarUrl: true } },
+    },
+  });
+  return rows.map((row) => {
+    const other = row.requesterId === userId ? row.addressee : row.requester;
+    return { id: other.id, displayName: other.displayName, avatarUrl: other.avatarUrl };
+  });
+}
+
+async function watchHistoryOf(prisma: PrismaClient, userId: string) {
+  const rows = await prisma.watchHistory.findMany({
+    where: { userId },
+    orderBy: { lastWatchedAt: "desc" },
+    take: 50,
+  });
+  return rows.map((row) => ({
+    url: row.videoUrl,
+    title: row.title,
+    thumbnail: row.thumbnail,
+    source: row.source,
+    watchCount: row.watchCount,
+    lastWatchedAt: row.lastWatchedAt.toISOString(),
+  }));
+}
+
+async function favouritesOf(prisma: PrismaClient, userId: string) {
+  const rows = await prisma.watchHistory.findMany({
+    where: { userId, watchCount: { gt: 1 } },
+    orderBy: { watchCount: "desc" },
+    take: 20,
+  });
+  return rows.filter((row) => isFavourite(row.watchCount)).map((row) => ({
+    url: row.videoUrl,
+    title: row.title,
+    thumbnail: row.thumbnail,
+    source: row.source,
+    watchCount: row.watchCount,
+    lastWatchedAt: row.lastWatchedAt.toISOString(),
+  }));
+}
+
+async function topFriendsOf(prisma: PrismaClient, userId: string) {
+  const rows = await prisma.watchSession.groupBy({
+    by: ["partnerId"],
+    where: { userId },
+    _sum: { watchDuration: true },
+    orderBy: { _sum: { watchDuration: "desc" } },
+    take: 5,
+  });
+  const partners = await prisma.user.findMany({
+    where: { id: { in: rows.map((row) => row.partnerId) } },
+    select: { id: true, displayName: true },
+  });
+  const names = new Map(partners.map((user) => [user.id, user.displayName]));
+  return rows.map((row) => ({
+    partnerId: row.partnerId,
+    displayName: names.get(row.partnerId) ?? null,
+    seconds: row._sum.watchDuration ?? 0,
+  }));
+}
+
 export async function prepareSocial(prisma: PrismaClient): Promise<void> {
   await seedPartyAchievements(prisma);
 }
@@ -221,6 +287,100 @@ export function registerSocialRoutes(
     });
   });
 
+  app.get("/users/profile/:id", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const target = await prisma.user.findFirst({
+      where: { id: params.id, deletedAt: null },
+      include: { achievements: { include: { achievement: true } } },
+    });
+    if (!target) return reply.code(404).send({ error: "not_found" });
+    const viewerId = await optionalViewer(request, env);
+    const isOwner = viewerId === target.id;
+    const showFriends = isOwner || target.isFriendsPublic;
+    const showHistory = isOwner || target.isWatchHistoryPublic;
+    const showFavourites = isOwner || target.isFavoriteVideosPublic;
+    const showTopFriends = isOwner || target.isTopFriendsPublic;
+    const [seat, friends, watchHistory, favourites, topFriends] = await Promise.all([
+      prisma.roomMember.findFirst({
+        where: { userId: target.id, leftAt: null },
+        include: { room: true },
+        orderBy: { joinedAt: "desc" },
+      }),
+      showFriends ? friendsOf(prisma, target.id) : Promise.resolve(null),
+      showHistory ? watchHistoryOf(prisma, target.id) : Promise.resolve(null),
+      showFavourites ? favouritesOf(prisma, target.id) : Promise.resolve(null),
+      showTopFriends ? topFriendsOf(prisma, target.id) : Promise.resolve(null),
+    ]);
+    return reply.send({
+      id: target.id,
+      displayName: target.displayName,
+      username: target.showUsername ? target.username : null,
+      bio: target.bio,
+      avatarUrl: target.avatarUrl,
+      xp: target.xp,
+      level: levelFromXp(target.xp),
+      isPremium: target.isPremium,
+      privacy: {
+        isFriendsPublic: target.isFriendsPublic,
+        isFavoriteVideosPublic: target.isFavoriteVideosPublic,
+        isTopFriendsPublic: target.isTopFriendsPublic,
+        isWatchHistoryPublic: target.isWatchHistoryPublic,
+        showUsername: target.showUsername,
+      },
+      currentActivity: seat && seat.room.status !== "ended"
+        ? { roomId: seat.roomId, roomTitle: seat.room.title }
+        : null,
+      achievements: target.achievements.map((row) => ({
+        key: row.achievement.key,
+        title: row.achievement.titleRu,
+        icon: row.achievement.icon,
+        pinSlot: row.pinSlot,
+        awardedAt: row.awardedAt.toISOString(),
+      })),
+      friends,
+      watchHistory,
+      favourites,
+      topFriends,
+    });
+  });
+
+  app.get("/users/:id/friends", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const target = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
+    if (!target) return reply.code(404).send({ error: "not_found" });
+    const viewerId = await optionalViewer(request, env);
+    if (viewerId !== target.id && !target.isFriendsPublic) {
+      return reply.code(403).send({ error: "friends_private" });
+    }
+    return reply.send({ friends: await friendsOf(prisma, target.id) });
+  });
+
+  app.get("/users/:id/favourites", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const target = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
+    if (!target) return reply.code(404).send({ error: "not_found" });
+    const viewerId = await optionalViewer(request, env);
+    if (viewerId !== target.id && !target.isFavoriteVideosPublic) {
+      return reply.code(403).send({ error: "favourites_private" });
+    }
+    return reply.send({ items: await favouritesOf(prisma, target.id) });
+  });
+
+  app.get("/users/:id/top-friends", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const target = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
+    if (!target) return reply.code(404).send({ error: "not_found" });
+    const viewerId = await optionalViewer(request, env);
+    if (viewerId !== target.id && !target.isTopFriendsPublic) {
+      return reply.code(403).send({ error: "top_friends_private" });
+    }
+    return reply.send({ friends: await topFriendsOf(prisma, target.id) });
+  });
+
   app.get("/users/:id", async (request, reply) => {
     const params = z.object({ id: z.string() }).parse(request.params);
     if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
@@ -234,10 +394,19 @@ export function registerSocialRoutes(
     return reply.send({
       id: user.id,
       displayName: user.displayName,
+      username: user.showUsername ? user.username : null,
       bio: user.bio,
       avatarUrl: user.avatarUrl,
+      level: levelFromXp(user.xp),
       roomId: seat && seat.room.status !== "ended" ? seat.roomId : null,
       roomTitle: seat && seat.room.status !== "ended" ? seat.room.title : null,
+      privacy: {
+        isFriendsPublic: user.isFriendsPublic,
+        isFavoriteVideosPublic: user.isFavoriteVideosPublic,
+        isTopFriendsPublic: user.isTopFriendsPublic,
+        isWatchHistoryPublic: user.isWatchHistoryPublic,
+        showUsername: user.showUsername,
+      },
     });
   });
 
@@ -250,21 +419,7 @@ export function registerSocialRoutes(
     if (viewerId !== target.id && !target.isWatchHistoryPublic) {
       return reply.code(403).send({ error: "watch_history_private" });
     }
-    const rows = await prisma.watchHistory.findMany({
-      where: { userId: target.id },
-      orderBy: { lastWatchedAt: "desc" },
-      take: 50,
-    });
-    return reply.send({
-      items: rows.map((row) => ({
-        url: row.videoUrl,
-        title: row.title,
-        thumbnail: row.thumbnail,
-        source: row.source,
-        watchCount: row.watchCount,
-        lastWatchedAt: row.lastWatchedAt.toISOString(),
-      })),
-    });
+    return reply.send({ items: await watchHistoryOf(prisma, target.id) });
   });
 
   app.get("/friends", async (request, reply) => {
@@ -575,17 +730,7 @@ export function registerSocialRoutes(
       if (actor) return reply.code(503).send({ error: "database_unconfigured" });
       return;
     }
-    const rows = await prisma.watchHistory.findMany({ where: { userId: actor.userId, watchCount: { gt: 1 } }, orderBy: { watchCount: "desc" }, take: 20 });
-    return reply.send({
-      items: rows.filter((row) => isFavourite(row.watchCount)).map((row) => ({
-        url: row.videoUrl,
-        title: row.title,
-        thumbnail: row.thumbnail,
-        source: row.source,
-        watchCount: row.watchCount,
-        lastWatchedAt: row.lastWatchedAt.toISOString(),
-      })),
-    });
+    return reply.send({ items: await favouritesOf(prisma, actor.userId) });
   });
 
   app.post("/rooms/resume-last", async (request, reply) => {
@@ -850,6 +995,11 @@ async function profileOf(prisma: PrismaClient, userId: string, includePrivate: b
     level: levelFromXp(user.xp),
     isPremium: user.isPremium,
     hideOtherReactions: user.hideOtherReactions,
+    isFriendsPublic: user.isFriendsPublic,
+    isFavoriteVideosPublic: user.isFavoriteVideosPublic,
+    isTopFriendsPublic: user.isTopFriendsPublic,
+    isWatchHistoryPublic: user.isWatchHistoryPublic,
+    showUsername: user.showUsername,
     recentEmojis: Array.isArray(user.recentEmojis)
       ? user.recentEmojis.filter((item): item is string => typeof item === "string")
       : [],

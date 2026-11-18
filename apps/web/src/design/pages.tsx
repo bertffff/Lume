@@ -25,6 +25,8 @@ export function SettingsScreen({
   const [telegramId, setTelegramId] = useState("");
   const [linked, setLinked] = useState("…");
   const [services, setServices] = useState<string[]>([]);
+  const [friendsPublic, setFriendsPublic] = useState(true);
+  const [historyPublic, setHistoryPublic] = useState(true);
   useEffect(() => {
     if (!apiUrl) return;
     void fetch(`${apiUrl}/video/services`).then((response) => response.json()).then((payload: { services?: string[] }) => setServices(payload.services ?? [])).catch(() => setServices([]));
@@ -35,6 +37,13 @@ export function SettingsScreen({
         setLinked(linkedLabel({ email: Boolean(payload.email), telegram: Boolean(payload.telegram) }));
       })
       .catch(() => setLinked("нет"));
+    void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { isFriendsPublic?: boolean; isWatchHistoryPublic?: boolean }) => {
+        if (typeof payload.isFriendsPublic === "boolean") setFriendsPublic(payload.isFriendsPublic);
+        if (typeof payload.isWatchHistoryPublic === "boolean") setHistoryPublic(payload.isWatchHistoryPublic);
+      })
+      .catch(() => undefined);
   }, [token, apiUrl]);
   const system = mode === "system";
   return (
@@ -93,7 +102,34 @@ export function SettingsScreen({
         <div className="set-row"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
         <div className="set-row">
           <div><b>Приватность</b><small>Друзья и история видны другим, пока вы не скроете их.</small></div>
-          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isFriendsPublic: false, isWatchHistoryPublic: false }) }); }}>Скрыть</button>
+          <label className="tr-check">
+            <input
+              data-testid="privacy-friends"
+              type="checkbox"
+              checked={friendsPublic}
+              onChange={(event) => {
+                const next = event.target.checked;
+                setFriendsPublic(next);
+                if (!token || !apiUrl) return;
+                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isFriendsPublic: next }) });
+              }}
+            />
+            Друзья видны
+          </label>
+          <label className="tr-check">
+            <input
+              data-testid="privacy-history"
+              type="checkbox"
+              checked={historyPublic}
+              onChange={(event) => {
+                const next = event.target.checked;
+                setHistoryPublic(next);
+                if (!token || !apiUrl) return;
+                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isWatchHistoryPublic: next }) });
+              }}
+            />
+            История видна
+          </label>
         </div>
         <div className="set-row">
           <div><b>Чёрный список</b>{blocked.map((row) => <small key={row.id}>{row.displayName} <button type="button" onClick={() => onUnblock?.(row.id)}>убрать</button></small>)}{blocked.length === 0 ? <small>Пусто</small> : null}</div>

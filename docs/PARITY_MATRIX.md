@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 107 |
+| Done | 108 |
 | Done (needs creds) | 13 |
-| Partial | 15 |
+| Partial | 14 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -119,7 +119,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F100 | Watch history | Done | GET /users/:id/watch-history returns the persisted rows newest-first with replay counts, and refuses other readers when isWatchHistoryPublic is off. The live profile lists that history. |
 | F101 | Favourite videos | Done | A second watch of the same URL increments WatchHistory.watchCount. GET /me/favourites returns those rows with counts and timestamps, and the live profile lists them. |
 | F102 | Discovery feed | Done | Discovery suggestions from watch history show on the queue. |
-| F103 | Public profile + privacy | Partial | Settings sends isFriendsPublic and isWatchHistoryPublic. Watch history honors its flag now; the friends and public-profile readers still do not. |
+| F103 | Public profile + privacy | Done | GET /users/profile/:id, /users/:id/friends, /users/:id/watch-history, /users/:id/favourites, and /users/:id/top-friends all honor the owner's flags. Settings has live switches; a viewer's live public profile shows «Скрыто» until the owner turns a section back on. |
 | F104 | Bio + current activity | Done | Bio can be edited from the people screen and is stored on the user. |
 | F105 | Avatar upload + crop | Done | An avatar file is cropped to a square on a canvas and saved. |
 | F106 | Profile share + user_ deep link | Done | startapp user_<id> opens that person's name on the people screen. |
