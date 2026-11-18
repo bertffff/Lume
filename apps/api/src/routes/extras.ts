@@ -172,6 +172,27 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     });
   });
 
+  app.get("/rooms/:id/settings", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    const member = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
+    if (!member || member.leftAt) return reply.code(403).send({ error: "forbidden" });
+    const room = await prisma.room.findUnique({ where: { id: params.id } });
+    if (!room) return reply.code(404).send({ error: "not_found" });
+    return reply.send({
+      title: room.title,
+      description: room.description ?? "",
+      isPublic: room.isPublic,
+      maxMembers: room.maxMembers,
+      hideReactions: room.hideReactions,
+      defaults: room.defaultPermissions ?? null,
+    });
+  });
+
   app.patch("/rooms/:id/settings", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {
@@ -179,12 +200,43 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
       return;
     }
     const params = z.object({ id: z.string() }).parse(request.params);
-    const body = z.object({ hideReactions: z.boolean().optional(), description: z.string().max(280).optional(), maxMembers: z.number().int().min(2).max(100).optional() }).safeParse(request.body);
+    const body = z.object({
+      title: z.string().trim().min(1).max(120).optional(),
+      hideReactions: z.boolean().optional(),
+      description: z.string().trim().max(280).optional(),
+      isPublic: z.boolean().optional(),
+      maxMembers: z.number().int().min(2).max(100).optional(),
+      defaults: z.object({
+        canChat: z.boolean(),
+        canQueue: z.boolean(),
+        canSpeak: z.boolean(),
+        canReact: z.boolean(),
+        canSeek: z.boolean(),
+        canInvite: z.boolean(),
+      }).optional(),
+    }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
     const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
-    if (!self || self.role !== "host") return reply.code(403).send({ error: "forbidden" });
-    await prisma.room.update({ where: { id: params.id }, data: body.data });
-    return reply.send({ ok: true });
+    if (!self || self.role !== "host" || self.leftAt) return reply.code(403).send({ error: "forbidden" });
+    const room = await prisma.room.update({
+      where: { id: params.id },
+      data: {
+        ...(body.data.title === undefined ? {} : { title: body.data.title }),
+        ...(body.data.description === undefined ? {} : { description: body.data.description || null }),
+        ...(body.data.isPublic === undefined ? {} : { isPublic: body.data.isPublic }),
+        ...(body.data.maxMembers === undefined ? {} : { maxMembers: body.data.maxMembers }),
+        ...(body.data.hideReactions === undefined ? {} : { hideReactions: body.data.hideReactions }),
+        ...(body.data.defaults === undefined ? {} : { defaultPermissions: body.data.defaults }),
+      },
+    });
+    return reply.send({
+      title: room.title,
+      description: room.description ?? "",
+      isPublic: room.isPublic,
+      maxMembers: room.maxMembers,
+      hideReactions: room.hideReactions,
+      defaults: room.defaultPermissions ?? null,
+    });
   });
 
   app.post("/rooms/:id/queue/order", async (request, reply) => {

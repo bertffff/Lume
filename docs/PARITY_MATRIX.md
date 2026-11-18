@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 97 |
+| Done | 98 |
 | Done (needs creds) | 13 |
-| Partial | 25 |
+| Partial | 24 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -37,7 +37,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F018 | Permanent vs temporary host | Done | The returning owner gets «вернулся и забрал хост», covered by the room service test. |
 | F019 | Host succession | Done | Leave promotes a moderator, otherwise the earliest member, and pauses playback when the host leaves. The chat line says the new host took over. |
 | F020 | Resume-last-room snapshot | Done | An empty room stores a snapshot. POST /rooms/resume-last recreates it paused, with the saved time clamped to the duration. Home calls that route. |
-| F021 | Room settings | Partial | Room settings saves chat and speak only. Description, member cap, and hide-reactions are not on the live sheet. |
+| F021 | Room settings | Done | The live room has a settings sheet for title, description, public/private, the member cap, hide-reactions, and the six viewer defaults. Esc closes it, and the cap is enforced on join. |
 | F022 | Browse public rooms | Done | GET /rooms accepts a search query and a title sort. The home search box sends that query. |
 | F023 | Live carousel + global stats | Partial | Home shows room cards. GET /stats is not a live carousel or a global counter strip. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |

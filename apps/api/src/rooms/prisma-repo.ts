@@ -15,6 +15,7 @@ function mapRoom(room: {
   ownerId: string;
   status: "open" | "live" | "ended";
   isPublic: boolean;
+  maxMembers: number;
   createdAt: Date;
   nowPlayingId: string | null;
 }): RoomRecord {
@@ -26,6 +27,7 @@ function mapRoom(room: {
     ownerId: room.ownerId,
     status: room.status,
     isPublic: room.isPublic,
+    maxMembers: room.maxMembers,
     createdAt: room.createdAt.toISOString(),
     nowPlayingId: room.nowPlayingId,
   };
@@ -43,6 +45,7 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
           ownerId: room.hostId,
           status: room.status,
           isPublic: room.isPublic,
+          maxMembers: room.maxMembers,
           layout: defaultRoomLayout,
           videoAspect: defaultRoomLayout.videoAspect,
           createdAt: new Date(room.createdAt),

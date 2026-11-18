@@ -7,6 +7,7 @@ import { useRoomActions } from "../room/live.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { posterFor } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
+import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
 import { initials, personHue } from "./theme.js";
 
 function clock(ms: number): string {
@@ -50,6 +51,9 @@ export function RoomStage({
   const seenReady = useRef(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<InRoomProfile | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [roomTitle, setRoomTitle] = useState<string | null>(null);
+  const [roomHideReactions, setRoomHideReactions] = useState(false);
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setStyle(document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema");
@@ -62,6 +66,13 @@ export function RoomStage({
         .then((response) => response.json())
         .then((payload: { history?: Array<{ id: string; title: string | null }> }) => setHistory(payload.history ?? []))
         .catch(() => setHistory([]));
+      void fetch(`${apiUrl}/rooms/${room}/settings`, { headers: { authorization: `Bearer ${token}` } })
+        .then((response) => response.json())
+        .then((payload: RoomSettings) => {
+          setRoomTitle(payload.title);
+          setRoomHideReactions(Boolean(payload.hideReactions));
+        })
+        .catch(() => undefined);
       void fetch(`${apiUrl}/me/discovery`, { headers: { authorization: `Bearer ${token}` } })
         .then((response) => response.json())
         .then((payload: { items?: Array<{ title: string | null; url: string }> }) => setTip(payload.items?.[0]?.title ?? payload.items?.[0]?.url ?? null))
@@ -135,13 +146,13 @@ export function RoomStage({
         {gruv ? (
           <>
             <span className="brand"><span className="dot" />LUME</span>
-            <div className="bufs"><span className="buf on"><span className="nr">1</span><b data-testid="room-title">{room.title}</b></span></div>
+            <div className="bufs"><span className="buf on"><span className="nr">1</span><b data-testid="room-title">{roomTitle ?? room.title}</b></span></div>
             <span className="hash" data-testid="room-code">{room.code}</span>
           </>
         ) : (
           <>
             <button type="button" className="logo" onClick={onLeave}><i />lume</button>
-            <div className="crumb"><b data-testid="room-title">{room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
+            <div className="crumb"><b data-testid="room-title">{roomTitle ?? room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
             <span className="spacer" />
             <div className="sync session-dock"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
               <button type="button" data-testid="sync-incident" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) })}>Сбой</button>
@@ -153,6 +164,9 @@ export function RoomStage({
                   .then((response) => response.json())
                   .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions)));
               }}>Скрыть чужие</button>
+              {live.state.self.role === "host" ? (
+                <button type="button" data-testid="room-settings-open" onClick={() => setSettingsOpen(true)}>Настройки</button>
+              ) : null}
             </div>
             <div className="who">
               <div className="stack">
@@ -185,8 +199,8 @@ export function RoomStage({
                 </form>
               </div>
             ) : null}
-            <div className="flo" data-testid="float-log" data-hide-other={hideOther ? "true" : "false"}>
-              {live.floats.filter((float) => !hideOther || float.userId === live.selfId).slice(-2).map((float) => (
+            <div className="flo" data-testid="float-log" data-hide-other={hideOther ? "true" : "false"} data-room-hide-reactions={roomHideReactions ? "true" : "false"}>
+              {live.floats.filter((float) => (!hideOther && !roomHideReactions) || float.userId === live.selfId).slice(-2).map((float) => (
                 <div className="fb" key={float.id}><span>{float.emoji}</span></div>
               ))}
             </div>
@@ -356,6 +370,17 @@ export function RoomStage({
           token={live.accessToken}
           selfId={live.selfId}
           onClose={() => setProfile(null)}
+        />
+      ) : null}
+      {settingsOpen ? (
+        <RoomSettingsSheet
+          roomId={room.id}
+          token={live.accessToken}
+          onClose={() => setSettingsOpen(false)}
+          onSaved={(next) => {
+            setRoomTitle(next.title);
+            setRoomHideReactions(Boolean(next.hideReactions));
+          }}
         />
       ) : null}
     </div>

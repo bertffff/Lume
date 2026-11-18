@@ -8,6 +8,7 @@ export interface RoomRecord {
   ownerId?: string;
   status: "open" | "live" | "ended";
   isPublic: boolean;
+  maxMembers: number;
   createdAt: string;
   nowPlayingId: string | null;
 }

@@ -8,6 +8,7 @@ import {
   mediaFallbackTitle,
   parseEmbedInput,
   roomOverMemberCap,
+  FREE_ROOM_MEMBER_CAP,
   type ChatMessage,
   type MemberRole,
   type ParsedEmbed,
@@ -110,6 +111,7 @@ export class RoomService {
       ownerId: actor.userId,
       status: "open",
       isPublic: input.isPublic ?? false,
+      maxMembers: FREE_ROOM_MEMBER_CAP,
       createdAt,
       nowPlayingId: null,
     };
@@ -145,7 +147,7 @@ export class RoomService {
     if (existing?.leftAt === null) {
       return this.detailFor(actor.userId, room.id);
     }
-    if (roomOverMemberCap(active(members).length)) {
+    if (roomOverMemberCap(active(members).length, room.maxMembers)) {
       throw new RoomFailure("room_full");
     }
     const reclaim = room.ownerId === actor.userId;
