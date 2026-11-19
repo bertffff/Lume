@@ -72,6 +72,7 @@ function mapFailure(error: unknown): RoomError["code"] {
       "invalid_media",
       "empty_queue",
       "not_found",
+      "conflict",
     ];
     if (known.includes(error.code as RoomError["code"])) {
       return error.code as RoomError["code"];
@@ -158,6 +159,9 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
     });
     socket.on("queue:next", (payload: unknown) => {
       void queueNext(io, redis, api, socket, payload);
+    });
+    socket.on("queue:reload", (payload: unknown) => {
+      void queueReload(io, api, socket, payload);
     });
     socket.on("mod:kick", (payload: unknown) => {
       void moderate(io, redis, api, socket, payload, "kick");
@@ -406,6 +410,25 @@ async function queueAdd(io: Server, api: RoomApi, socket: Socket, payload: unkno
     });
   } catch (error) {
     fail(socket, { code: mapFailure(error), message: "queue:add" });
+  }
+}
+
+async function queueReload(io: Server, api: RoomApi, socket: Socket, payload: unknown): Promise<void> {
+  const parsed = z.object({ roomId: z.string().min(1), historyId: z.string().min(1) }).safeParse(payload);
+  const actor = actorOf(socket);
+  if (!parsed.success || !actor) {
+    fail(socket, { code: "invalid_payload", message: "queue:reload" });
+    return;
+  }
+  try {
+    const session = await api.reloadQueue(actor.token, parsed.data.roomId, parsed.data.historyId);
+    io.to(parsed.data.roomId).emit("queue:state", {
+      roomId: parsed.data.roomId,
+      queue: session.queue,
+      nowPlaying: session.room.nowPlaying,
+    });
+  } catch (error) {
+    fail(socket, { code: mapFailure(error), message: "queue:reload" });
   }
 }
 

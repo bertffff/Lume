@@ -413,6 +413,7 @@ export function RoomStage({
                       <li key={item.id} data-testid="queue-history-item" data-url={item.url}>
                         <b>{item.title ?? item.url}</b>
                         <small>{item.source}</small>
+                        <button type="button" data-testid="history-reload" onClick={() => live.reloadHistory(item.id)}>В очередь</button>
                       </li>
                     ))}
                   </ol>

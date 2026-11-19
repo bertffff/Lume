@@ -1,4 +1,4 @@
-import { createRoomSchema, detectSource, joinRoomSchema, lastIncidents, matchesBrowse, planPlayback } from "@lume/contracts";
+import { createRoomSchema, detectSource, joinRoomSchema, lastIncidents, matchesBrowse, parseEmbedInput, planPlayback } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { allowsModeration, memberFlagsFromDefaults, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
@@ -367,6 +367,51 @@ export function registerRoomRoutes(
     return run(reply, () =>
       service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, body.data.url),
     );
+  });
+
+  app.post("/rooms/:id/queue/reload", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !service || !prisma) {
+      if (actor && !service) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    const body = z.object({ historyId: z.string().min(1) }).safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+    const member = await prisma.roomMember.findUnique({
+      where: { roomId_userId: { roomId: params.data.id, userId: actor.userId } },
+    });
+    if (!member || member.leftAt) return reply.code(403).send({ error: "forbidden" });
+    if (member.muted) return reply.code(403).send({ error: "muted" });
+    if (member.role !== "host" && member.canAddToQueue === false) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
+    const history = await prisma.roomHistoryItem.findFirst({
+      where: { id: body.data.historyId, roomId: params.data.id },
+    });
+    if (!history) return reply.code(404).send({ error: "not_found" });
+    const existing = await prisma.queueItem.findMany({
+      where: { roomId: params.data.id },
+      orderBy: { position: "asc" },
+    });
+    if (existing.some((item) => item.url === history.url && !item.played)) {
+      return reply.code(409).send({ error: "conflict" });
+    }
+    const parsed = parseEmbedInput(history.url);
+    const last = existing[existing.length - 1];
+    await prisma.queueItem.create({
+      data: {
+        roomId: params.data.id,
+        url: history.url,
+        provider: parsed?.provider ?? "direct",
+        externalId: parsed?.externalId ?? history.url,
+        title: history.title ?? parsed?.titleHint ?? history.url,
+        position: (last?.position ?? 0) + 1,
+        addedById: actor.userId,
+      },
+    });
+    const detail = await service.detailFor(actor.userId, params.data.id);
+    return reply.send(detail);
   });
 
   app.post("/rooms/:id/queue/next", async (request, reply) => {

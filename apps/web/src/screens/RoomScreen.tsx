@@ -83,6 +83,7 @@ export function RoomScreen({
         sendChat: live.sendChat,
         react: live.react,
         addQueue: live.addQueue,
+        reloadHistory: live.reloadHistory,
         playNext: live.playNext,
         setPlayback: live.setPlayback,
         reportViewer: live.reportViewer,

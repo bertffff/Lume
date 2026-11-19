@@ -67,6 +67,9 @@ export function createRoomApi(baseUrl: string) {
     playNext(token: string, roomId: string) {
       return request<RoomSession>(token, `/rooms/${roomId}/queue/next`, { method: "POST", body: {} });
     },
+    reloadQueue(token: string, roomId: string, historyId: string) {
+      return request<RoomSession>(token, `/rooms/${roomId}/queue/reload`, { method: "POST", body: { historyId } });
+    },
     kick(token: string, roomId: string, userId: string) {
       return request<RoomSession>(token, `/rooms/${roomId}/kick`, { method: "POST", body: { userId } });
     },

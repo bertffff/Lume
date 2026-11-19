@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 110 |
+| Done | 111 |
 | Done (needs creds) | 13 |
-| Partial | 12 |
+| Partial | 11 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -43,7 +43,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
-| F027 | DB-backed queue reload | Partial | The queue column prints a history count. It does not reload played items into the live queue. |
+| F027 | DB-backed queue reload | Done | A played history row has an «В очередь» control. POST /rooms/:id/queue/reload copies the persisted RoomHistoryItem back into QueueItem, the socket emits queue:state, and a duplicate live row is refused with 409. |
 | F028 | Layout presets × aspect | Done | The live header applies Обычный, Шире, and Погружение presets and switches 16:9 or 9:16. The player frame changes size, the layout is stored per aspect under `telerave-room-layout-v1`, synced across tabs, and saved on the room. |
 | F029 | Mobile room sheet | Done | A narrow room has a bottom sheet with chat, members, and queue tabs over live state. Esc closes it, and queue items come from the persisted room queue. |
 | F030 | Session dock | Done | The live room has a session dock bar with the persisted session timer, live member and voice counts, invite-link copy, a stored reminder, voice join/mute/leave, settings, and leave. GET /rooms/:id/session reads the room and membership rows. |

@@ -297,6 +297,12 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       }
       emit("queue:next", { roomId });
     },
+    reloadHistory(historyId: string) {
+      if (!roomId) {
+        return;
+      }
+      emit("queue:reload", { roomId, historyId });
+    },
     setPlayback(mode: "play" | "pause" | "seek", positionMs: number) {
       if (!roomId) {
         return;

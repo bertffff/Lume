@@ -71,6 +71,7 @@ export const roomErrorSchema = z.object({
     "empty_queue",
     "unauthorized",
     "not_found",
+    "conflict",
   ]),
   message: z.string().min(1),
   ownerIndex: z.number().int().nonnegative().optional(),

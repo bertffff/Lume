@@ -11,6 +11,7 @@ export interface RoomActions {
   sendChat: (body: string, replyToId?: string | null) => void;
   react: (messageId: string, emoji: string) => void;
   addQueue: (url: string) => void;
+  reloadHistory: (historyId: string) => void;
   playNext: () => void;
   setPlayback: (mode: "play" | "pause" | "seek", positionMs: number) => void;
   reportViewer: (phase: "buffering" | "ready") => void;
