@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 import { expect, test } from "@playwright/test";
@@ -41,8 +41,16 @@ const cases = [
   ["E/settings-desktop.html", "/?shot=settings&style=cinema&mode=dark", "compare-settings-cinema-dark.png", 1440, 900],
 ] as const;
 
+/**
+ * The final design references were exported from an older environment and are
+ * deliberately not committed. Without them this file can only produce noise, so
+ * skip the visual diff instead of failing CI or a fresh checkout.
+ */
+const referenceMocksAvailable = existsSync("/tmp/lume-design/final");
+
 for (const [mock, appPath, file, width, height] of cases) {
   test(file, async ({ page }) => {
+    test.skip(!referenceMocksAvailable, "reference mocks from /tmp/lume-design/final are not available");
     test.setTimeout(60_000);
     await page.setViewportSize({ width, height });
     await page.goto(`file:///tmp/lume-design/final/${mock}`);

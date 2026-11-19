@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/lume-greenfield-87d4]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   check:
@@ -36,6 +37,7 @@ jobs:
       REDIS_URL: redis://localhost:6379
       JWT_SECRET: e2e-only-not-a-real-secret
       ALLOW_STUB_AUTH: "true"
+      ALLOW_STUB_VOICE: "true"
       TURBO_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4

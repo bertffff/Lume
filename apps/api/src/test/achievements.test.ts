@@ -4,7 +4,7 @@ import { buildApp } from "../app.js";
 import { loadApiEnv } from "../env.js";
 import { seedPartyAchievements } from "../account/awards.js";
 
-const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume?schema=public";
+const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
 
 describe("achievements and levels", () => {
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;

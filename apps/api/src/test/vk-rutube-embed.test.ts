@@ -1,18 +1,43 @@
+import { createServer, type Server } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
 import { createPrismaClient } from "@lume/db";
 import { buildApp } from "../app.js";
 import { loadApiEnv } from "../env.js";
 
-const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume?schema=public";
+const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
+
+async function listen(server: Server): Promise<string> {
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("no address");
+  return `http://127.0.0.1:${address.port}`;
+}
 
 describe("VK and Rutube embed queue", () => {
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
+  let server: Server | undefined;
 
   afterEach(async () => {
     await app?.close();
+    await new Promise<void>((resolve, reject) => {
+      if (!server?.listening) {
+        resolve();
+        return;
+      }
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+    server = undefined;
   });
 
   it("persists the provider and external id used by the live embed adapters", async () => {
+    // Keep the queue metadata resolver off the public network. CI has no
+    // guarantee that VK/Rutube oEmbed endpoints answer within the test budget.
+    server = createServer((_request, response) => {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ title: "Embed fixture", thumbnail_url: "https://cdn.example.com/embed.jpg" }));
+    });
+    const oEmbedBaseUrl = `${await listen(server)}/oembed`;
+
     process.env.DATABASE_URL = databaseUrl;
     const prisma = createPrismaClient();
     const env = loadApiEnv({
@@ -21,6 +46,7 @@ describe("VK and Rutube embed queue", () => {
       JWT_SECRET: "embed-test-secret",
       ALLOW_STUB_AUTH: "true",
       WEB_ORIGIN: "http://127.0.0.1:5173",
+      OEMBED_BASE_URL: oEmbedBaseUrl,
     });
     app = await buildApp(env, { prisma });
     const stamp = Date.now().toString(36);

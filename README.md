@@ -119,16 +119,57 @@ pnpm test:e2e
 
 ## Переменные, которые задаёт человек
 
+Полный список с поведением при пустом значении — в [docs/CONFIG.md](docs/CONFIG.md). Имена без значений — в [.env.example](.env.example). `.env` не коммитится.
+
+Обязательные для рабочего зала и деплоя:
+
 | Имя | Зачем |
 | --- | --- |
-| `DATABASE_URL` | Postgres для `pnpm db:migrate` |
-| `REDIS_URL` | Realtime и worker. Без него они живые, но не готовы |
+| `DATABASE_URL` | Postgres для аккаунтов, комнат, очереди и истории; `pnpm db:migrate` |
+| `REDIS_URL` | Presence, refresh-токены, rate limit и очереди worker |
 | `JWT_SECRET` | Подпись access token. Без него выпуск токена отвечает `jwt_unconfigured` |
-| `TELEGRAM_BOT_TOKEN` | Проверка initData и polling бота |
+| `WEB_ORIGIN` | CORS и ссылки в уведомлениях; в деплое — реальный origin веба |
+| `API_URL`, `REALTIME_URL` | Адреса API и Socket.IO для realtime/API; по умолчанию `127.0.0.1:3001` и `:3002` |
+| `VITE_API_URL`, `VITE_REALTIME_URL` | Те же адреса, вшиваемые в браузерный бандл |
+
+Только для локальной машины и тестов:
+
+| Имя | Зачем |
+| --- | --- |
 | `ALLOW_STUB_AUTH` | `true` только локально: гостевой вход и initData без токена бота |
+| `ALLOW_STUB_VOICE` | `true` только локально: заглушка голосового токена |
+| `DEV_ADMIN_NAMES` | Имена, которым локально выдаётся админка |
+
+Опциональные возможности:
+
+| Имя | Зачем |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | Проверка initData, Login Widget, polling бота и уведомления |
+| `TELEGRAM_BOT_USERNAME` | Имя бота в deep links |
+| `TELEGRAM_STORAGE_CHAT` | Telegram-чат как backend загрузок |
+| `TELEGRAM_AUTH_MAX_AGE_SECONDS` | Максимальный возраст initData, по умолчанию 300 с |
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Учётные данные LiveKit Cloud. Пока пусто — `livekit_disabled` |
-| `VITE_API_URL`, `VITE_REALTIME_URL` | Необязательно. По умолчанию `127.0.0.1:3001` и `:3002` |
+| `LIVEKIT_TOKEN_TTL_SECONDS` | Время жизни токена LiveKit, по умолчанию 3600 с |
+| `STUN_URLS`, `TURN_URL`, `TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL` | ICE-серверы из `GET /ice-servers` |
+| `JWT_TTL_SECONDS` | Время жизни access token, по умолчанию 12 часов |
+| `API_HOST`, `API_PORT`, `REALTIME_HOST`, `REALTIME_PORT`, `WORKER_HOST`, `WORKER_PORT`, `BOT_HOST`, `BOT_PORT` | Адреса приложений |
 | `REALTIME_REPLICA_COUNT`, `REALTIME_REPLICA_INDEX`, `REALTIME_ENFORCE_ROOM_OWNER` | Несколько реплик и запрет чужих записей |
+| `FF_EXTRACTORS`, `COBALT_API_URL`, `YTDLP_PATH`, `VK_COOKIES`, `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Живые экстракторы; без них работают фикстуры и `unconfigured` |
+| `SEARXNG_URL` | Поиск видео; без него список пуст |
+| `OEMBED_BASE_URL`, `METADATA_ALLOW_PRIVATE_HOSTS` | Локальный/тестовый oEmbed и разрешение приватных хостов |
+| `STREAM_ALLOWLIST`, `STREAM_MAX_BYTES`, `STREAM_ALLOW_PRIVATE_HOSTS`, `STREAM_HEADER_TIMEOUT_MS` | Allowlist, лимит и таймауты прокси сегментов |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Почта и magic-link; без них доставка `skipped` |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web push; без них отправка `skipped` |
+| `SENTRY_DSN`, `METRICS_TOKEN` | Отправка ошибок и защита `GET /metrics` |
+| `CDN_ENDPOINT`, `CDN_BUCKET`, `CDN_ACCESS_KEY`, `CDN_SECRET_KEY`, `CDN_REGION`, `CDN_PUBLIC_URL` | Зарезервировано под CDN-выгрузку (`F062`); сейчас не включено |
+
+### Заметки по деплою
+
+- В продакшене выставите `NODE_ENV=production` и все обязательные переменные из таблицы выше. Секреты храните в секрет-хранилище платформы, не в Git.
+- Перед запуском API выполните `pnpm db:migrate`, затем `pnpm build`; API, realtime и bot стартуют из `dist/`.
+- Наружу отдавайте только веб-origin. Postgres и Redis держите в приватной сети, TLS завершайте на reverse proxy, WebSocket-апгрейды проксируйте в realtime.
+- `/health` — liveness, `/ready` — readiness; в продакшене без Postgres или Redis он отвечает `503`.
+- LiveKit, SMTP, VAPID и `TELEGRAM_BOT_TOKEN` подключайте после того, как поднялись Postgres, Redis и API. Без них приложение работает с честно отключёнными возможностями.
 
 ## English
 
@@ -142,4 +183,6 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Set `JWT_SECRET` and `ALLOW_STUB_AUTH=true` in `.env`, then open two browsers on <http://localhost:5173>. Sign in under different names, create a room, join with the code, paste an embed URL, press play, and send a chat line. `pnpm lint`, `pnpm test`, and `pnpm build` do not need a database. `pnpm test:e2e` does: it boots API, realtime, and the web build against Postgres and Redis.
+Set `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `ALLOW_STUB_AUTH=true` and `ALLOW_STUB_VOICE=true` in `.env`, then open two browsers on <http://localhost:5173>. Sign in under different names, create a room, join with the code, paste an embed URL, press play, and send a chat line. `pnpm lint`, `pnpm test`, and `pnpm build` do not need a database. `pnpm test:e2e` does: it boots API, realtime, and the web build against Postgres and Redis.
+
+Every variable, its empty-value behaviour and the deploy checklist live in [docs/CONFIG.md](docs/CONFIG.md). The short version: production needs Postgres, Redis, `JWT_SECRET`, the public origins and the API/realtime/Vite URLs; LiveKit, Telegram, SMTP, push, extractors and Sentry are optional and degrade honestly when empty.

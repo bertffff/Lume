@@ -3,7 +3,7 @@ import { createPrismaClient } from "@lume/db";
 import { buildApp } from "../app.js";
 import { loadApiEnv } from "../env.js";
 
-const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume?schema=public";
+const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
 
 describe("favourite videos", () => {
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;
