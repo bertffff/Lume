@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { legacyText } from "../i18n/legacy.js";
@@ -70,6 +70,8 @@ export function DesignApp({
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Array<{ id: string; title: string; code: string; memberCount?: number }>>([]);
+  const [globalStats, setGlobalStats] = useState({ usersOnline: 0, activeRooms: 0, totalVideos: 0, totalWatchHours: 0 });
+  const [statsReady, setStatsReady] = useState(false);
   const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
   const [blocked, setBlocked] = useState<Array<{ id: string; displayName: string }>>([]);
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
@@ -110,7 +112,33 @@ export function DesignApp({
   useEffect(() => {
     void api.listRooms(query).then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
     void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIce(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIce(null));
-  }, [query]);
+  }, [query, path, roomId]);
+
+  useEffect(() => {
+    let stopped = false;
+    const load = () => {
+      void fetch(`${apiUrl}/stats/global`)
+        .then((response) => response.json())
+        .then((payload: Partial<typeof globalStats>) => {
+          if (!stopped) {
+            setGlobalStats({
+              usersOnline: Number(payload.usersOnline ?? 0),
+              activeRooms: Number(payload.activeRooms ?? 0),
+              totalVideos: Number(payload.totalVideos ?? 0),
+              totalWatchHours: Number(payload.totalWatchHours ?? 0),
+            });
+            setStatsReady(true);
+          }
+        })
+        .catch(() => undefined);
+    };
+    load();
+    const timer = window.setInterval(load, 30_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [path, roomId]);
 
   useEffect(() => {
     if (!session) return;
@@ -230,6 +258,14 @@ export function DesignApp({
               <h1>{text.evening}{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1>
               <p className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : `${legacyText(locale, "common", "nav.home")} · ${text.friendsWatching}`}</p>
             </div>
+            {!demo ? (
+              <section className="global-stats" data-testid="global-stats" data-ready={statsReady ? "true" : "false"}>
+                <div className="stat"><small>Сейчас онлайн</small><b data-testid="stat-users-online" data-value={globalStats.usersOnline}>{globalStats.usersOnline}</b></div>
+                <div className="stat"><small>Активные комнаты</small><b data-testid="stat-active-rooms" data-value={globalStats.activeRooms}>{globalStats.activeRooms}</b></div>
+                <div className="stat"><small>Видео в истории</small><b data-testid="stat-total-videos" data-value={globalStats.totalVideos}>{globalStats.totalVideos}</b></div>
+                <div className="stat"><small>Часов вместе</small><b data-testid="stat-watch-hours" data-value={globalStats.totalWatchHours}>{globalStats.totalWatchHours}</b></div>
+              </section>
+            ) : null}
             {demo ? (
               <div className="stories">
                 <div className="st new"><div className="ring">+</div>Своя</div>
@@ -303,20 +339,24 @@ export function DesignApp({
                 ))}
               </div>
             </div>
-            <div className="rooms">
-              {demo ? (
-                <>
-                  <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span></div><div className="bd"><div><b>Пятничный звук</b><small>Концерт на крыше</small></div><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span></div></div></div>
-                  <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span></div><div className="bd"><div><b>Нуар по средам</b><small>Город после дождя</small></div><div className="stack"><span className="av sm p-nick">Н</span></div></div></div>
-                  <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag">в 22:00</span></div><div className="bd"><div><b>Документалки</b><small>Лес, который помнит</small></div><div className="stack"><span className="av sm p-dasha">Д</span></div></div></div>
-                </>
-              ) : shownRooms.map((item) => (
-                <button key={item.id} type="button" className="rc" onClick={() => { if (!session) return; void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}>
-                  <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}><span className="tag">{item.memberCount ?? 0}</span></div>
-                  <div className="bd"><b>{item.title}</b><small className="mono">{item.code}</small></div>
-                </button>
-              ))}
-            </div>
+            {demo ? (
+              <div className="rooms">
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span></div><div className="bd"><div><b>Пятничный звук</b><small>Концерт на крыше</small></div><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span></div></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span></div><div className="bd"><div><b>Нуар по средам</b><small>Город после дождя</small></div><div className="stack"><span className="av sm p-nick">Н</span></div></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag">в 22:00</span></div><div className="bd"><div><b>Документалки</b><small>Лес, который помнит</small></div><div className="stack"><span className="av sm p-dasha">Д</span></div></div></div>
+              </div>
+            ) : (
+              <LiveRoomsCarousel
+                rooms={shownRooms}
+                onOpen={(item) => {
+                  if (!session) {
+                    go("/auth");
+                    return;
+                  }
+                  void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id));
+                }}
+              />
+            )}
           </main>
           <aside className="side">
             <section className="card">
@@ -595,6 +635,45 @@ function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "k
     <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function LiveRoomsCarousel({
+  rooms,
+  onOpen,
+}: {
+  rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
+  onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
+}) {
+  const track = useRef<HTMLDivElement>(null);
+  const scroll = (direction: -1 | 1) => {
+    track.current?.scrollBy({ left: direction * 320, behavior: "smooth" });
+  };
+  if (rooms.length === 0) return <p className="tr-empty">Открытых комнат пока нет</p>;
+  return (
+    <div className="live-carousel" data-testid="live-carousel">
+      <div className="carousel-track" ref={track}>
+        {rooms.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className="rc"
+            data-testid="carousel-room"
+            data-code={item.code}
+            onClick={() => onOpen(item)}
+          >
+            <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}><span className="tag">{item.memberCount ?? 0}</span></div>
+            <div className="bd"><b>{item.title}</b><small className="mono">{item.code}</small></div>
+          </button>
+        ))}
+      </div>
+      {rooms.length > 1 ? (
+        <div className="carousel-nav">
+          <button type="button" data-testid="carousel-prev" onClick={() => scroll(-1)} aria-label="previous rooms">‹</button>
+          <button type="button" data-testid="carousel-next" onClick={() => scroll(1)} aria-label="next rooms">›</button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

@@ -31,6 +31,32 @@ const uploads = new Map<string, { bytes: Buffer; type: string }>();
 const magicLinks = new Map<string, MagicRow>();
 
 export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null): void {
+  app.get("/stats/global", async () => {
+    if (!prisma) {
+      return { usersOnline: 0, activeRooms: 0, totalVideos: 0, totalWatchHours: 0 };
+    }
+    const [online, active, videos, watch] = await Promise.all([
+      prisma.roomMember.findMany({
+        where: { leftAt: null, room: { status: { not: "ended" } } },
+        distinct: ["userId"],
+        select: { userId: true },
+      }),
+      prisma.room.findMany({
+        where: { status: { not: "ended" }, members: { some: { leftAt: null } } },
+        select: { id: true },
+      }),
+      prisma.watchHistory.findMany({ distinct: ["videoUrl"], select: { videoUrl: true } }),
+      prisma.user.aggregate({ _sum: { totalWatchTime: true } }),
+    ]);
+    const totalWatchSeconds = watch._sum.totalWatchTime ?? 0;
+    return {
+      usersOnline: online.length,
+      activeRooms: active.length,
+      totalVideos: videos.length,
+      totalWatchHours: Math.round((totalWatchSeconds / 3600) * 10) / 10,
+    };
+  });
+
   app.get("/stats", async () => {
     if (!prisma) return { watchers: [], parties: [] };
     const users = await prisma.user.findMany({ orderBy: { xp: "desc" }, take: 10, select: { id: true, displayName: true, xp: true } });

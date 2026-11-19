@@ -124,3 +124,15 @@ html[data-style="gruvbox"] .design-app .panel{border-radius:0}
   .design-app .nav{padding:0 12px;gap:8px}
   .design-app .side{display:none}
 }
+
+.design-app .global-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.design-app .global-stats .stat{background:var(--s1);border:1px solid var(--line, transparent);border-radius:var(--r-sm);padding:10px 12px}
+.design-app .global-stats small{display:block;color:var(--text-2);font:400 11.5px/15px var(--font-ui)}
+.design-app .global-stats b{font:600 20px/24px var(--font-display, var(--font-ui))}
+.design-app .live-carousel{display:flex;align-items:stretch;gap:10px;min-height:0;flex:1}
+.design-app .live-carousel .carousel-track{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;flex:1;padding-bottom:4px}
+.design-app .live-carousel .carousel-track>.rc{flex:0 0 240px;scroll-snap-align:start}
+.design-app .live-carousel .carousel-track .th{height:130px;min-height:130px;flex:none}
+.design-app .live-carousel .carousel-nav{display:flex;flex-direction:column;gap:6px;justify-content:center}
+.design-app .live-carousel .carousel-nav button{width:30px;height:32px;border-radius:8px;border:1px solid var(--line, var(--s1));background:var(--s1);color:var(--text);font-size:20px;line-height:1;cursor:pointer}
+.design-app.is-narrow .global-stats{grid-template-columns:repeat(2,minmax(0,1fr))}

@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 115 |
+| Done | 116 |
 | Done (needs creds) | 13 |
-| Partial | 7 |
+| Partial | 6 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -39,7 +39,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F020 | Resume-last-room snapshot | Done | An empty room stores a snapshot. POST /rooms/resume-last recreates it paused, with the saved time clamped to the duration. Home calls that route. |
 | F021 | Room settings | Done | The live room has a settings sheet for title, description, public/private, the member cap, hide-reactions, and the six viewer defaults. Esc closes it. The defaults are projected onto every member without personal overrides on join and again when the host changes them, and chat, reactions, queue adds, invites, seeking, and voice joining consult them. The cap is enforced on join. |
 | F022 | Browse public rooms | Done | GET /rooms accepts a search query and a title sort. The home search box sends that query. |
-| F023 | Live carousel + global stats | Partial | Home shows room cards. GET /stats is not a live carousel or a global counter strip. |
+| F023 | Live carousel + global stats | Done | GET /stats/global aggregates online members, active rooms, distinct videos in watch history, and summed watch hours from Postgres rows. Home renders those counters and a horizontally scrolling carousel of the public rooms returned by GET /rooms, with working previous/next controls. |
 | F024 | Share links ?t= ?v= | Done | The player copies a link with ?t= and ?v=, and opening that link queues the video and seeks. |
 | F025 | Room invites | Done | A friend row can send a room invite, which is stored as a notification. |
 | F026 | Watch reminders | Done | A reminder is stored on the delivery queue and the worker releases it when it is due. |
