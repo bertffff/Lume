@@ -5,8 +5,8 @@ import { legacyText } from "../i18n/legacy.js";
 import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
-import { demoFriends, demoMessages, demoRooms, heatCells } from "./fixtures.js";
-import { AuthScreen, CreateScreen, EmptyScreen, JoinScreen, MembersScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, QueueScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
+import { heatCells } from "./fixtures.js";
+import { AuthScreen, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
 import { posterFor } from "./posters.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
 
@@ -43,7 +43,7 @@ function viewFromPath(path: string): View {
 export function DesignApp({
   session,
   onSession,
-  onSignOut,
+  onSignOut: _onSignOut,
   roomId,
   onOpen,
   onLeave,
@@ -57,7 +57,7 @@ export function DesignApp({
   onLeave: () => void;
   room: ReactNode;
 }) {
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const text = copy(locale);
   const [path, setPath] = useState(() => window.location.pathname);
   const [shot] = useState(() => new URLSearchParams(window.location.search).get("shot"));
@@ -75,7 +75,6 @@ export function DesignApp({
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [heat, setHeat] = useState<Array<{ day: string; score: number }>>([]);
   const [level, setLevel] = useState(1);
-  const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number; totalMessages: number; totalReactions: number; totalVoiceSeconds: number }>>([]);
   const [resume, setResume] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "friends" | "film" | "music">("all");
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
@@ -88,8 +87,6 @@ export function DesignApp({
   const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
   const [people, setPeople] = useState<Array<{ id: string; displayName: string }>>([]);
   const [ice, setIce] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
-  const [linked, setLinked] = useState<string>("off");
   const [offline, setOffline] = useState(() => !window.navigator.onLine);
 
   useEffect(() => {
@@ -130,16 +127,11 @@ export function DesignApp({
         if (Array.isArray(payload.heatmap)) setHeat(payload.heatmap);
       })
       .catch(() => undefined);
-    void fetch(`${apiUrl}/stats/leaderboard`, { headers: { authorization: `Bearer ${session.accessToken}` } })
-      .then((response) => response.json())
-      .then((payload: { users?: typeof ranks }) => setRanks(payload.users ?? []))
-      .catch(() => undefined);
     void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${session.accessToken}` } })
       .then((response) => response.json())
       .then((payload: { uiStyle?: StyleId; uiMode?: ModeId; telegramId?: string | null }) => {
         if (payload.uiStyle === "cinema" || payload.uiStyle === "gruvbox") setStyle(payload.uiStyle);
         if (payload.uiMode === "dark" || payload.uiMode === "light" || payload.uiMode === "system") setMode(payload.uiMode);
-        setLinked(payload.telegramId ? "on" : "off");
       })
       .catch(() => undefined);
   }, [session]);
@@ -195,7 +187,6 @@ export function DesignApp({
   }
 
   const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
-  const hue = personHue(session?.user.id ?? "me");
   const shownRooms = rooms.filter((roomItem) => {
     const q = query.trim().toLowerCase();
     if (q && !roomItem.title.toLowerCase().includes(q) && !roomItem.code.includes(q)) return false;
