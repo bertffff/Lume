@@ -24,7 +24,7 @@ async function guardRoom(service: RoomService, userId: string, roomId: string, r
 }
 
 export function registerVoiceRoutes(app: FastifyInstance, env: ApiEnv, service: RoomService | null): void {
-  app.get("/voice/livekit", async () => ({ enabled: liveKitConfigured(env) }));
+  app.get("/voice/livekit", async () => ({ enabled: liveKitConfigured(env), stub: env.ALLOW_STUB_VOICE }));
 
   app.post("/voice/livekit/token", async (request, reply) => {
     if (!liveKitConfigured(env)) {

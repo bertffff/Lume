@@ -43,6 +43,7 @@ export function RoomStage({
   const [tip, setTip] = useState<string | null>(null);
   const [iceUrl, setIceUrl] = useState<string | null>(null);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
+  const voiceSecondsRef = useRef(0);
   const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [hideOther, setHideOther] = useState(false);
@@ -104,10 +105,36 @@ export function RoomStage({
     };
   }, []);
   useEffect(() => {
+    voiceSecondsRef.current = 0;
+    setVoiceSeconds(0);
     if (!voice.joined) return;
-    const timer = window.setInterval(() => setVoiceSeconds((value) => value + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, [voice.joined]);
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      voiceSecondsRef.current = elapsed;
+      setVoiceSeconds(elapsed);
+    }, 1000);
+    return () => {
+      window.clearInterval(timer);
+      const seconds = Math.max(voiceSecondsRef.current, Math.floor((Date.now() - startedAt) / 1000));
+      voiceSecondsRef.current = 0;
+      const token = live?.accessToken;
+      if (seconds <= 0 || !token) return;
+      void (async () => {
+        let remaining = seconds;
+        while (remaining > 0) {
+          const chunk = Math.min(remaining, 8 * 60 * 60);
+          remaining -= chunk;
+          await fetch(`${apiUrl}/me/voice-seconds`, {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+            body: JSON.stringify({ seconds: chunk }),
+            keepalive: true,
+          }).catch(() => undefined);
+        }
+      })();
+    };
+  }, [voice.joined, live?.accessToken]);
   useEffect(() => {
     const room = live?.state.room.id;
     const token = live?.accessToken;
@@ -328,7 +355,7 @@ export function RoomStage({
           <div className={narrow ? "sheet" : "low"}>
             {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Панели</button> : null}
             <div className="card voice-card">
-              <div className="ct">Голосовой {voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{voice.joined ? `в эфире ${voiceSeconds}с` : iceUrl}</small>}</div>
+              <div className="ct">Голосовой {voice.joined ? <small>{`в эфире ${voiceSeconds}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{iceUrl}</small>}</div>
               <div className="voice">
                 <ul className="voice" data-testid="member-list">
                   {members.map((member) => (
@@ -346,10 +373,10 @@ export function RoomStage({
                   ))}
                 </ul>
                 <div className="vbtns">
-                  <button type="button" className="vbtn" onClick={() => void voice.join()}>Войти</button>
-                <button type="button" className="vbtn" onClick={() => void navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => stream.getTracks().forEach((track) => track.stop()))}>Тест</button>
-                <button type="button" className="vbtn" onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
-                  <button type="button" className="vbtn leave" onClick={() => void voice.leave()}>✕</button>
+                  <button type="button" className="vbtn" data-testid="voice-join" onClick={() => void voice.join()}>Войти</button>
+                <button type="button" className="vbtn" data-testid="voice-test" onClick={() => void navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => stream.getTracks().forEach((track) => track.stop()))}>Тест</button>
+                <button type="button" className="vbtn" data-testid="voice-toggle" onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
+                  <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>✕</button>
                 </div>
               </div>
             </div>

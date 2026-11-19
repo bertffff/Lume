@@ -11,6 +11,7 @@ const sharedEnv = {
   REDIS_URL: redisUrl,
   JWT_SECRET: jwtSecret,
   ALLOW_STUB_AUTH: "true",
+  ALLOW_STUB_VOICE: "true",
   WEB_ORIGIN: "http://127.0.0.1:5173",
   API_URL: "http://127.0.0.1:3001",
 };

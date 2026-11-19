@@ -365,11 +365,23 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
       bySource.set(source, (bySource.get(source) ?? 0) + item.watchCount);
     }
     const sessions = await prisma.watchSession.groupBy({ by: ["partnerId"], where: { userId: user.id }, _sum: { watchDuration: true }, orderBy: { _sum: { watchDuration: "desc" } }, take: 5 });
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const todaySessions = await prisma.watchSession.findMany({
+      where: { userId: user.id, sessionDate: { gte: today } },
+      select: { roomId: true, sessionDate: true, watchDuration: true },
+    });
+    const todayBuckets = new Map<string, number>();
+    for (const row of todaySessions) {
+      const key = `${row.roomId ?? "none"}:${Math.floor(row.sessionDate.getTime() / 60_000)}`;
+      todayBuckets.set(key, Math.max(todayBuckets.get(key) ?? 0, row.watchDuration));
+    }
+    const watchedToday = [...todayBuckets.values()].reduce((sum, seconds) => sum + seconds, 0);
     return reply.send({
       level: levelFromXp(user.xp),
       bio: user.bio,
       heatmap: yearHeatmap(new Date(), {
-        [new Date().toISOString().slice(0, 10)]: dayScore(user.totalWatchTime, messages, user.totalReactions),
+        [new Date().toISOString().slice(0, 10)]: dayScore(watchedToday, messages, user.totalReactions),
       }),
       platforms: [...bySource.entries()].map(([source, count]) => ({ source, count })).slice(0, 8),
       host: { roomsHosted: user.hostedRooms.length, messages },

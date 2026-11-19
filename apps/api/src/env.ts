@@ -31,6 +31,7 @@ export const apiEnvSchema = z.object({
   TELEGRAM_STORAGE_CHAT: optionalString,
   CDN_ENDPOINT: optionalString,
   ALLOW_STUB_AUTH: boolFromEnv.default(false),
+  ALLOW_STUB_VOICE: boolFromEnv.default(false),
   TELEGRAM_AUTH_MAX_AGE_SECONDS: z.coerce.number().int().positive().default(300),
   LIVEKIT_URL: optionalString,
   LIVEKIT_API_KEY: optionalString,

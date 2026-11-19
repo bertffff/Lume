@@ -119,6 +119,41 @@ async function topFriendsOf(prisma: PrismaClient, userId: string) {
   }));
 }
 
+async function engagementOf(prisma: PrismaClient, userId: string) {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
+    select: { totalVoiceSeconds: true, totalWatchTime: true },
+  });
+  if (!user) {
+    return null;
+  }
+  const [messages, reactions, sessionRows] = await Promise.all([
+    prisma.message.count({ where: { userId } }),
+    prisma.reaction.count({ where: { userId } }),
+    prisma.watchSession.findMany({
+      where: { userId },
+      select: { roomId: true, sessionDate: true, watchDuration: true },
+    }),
+  ]);
+  const perSession = new Map<string, number>();
+  for (const row of sessionRows) {
+    const key = `${row.roomId ?? "none"}:${Math.floor(row.sessionDate.getTime() / 60_000)}`;
+    perSession.set(key, Math.max(perSession.get(key) ?? 0, row.watchDuration));
+  }
+  const sessionSeconds = [...perSession.values()].reduce((sum, seconds) => sum + seconds, 0);
+  const watchSeconds = Math.max(user.totalWatchTime, sessionSeconds);
+  const voiceSeconds = user.totalVoiceSeconds;
+  return {
+    userId,
+    messages,
+    reactions,
+    voiceSeconds,
+    watchSeconds,
+    totalSeconds: watchSeconds + voiceSeconds,
+    activity: messages + reactions,
+  };
+}
+
 async function achievementsOf(prisma: PrismaClient, userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -336,6 +371,14 @@ export function registerSocialRoutes(
         username: user.showUsername ? user.username : null,
       })),
     });
+  });
+
+  app.get("/users/:id/engagement", async (request, reply) => {
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const engagement = await engagementOf(prisma, params.id);
+    if (!engagement) return reply.code(404).send({ error: "not_found" });
+    return reply.send(engagement);
   });
 
   app.get("/users/:id/achievements", async (request, reply) => {

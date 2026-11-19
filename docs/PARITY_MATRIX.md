@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 109 |
+| Done | 110 |
 | Done (needs creds) | 13 |
-| Partial | 13 |
+| Partial | 12 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -128,7 +128,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F109 | Achievement pin slots | Done | Three pin slots can be filled from earned achievements. |
 | F110 | Activity heatmap | Done | The studio returns 365 days and the people screen marks active ones. |
 | F111 | Platforms chart | Done | Platform counts from watch history are listed. |
-| F112 | Engagement widget | Partial | The profile prints partner ids and seconds from studio. It is not an engagement total with voice seconds. |
+| F112 | Engagement widget | Done | GET /users/:id/engagement aggregates persisted watch sessions once per session plus totalWatchTime, voice seconds flushed by the live voice timer, messages, and reactions. The live profile renders that widget with totals. |
 | F113 | Host stats | Done | Hosted room count is shown. |
 | F114 | Leaderboards | Partial | The profile reads GET /stats, which is not the message, reaction, and voice leaderboards, and there is no test. |
 | F115 | In-app notifications | Done | The people screen lists unread notices. |

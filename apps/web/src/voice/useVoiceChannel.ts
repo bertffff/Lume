@@ -15,6 +15,7 @@ export function useVoiceChannel(roomId: string | undefined) {
   const live = useRoomActions();
   const handle = useRef<LiveKitHandle | null>(null);
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [stub, setStub] = useState(false);
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(true);
   const [devices, setDevices] = useState<Array<{ deviceId: string; label: string }>>([]);
@@ -29,6 +30,7 @@ export function useVoiceChannel(roomId: string | undefined) {
       .then((status) => {
         if (!stopped) {
           setEnabled(status.enabled);
+          setStub(Boolean(status.stub));
         }
       })
       .catch(() => {
@@ -84,6 +86,14 @@ export function useVoiceChannel(roomId: string | undefined) {
     }
     setBusy(true);
     setError(null);
+    if (stub) {
+      setMuted(false);
+      setJoined(true);
+      live.joinVoicePresence();
+      live.reportVoice(false, false);
+      setBusy(false);
+      return;
+    }
     const allowed = await requestMicrophone();
     if (!allowed) {
       setError("mic_denied");
@@ -134,6 +144,12 @@ export function useVoiceChannel(roomId: string | undefined) {
   }
 
   async function leave() {
+    if (stub) {
+      setJoined(false);
+      setMuted(true);
+      live?.leaveVoicePresence();
+      return;
+    }
     await handle.current?.disconnect();
     handle.current = null;
     setJoined(false);
@@ -142,6 +158,13 @@ export function useVoiceChannel(roomId: string | undefined) {
   }
 
   async function toggleMute() {
+    if (stub) {
+      const next = !muted;
+      setMuted(next);
+      hapticImpact(readTelegramWebApp(), "light");
+      live?.reportVoice(next, false);
+      return;
+    }
     if (!handle.current) {
       return;
     }

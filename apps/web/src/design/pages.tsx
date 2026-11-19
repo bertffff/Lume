@@ -158,6 +158,14 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
   const [totalXp, setTotalXp] = useState(0);
   const [nextLevelXp, setNextLevelXp] = useState(0);
   const [totalAchievements, setTotalAchievements] = useState(0);
+  const [engagement, setEngagement] = useState<{
+    watchSeconds: number;
+    voiceSeconds: number;
+    messages: number;
+    reactions: number;
+    totalSeconds: number;
+    activity: number;
+  } | null>(null);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number }>>([]);
@@ -196,6 +204,10 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number; lastWatchedAt: string }> }) => setHistory(payload.items ?? []))
       .catch(() => setHistory([]));
+    void fetch(`${apiUrl}/users/${userId}/engagement`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: typeof engagement) => setEngagement(payload))
+      .catch(() => setEngagement(null));
   }, [token, apiUrl, userId]);
   const earnedCount = achievements.filter((item) => item.earned).length;
   return (
@@ -233,6 +245,30 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
           <div className="stat"><small>Стрик</small><b>14 дней</b></div>
           <div className="stat"><small>Вечеров вместе</small><b>38</b></div>
         </div>
+        <div className="card" data-testid="profile-engagement">
+          <div className="heat-top"><h3>Вовлечённость</h3></div>
+          <div className="grid3">
+            <div className="stat">
+              <small>Секунды просмотра</small>
+              <b data-testid="engagement-watch" data-seconds={engagement?.watchSeconds ?? 0}>{formatSeconds(engagement?.watchSeconds ?? 0)}</b>
+            </div>
+            <div className="stat">
+              <small>Секунды голоса</small>
+              <b data-testid="engagement-voice" data-seconds={engagement?.voiceSeconds ?? 0}>{formatSeconds(engagement?.voiceSeconds ?? 0)}</b>
+            </div>
+            <div className="stat">
+              <small>Сообщения</small>
+              <b data-testid="engagement-messages" data-count={engagement?.messages ?? 0}>{engagement?.messages ?? 0}</b>
+            </div>
+            <div className="stat">
+              <small>Реакции</small>
+              <b data-testid="engagement-reactions" data-count={engagement?.reactions ?? 0}>{engagement?.reactions ?? 0}</b>
+            </div>
+          </div>
+          <div className="stats" data-testid="engagement-total" data-seconds={engagement?.totalSeconds ?? 0}>
+            Всего {formatSeconds(engagement?.totalSeconds ?? 0)} · {engagement?.activity ?? 0} действий
+          </div>
+        </div>
         <div className="card heat-wrap">
           <div className="heat-top"><h3>Ваш сезон</h3></div>
           <div className="stats"><b>14 дней</b> подряд · 142 сеанса</div>
@@ -268,6 +304,13 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
       </main>
     </div>
   );
+}
+
+function formatSeconds(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safe / 60);
+  const rest = safe % 60;
+  return minutes > 0 ? `${minutes} мин ${rest} с` : `${rest} с`;
 }
 
 export function AuthScreen({ onTelegram, name, onName, onEmail, onRegister }: {

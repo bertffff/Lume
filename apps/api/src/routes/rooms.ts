@@ -184,10 +184,12 @@ export function registerRoomRoutes(
       if (prisma) {
         const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.data.id, userId: actor.userId } } });
         const others = await prisma.roomMember.findMany({ where: { roomId: params.data.id, userId: { not: actor.userId }, leftAt: null } });
-        if (self && shouldRecordWatch(self.joinedAt.getTime(), Date.now())) {
+        if (self && !self.leftAt && shouldRecordWatch(self.joinedAt.getTime(), Date.now())) {
           const seconds = Math.round((Date.now() - self.joinedAt.getTime()) / 1000);
+          const sessionDate = new Date();
+          await prisma.user.update({ where: { id: actor.userId }, data: { totalWatchTime: { increment: seconds } } });
           for (const other of others) {
-            await prisma.watchSession.create({ data: { userId: actor.userId, partnerId: other.userId, roomId: params.data.id, watchDuration: seconds } });
+            await prisma.watchSession.create({ data: { userId: actor.userId, partnerId: other.userId, roomId: params.data.id, watchDuration: seconds, sessionDate } });
           }
         }
       }
