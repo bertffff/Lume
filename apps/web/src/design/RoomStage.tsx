@@ -26,6 +26,18 @@ function durationLabel(durationMs: number | null): string {
   return durationMs === null ? "—" : clock(durationMs);
 }
 
+/** Fire-and-forget UI actions must not surface as unhandled promise rejections offline. */
+function quietly(request: Promise<unknown>): void {
+  void request.catch(() => undefined);
+}
+
+function voiceErrorText(code: string): string {
+  if (code === "livekit_disabled") return "Голос не настроен на сервере";
+  if (code === "mic_denied") return "Нет доступа к микрофону";
+  if (code === "forbidden") return "Говорить в этой комнате нельзя";
+  return "Не удалось подключиться к голосу";
+}
+
 export function RoomStage({
   layout,
   synced,
@@ -70,51 +82,60 @@ export function RoomStage({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [roomTitle, setRoomTitle] = useState<string | null>(null);
   const [roomHideReactions, setRoomHideReactions] = useState(false);
+  const liveRoomId = live?.state.room.id;
+  const accessToken = live?.accessToken;
+  const hasLive = Boolean(live);
+  const messageCount = live?.state.messages.length ?? 0;
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 800);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setStyle(document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema");
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-style"] });
-    const room = live?.state.room.id;
-    const token = live?.accessToken;
-    if (room && token) {
-      void fetch(`${apiUrl}/rooms/${room}/settings`, { headers: { authorization: `Bearer ${token}` } })
-        .then((response) => response.json())
-        .then((payload: RoomSettings) => {
-          setRoomTitle(payload.title);
-          setRoomHideReactions(Boolean(payload.hideReactions));
-        })
-        .catch(() => undefined);
-    }
-    if (token) {
-      void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${token}` } })
-        .then((response) => response.json())
-        .then((payload: { iceServers?: Array<{ urls?: string | string[] }> }) => {
-          setIceUrls((payload.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : [])));
-        })
-        .catch(() => setIceUrls([]));
-    }
-    if (token) {
-      void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
-        .then((response) => response.json())
-        .then((payload: { hideOtherReactions?: boolean; isPremium?: boolean; recentEmojis?: string[] }) => {
-          setHideOther(Boolean(payload.hideOtherReactions));
-          setPremium(Boolean(payload.isPremium));
-          setRecentEmojis(Array.isArray(payload.recentEmojis) ? payload.recentEmojis : []);
-        })
-        .catch(() => {
-          setHideOther(false);
-          setPremium(false);
-          setRecentEmojis([]);
-        });
-    }
-    const onResize = () => setNarrow(window.innerWidth < 800);
-    window.addEventListener("resize", onResize);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", onResize);
-    };
+    return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    if (!liveRoomId || !accessToken) return;
+    let stopped = false;
+    void fetch(`${apiUrl}/rooms/${liveRoomId}/settings`, { headers: { authorization: `Bearer ${accessToken}` } })
+      .then((response) => response.json())
+      .then((payload: RoomSettings) => {
+        if (stopped) return;
+        setRoomTitle(payload.title);
+        setRoomHideReactions(Boolean(payload.hideReactions));
+      })
+      .catch(() => undefined);
+    void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${accessToken}` } })
+      .then((response) => response.json())
+      .then((payload: { iceServers?: Array<{ urls?: string | string[] }> }) => {
+        if (stopped) return;
+        setIceUrls((payload.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : [])));
+      })
+      .catch(() => {
+        if (!stopped) setIceUrls([]);
+      });
+    void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${accessToken}` } })
+      .then((response) => response.json())
+      .then((payload: { hideOtherReactions?: boolean; isPremium?: boolean; recentEmojis?: string[] }) => {
+        if (stopped) return;
+        setHideOther(Boolean(payload.hideOtherReactions));
+        setPremium(Boolean(payload.isPremium));
+        setRecentEmojis(Array.isArray(payload.recentEmojis) ? payload.recentEmojis : []);
+      })
+      .catch(() => {
+        if (stopped) return;
+        setHideOther(false);
+        setPremium(false);
+        setRecentEmojis([]);
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [accessToken, liveRoomId]);
   useEffect(() => {
     const token = live?.accessToken;
     if (!token) return;
@@ -199,10 +220,10 @@ export function RoomStage({
     };
   }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
   useEffect(() => {
-    if (!live || seenReady.current) return;
+    if (!hasLive || seenReady.current) return;
     seenReady.current = true;
-    setSeenCount(live.state.messages.length);
-  }, [live?.state.messages.length]);
+    setSeenCount(messageCount);
+  }, [hasLive, messageCount]);
   useEffect(() => {
     if (!sheet) return;
     const onKey = (event: KeyboardEvent) => {
@@ -230,6 +251,7 @@ export function RoomStage({
   const firstUnreadIndex = Math.min(seenCount, live.state.messages.length);
   const pendingPlan = url ? planPlayback({ url, premium }) : null;
   const premiumUrl = pendingPlan?.type === "error" && pendingPlan.code === "premium_required";
+  const voiceReady = voice.enabled !== false || voice.stub;
 
   function jumpToUnread() {
     const anchor = chatRef.current?.querySelector<HTMLElement>('[data-unread="true"]');
@@ -320,14 +342,14 @@ export function RoomStage({
             <div className="crumb"><b data-testid="room-title">{roomTitle ?? room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
             <span className="spacer" />
             <div className="sync sync-pill"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
-              <button type="button" data-testid="sync-incident" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) })}>Сбой</button>
+              <button type="button" data-testid="sync-incident" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) }))}>Сбой</button>
               <button type="button" data-testid="report-buffering" onClick={() => live.reportViewer("buffering")}>Буфер</button>
               <button type="button" data-testid="hide-other-reactions" onClick={() => {
                 const next = !hideOther;
-                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: next }) })
+                quietly(fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: next }) })
                   .then(() => fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${live.accessToken}` } }))
                   .then((response) => response.json())
-                  .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions)));
+                  .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions))));
               }}>Скрыть чужие</button>
               {live.state.self.role === "host" ? (
                 <button type="button" data-testid="room-settings-open" onClick={() => setSettingsOpen(true)}>Настройки</button>
@@ -381,9 +403,9 @@ export function RoomStage({
               <div className="unavail" data-testid="player-error">
                 <h2>Видео недоступно</h2>
                 <p>{playerError}</p>
-                <button type="button" data-testid="player-retry" onClick={() => void fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) })}>Обновить ссылку</button>
-                <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); void fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) }); }}>Открыть на платформе</button>
-                <form onSubmit={(event) => { event.preventDefault(); const next = String(new FormData(event.currentTarget).get("url") ?? ""); if (!next) return; live.addQueue(next); setPlayerError(null); void fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "replace", url: next }) }); }}>
+                <button type="button" data-testid="player-retry" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) }))}>Обновить ссылку</button>
+                <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) })); }}>Открыть на платформе</button>
+                <form onSubmit={(event) => { event.preventDefault(); const next = String(new FormData(event.currentTarget).get("url") ?? ""); if (!next) return; live.addQueue(next); setPlayerError(null); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "replace", url: next }) })); }}>
                   <input data-testid="player-replace-url" name="url" placeholder="Новая ссылка" />
                   <button type="submit" data-testid="player-replace">Заменить видео</button>
                 </form>
@@ -420,7 +442,7 @@ export function RoomStage({
           <div className={narrow ? "sheet" : "low"}>
             {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Панели</button> : null}
             <div className="card voice-card">
-              <div className="ct">Голосовой {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : null}
+              <div className="ct">Голосовой {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled" data-stub={voice.stub ? "true" : "false"}>{t("voice.disabled")}</small> : null}
                 <small data-testid="voice-ice" data-count={iceUrls.length}>{iceUrls.join(" · ")}</small>
               </div>
               <div className="voice">
@@ -447,11 +469,12 @@ export function RoomStage({
                   })}
                 </ul>
                 <div className="vbtns">
-                  <button type="button" className="vbtn" data-testid="voice-join" onClick={() => void voice.join()}>Войти</button>
+                  <button type="button" className="vbtn" data-testid="voice-join" disabled={!voiceReady || voice.busy} onClick={() => void voice.join()}>Войти</button>
                 <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? "Проверяем" : "Проверка"}</button>
-                <button type="button" className="vbtn" data-testid="voice-toggle" onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
+                <button type="button" className="vbtn" data-testid="voice-toggle" disabled={!voiceReady} onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
                   <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>✕</button>
                 </div>
+                {voice.error ? <small className="voice-error" data-testid="voice-error" data-code={voice.error}>{voiceErrorText(voice.error)}</small> : null}
                 <div
                   className="voice-preflight"
                   data-testid="voice-preflight"
@@ -528,11 +551,11 @@ export function RoomStage({
               {live.canControl ? (
                 <form data-testid="room-defaults" onSubmit={(event) => {
                   event.preventDefault();
-                  void fetch(`${apiUrl}/rooms/${room.id}/defaults`, {
+                  quietly(fetch(`${apiUrl}/rooms/${room.id}/defaults`, {
                     method: "POST",
                     headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
                     body: JSON.stringify(permissions),
-                  });
+                  }));
                 }}>
                   {(Object.keys(permissions) as Array<keyof typeof permissions>).map((key) => (
                     <label key={key}>
@@ -550,7 +573,7 @@ export function RoomStage({
                 const reason = String(data.get("reason") ?? "").trim();
                 const target = String(data.get("target") ?? "");
                 if (!reason || !target || target === live.selfId) return;
-                void fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) });
+                quietly(fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) }));
                 event.currentTarget.reset();
               }}>
                 <select data-testid="report-target" name="target" aria-label="report target">

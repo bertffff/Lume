@@ -47,12 +47,16 @@ export function RoomScreen({
     return () => window.clearInterval(timer);
   }, []);
 
+  const playbackVersion = playback?.version;
+  const playbackStatus = playback?.status;
+  const playbackServerTimeMs = playback?.serverTimeMs;
+  const playbackAnchorPositionMs = playback?.anchorPositionMs;
   useEffect(() => {
-    if (!playback) {
+    if (playbackServerTimeMs === undefined) {
       return;
     }
-    setOffset(playback.serverTimeMs - Date.now());
-  }, [playback?.version, playback?.status, playback?.serverTimeMs, playback?.anchorPositionMs]);
+    setOffset(playbackServerTimeMs - Date.now());
+  }, [playbackVersion, playbackStatus, playbackServerTimeMs, playbackAnchorPositionMs]);
 
   if (!live.state) {
     return (

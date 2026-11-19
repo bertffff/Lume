@@ -182,6 +182,7 @@ export function useVoiceChannel(roomId: string | undefined) {
 
   return {
     enabled,
+    stub,
     joined,
     muted,
     devices,

@@ -1,5 +1,5 @@
 import { imageKind, notificationChannels, notificationKinds } from "@lume/contracts";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useCallback, useState, type FormEvent } from "react";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
@@ -30,7 +30,7 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
   const [linked, setLinked] = useState<{ email: boolean; telegram: boolean } | null>(null);
   const [telegramId, setTelegramId] = useState("");
 
-  async function reload() {
+  const reload = useCallback(async () => {
     const [list, feed, card, profile] = await Promise.all([
       api.friends(session.accessToken),
       api.notifications(session.accessToken),
@@ -67,17 +67,20 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
     setFriends(list.friends);
     setNotes(feed.notifications.filter((item) => !item.read));
     setResume(card.resume ? `${card.resume.title} · ${card.resume.queueCount}` : null);
-  }
+  }, [session.accessToken, t]);
 
   useEffect(() => {
     void reload().catch(() => setError("request_failed"));
     const pending = sessionStorage.getItem("lume-pending-user");
     if (!pending) return;
     sessionStorage.removeItem("lume-pending-user");
-    void fetch(`${apiUrl}/users/${pending}`).then((response) => response.json()).then((payload: { displayName?: string }) => {
-      setProfileName(payload.displayName ?? null);
-    });
-  }, [session.accessToken]);
+    void fetch(`${apiUrl}/users/${pending}`)
+      .then((response) => response.json())
+      .then((payload: { displayName?: string }) => {
+        setProfileName(payload.displayName ?? null);
+      })
+      .catch(() => setProfileName(null));
+  }, [reload]);
 
   async function search(event: FormEvent) {
     event.preventDefault();

@@ -40,6 +40,9 @@ export interface LiveRoom {
 export type ChannelStatus = "off" | "connecting" | "online" | "error";
 
 export function useRoomChannel(input: { token: string; roomId: string; selfId: string } | null) {
+  const token = input?.token;
+  const roomId = input?.roomId;
+  const selfId = input?.selfId;
   const [state, setState] = useState<LiveRoom | null>(null);
   const [status, setStatus] = useState<ChannelStatus>(input ? "connecting" : "off");
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +60,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    if (!input) {
+    if (!token || !roomId || !selfId) {
       setStatus("off");
       setState(null);
       setSocket(null);
@@ -67,7 +70,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
     let active: Socket | null = null;
     setStatus("connecting");
     setError(null);
-    void connectRealtime(realtimeUrl, input.token)
+    void connectRealtime(realtimeUrl, token)
       .then((client) => {
         if (stopped) {
           client.close();
@@ -77,7 +80,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
         setSocket(client);
         client.on("connect", () => {
           setStatus("online");
-          client.emit("room:join", { roomId: input.roomId });
+          client.emit("room:join", { roomId });
         });
         client.on("connect_error", () => setStatus("error"));
         client.on("disconnect", () => setStatus("error"));
@@ -148,7 +151,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
           if (!parsed.success) {
             return;
           }
-          if (parsed.data.userId === input.selfId) {
+          if (parsed.data.userId === selfId) {
             setError("kicked");
             return;
           }
@@ -244,12 +247,12 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       active?.close();
       setSocket(null);
     };
-  }, [input?.roomId, input?.token, input?.selfId]);
+  }, [roomId, selfId, token]);
 
   useEffect(() => {
-    if (!socket || !input?.roomId) return;
+    if (!socket || !roomId) return;
     let stopped = false;
-    const room = input.roomId;
+    const room = roomId;
     const sampleRound = async () => {
       const samples: number[] = [];
       for (let index = 0; index < 5 && !stopped; index += 1) {
@@ -275,13 +278,12 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       stopped = true;
       window.clearInterval(again);
     };
-  }, [input?.roomId, socket]);
+  }, [roomId, socket]);
 
   function emit(event: string, payload: unknown) {
     socket?.emit(event, payload);
   }
 
-  const roomId = input?.roomId;
   return {
     state,
     status,
@@ -329,7 +331,7 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       }
       emit("playback:viewer", { roomId, phase });
     },
-    token: input?.token ?? "",
+    token: token ?? "",
     voiceForce,
     joinVoicePresence() {
       if (!roomId) {
