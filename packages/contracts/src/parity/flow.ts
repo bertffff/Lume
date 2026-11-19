@@ -191,6 +191,10 @@ export function hlsProxyUrl(apiBase: string, source: string): string {
   return `${apiBase}/video/hls-proxy?url=${encodeURIComponent(source)}`;
 }
 
+export function streamProxyUrl(apiBase: string, source: string): string {
+  return `${apiBase}/video/range?url=${encodeURIComponent(source)}`;
+}
+
 export function typingLine(names: readonly string[]): string {
   if (names.length === 0) return "";
   if (names.length === 1) return `${names[0]} печатает…`;

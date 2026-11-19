@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 112 |
+| Done | 113 |
 | Done (needs creds) | 13 |
-| Partial | 10 |
+| Partial | 9 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -76,7 +76,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
 | F058 | Metadata resolver | Done | POST /rooms/:id/queue resolves provider oEmbed JSON for title, poster and duration, then falls back to OpenGraph and schema.org duration. QueueItem.durationMs and RoomHistoryItem.durationMs are persisted, and the live queue renders the resolved name and duration instead of a raw oEmbed URL. The page fallback is DNS-checked, re-checks every redirect hop, caps the page read, and refuses private hosts; tests use a local `node:http` metadata server. |
 | F059 | Premium extraction gate | Done | The live queue reads isPremium from /me and blocks the 13 extraction-only platforms with a Premium notice. POST /rooms/:id/queue and /video/resolve read the saved isPremium flag, so the socket path is gated too and a client cannot claim premium in the body. |
-| F060 | Stream proxy | Partial | GET /video/range rejects a missing Range and blocks localhost. It does not enforce an allowlist, a size cap, or stream the body. |
+| F060 | Stream proxy | Done | GET /video/range checks a provider host allowlist, refuses private hosts and redirect hops that leave it, caps the body at STREAM_MAX_BYTES, and streams the ranged upstream body instead of buffering it. The live player sends direct files through this proxy. |
 | F061 | HLS/DASH manifest rewrite | Partial | Settings has a sentence about HLS. The proxy still requires FF_EXTRACTORS and does not cover every chain. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |

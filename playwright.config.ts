@@ -15,6 +15,9 @@ const sharedEnv = {
   WEB_ORIGIN: "http://127.0.0.1:5173",
   API_URL: "http://127.0.0.1:3001",
   OEMBED_BASE_URL: "http://127.0.0.1:3099/oembed",
+  STREAM_ALLOWLIST: "127.0.0.1",
+  STREAM_ALLOW_PRIVATE_HOSTS: "true",
+  STREAM_MAX_BYTES: "1048576",
 };
 
 export default defineConfig({

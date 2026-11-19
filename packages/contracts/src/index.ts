@@ -164,6 +164,7 @@ export { clockSample, median, pushWindow, smoothRtt, type ClockSample } from "./
 export { planDrift, type DriftPlan, type DriftSeek, type DriftStatus } from "./parity/drift.js";
 export { hostLeavePauses, nextHost, reclaimHost, type HostCandidate } from "./parity/host.js";
 export { rewriteHlsManifest } from "./parity/manifest.js";
+export { defaultStreamAllowlist, hostAllowed, parseAllowlist } from "./parity/allowlist.js";
 export {
   allowsAction,
   allowsModeration,
@@ -196,6 +197,7 @@ export {
   isFavourite,
   shouldRecordWatch,
   hlsProxyUrl,
+  streamProxyUrl,
   shouldHoldForReady,
   holdPlaybackOp,
   typingLine,
