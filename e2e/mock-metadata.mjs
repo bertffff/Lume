@@ -4,12 +4,17 @@ const port = Number(process.env.MOCK_METADATA_PORT ?? 3099);
 
 function titleFor(source) {
   try {
-    const host = new URL(source).hostname;
-    return host.replace(/^www\./, "");
+    const parsed = new URL(source);
+    if (parsed.pathname.includes("recommend.mp4")) {
+      return "Рекомендованный фильм";
+    }
+    return parsed.hostname.replace(/^www\./, "");
   } catch {
     return "metadata fixture";
   }
 }
+
+const seenRecommendations = new Set();
 
 const server = createServer((request, response) => {
   const url = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -60,6 +65,13 @@ const server = createServer((request, response) => {
   }
   if (url.pathname === "/oembed") {
     const source = url.searchParams.get("url") ?? "";
+    if (source.includes("recommend.mp4")) {
+      const firstRead = !seenRecommendations.has(source);
+      seenRecommendations.add(source);
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify(firstRead ? { title: "Рекомендованный фильм", duration: 60 } : {}));
+      return;
+    }
     if (source.includes("metadata-fixture")) {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({

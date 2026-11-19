@@ -10,7 +10,7 @@ test("the mobile room sheet switches chat, members, and the live queue", async (
 
   await page.getByTestId("queue-input").fill("https://mobile-sheet.example.com/video.mp4");
   await page.getByTestId("queue-add").click();
-  await expect(page.locator(".tr-queue li")).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.getByTestId("queue-item")).toHaveCount(1, { timeout: 15_000 });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByTestId("mobile-sheet")).toBeVisible();

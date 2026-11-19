@@ -10,7 +10,7 @@ export interface RoomActions {
   selfId: string;
   sendChat: (body: string, replyToId?: string | null) => void;
   react: (messageId: string, emoji: string) => void;
-  addQueue: (url: string) => void;
+  addQueue: (url: string, title?: string) => void;
   reloadHistory: (historyId: string) => void;
   playNext: () => void;
   setPlayback: (mode: "play" | "pause" | "seek", positionMs: number) => void;

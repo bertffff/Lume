@@ -418,8 +418,28 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
       if (actor) return reply.code(503).send({ error: "database_unconfigured" });
       return;
     }
-    const rows = await prisma.watchHistory.findMany({ where: { userId: actor.userId }, orderBy: { watchCount: "desc" }, take: 6 });
-    return reply.send({ items: rows.map((row) => ({ url: row.videoUrl, title: row.title, reason: row.watchCount > 1 ? "favorite" : "history" })) });
+    const query = z.object({ roomId: z.string().min(1).optional() }).safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: "invalid_body" });
+    const waiting = query.data.roomId
+      ? new Set(
+          (
+            await prisma.queueItem.findMany({
+              where: { roomId: query.data.roomId, played: false },
+              select: { url: true },
+            })
+          ).map((row) => row.url),
+        )
+      : new Set<string>();
+    const rows = await prisma.watchHistory.findMany({
+      where: { userId: actor.userId },
+      orderBy: { watchCount: "desc" },
+      take: 20,
+    });
+    const items = rows
+      .filter((row) => !waiting.has(row.videoUrl))
+      .slice(0, 6)
+      .map((row) => ({ url: row.videoUrl, title: row.title, reason: row.watchCount > 1 ? "favorite" : "history" }));
+    return reply.send({ items });
   });
 
   app.post("/auth/magic-link", async (request, reply) => {

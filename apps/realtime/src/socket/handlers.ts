@@ -402,7 +402,7 @@ async function queueAdd(io: Server, api: RoomApi, socket: Socket, payload: unkno
     return;
   }
   try {
-    const session = await api.addQueue(actor.token, parsed.data.roomId, parsed.data.url);
+    const session = await api.addQueue(actor.token, parsed.data.roomId, parsed.data.url, parsed.data.title);
     io.to(parsed.data.roomId).emit("queue:state", {
       roomId: parsed.data.roomId,
       queue: session.queue,

@@ -12,6 +12,7 @@ export const queueItemSchema = z.object({
   durationMs: z.number().int().nonnegative().nullable(),
   position: z.number().int().nonnegative(),
   addedById: z.string().min(1),
+  played: z.boolean(),
 });
 
 export type QueueItem = z.infer<typeof queueItemSchema>;
@@ -19,6 +20,7 @@ export type QueueItem = z.infer<typeof queueItemSchema>;
 export const queueAddSchema = z.object({
   roomId: z.string().min(1),
   url: z.string().trim().min(1).max(2000),
+  title: z.string().trim().max(200).optional(),
 });
 
 export const queueNextSchema = z.object({

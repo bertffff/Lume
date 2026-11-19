@@ -347,7 +347,7 @@ export function registerRoomRoutes(
       return;
     }
     const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
-    const body = z.object({ url: z.string().trim().min(1).max(2000) }).safeParse(request.body);
+    const body = z.object({ url: z.string().trim().min(1).max(2000), title: z.string().trim().max(200).optional() }).safeParse(request.body);
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });
     }
@@ -365,7 +365,7 @@ export function registerRoomRoutes(
       }
     }
     return run(reply, () =>
-      service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, body.data.url),
+      service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, body.data.url, body.data.title),
     );
   });
 

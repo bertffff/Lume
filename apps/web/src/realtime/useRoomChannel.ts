@@ -285,11 +285,11 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       }
       emit("chat:react", { roomId, messageId, emoji });
     },
-    addQueue(url: string) {
+    addQueue(url: string, title?: string) {
       if (!roomId) {
         return;
       }
-      emit("queue:add", { roomId, url });
+      emit("queue:add", title ? { roomId, url, title } : { roomId, url });
     },
     playNext() {
       if (!roomId) {

@@ -44,7 +44,7 @@ export function RoomStage({
   const [url, setUrl] = useState("");
   const [detected, setDetected] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }>>([]);
-  const [tip, setTip] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
   const [iceUrl, setIceUrl] = useState<string | null>(null);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
   const voiceSecondsRef = useRef(0);
@@ -81,10 +81,6 @@ export function RoomStage({
           setRoomHideReactions(Boolean(payload.hideReactions));
         })
         .catch(() => undefined);
-      void fetch(`${apiUrl}/me/discovery`, { headers: { authorization: `Bearer ${token}` } })
-        .then((response) => response.json())
-        .then((payload: { items?: Array<{ title: string | null; url: string }> }) => setTip(payload.items?.[0]?.title ?? payload.items?.[0]?.url ?? null))
-        .catch(() => setTip(null));
     }
     void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIceUrl(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIceUrl(null));
     if (token) {
@@ -157,6 +153,23 @@ export function RoomStage({
     };
   }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
   useEffect(() => {
+    const room = live?.state.room.id;
+    const token = live?.accessToken;
+    if (!room || !token) return;
+    let stopped = false;
+    void fetch(`${apiUrl}/me/discovery?roomId=${encodeURIComponent(room)}`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { items?: Array<{ url: string; title: string | null; reason: string }> }) => {
+        if (!stopped) setRecommendations(payload.items ?? []);
+      })
+      .catch(() => {
+        if (!stopped) setRecommendations([]);
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
+  useEffect(() => {
     if (!live || seenReady.current) return;
     seenReady.current = true;
     setSeenCount(live.state.messages.length);
@@ -173,8 +186,11 @@ export function RoomStage({
   const room = live.state.room;
   const members = live.state.members;
   const playing = live.state.playback.status === "playing";
-  const queue = live.state.queue.filter((item) => item.id !== room.nowPlaying?.id);
+  const queue = live.state.queue.filter((item) => !item.played && item.id !== room.nowPlaying?.id);
   const sheetItems = room.nowPlaying ? [room.nowPlaying, ...queue] : queue;
+  const recommended = recommendations
+    .filter((item) => !queue.some((queued) => queued.url === item.url))
+    .slice(0, 4);
   const gruv = style === "gruvbox";
   const bufferingCount = live.state.viewers.filter((viewer) => viewer.phase === "buffering").length;
   const waiting = shouldHoldForReady(bufferingCount > 0, bufferingCount);
@@ -385,11 +401,11 @@ export function RoomStage({
               </div>
             </div>
             <div className="card queue-card">
-              <div className="ct">Дальше в очереди <small>{queue.length}</small>{tip ? <small>ещё: {tip}</small> : null}{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
+              <div className="ct">Дальше в очереди <small>{queue.length}</small>{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
               <div className="q">
                 <ol className="tr-queue q">
                   {queue.slice(0, 2).map((item) => (
-                    <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider}>
+                    <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider} data-title={item.title}>
                       <div className="im" style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }} />
                       <b>{item.title}</b>
                       <small data-testid="queue-item-duration" data-duration-ms={item.durationMs ?? ""}>{durationLabel(item.durationMs)}</small>
@@ -403,6 +419,20 @@ export function RoomStage({
                   {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                 </form>
+              </div>
+              <div className="queue-recommendations" data-testid="queue-recommendations">
+                <div className="ct">Рекомендации <small>{recommended.length}</small></div>
+                {recommended.length === 0 ? <p className="tr-empty">Пока пусто</p> : (
+                  <ol className="recommendations-list">
+                    {recommended.map((item) => (
+                      <li key={item.url} data-testid="queue-recommendation" data-url={item.url} data-reason={item.reason}>
+                        <b>{item.title ?? item.url}</b>
+                        <small>{item.reason === "favorite" ? "избранное" : "история"}</small>
+                        <button type="button" data-testid="queue-recommendation-add" onClick={() => live.addQueue(item.url, item.title ?? undefined)}>В очередь</button>
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </div>
               <div className="queue-history" data-testid="queue-history">
                 <div className="ct">

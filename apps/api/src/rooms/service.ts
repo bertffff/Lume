@@ -72,6 +72,7 @@ function toQueueItem(item: QueueRecord): QueueItem {
     durationMs: item.durationMs,
     position: item.position,
     addedById: item.addedById,
+    played: item.played,
   };
 }
 
@@ -356,7 +357,7 @@ export class RoomService {
     return toMessage(message);
   }
 
-  async addQueueItem(actor: Actor, roomId: string, url: string): Promise<RoomDetail> {
+  async addQueueItem(actor: Actor, roomId: string, url: string, titleHint?: string): Promise<RoomDetail> {
     const { member } = await this.requireActive(roomId, actor.userId);
     if (member.muted) {
       throw new RoomFailure("muted");
@@ -366,9 +367,9 @@ export class RoomService {
       throw new RoomFailure("invalid_media");
     }
     const meta = await this.titles(parsed);
-    const title = meta?.title?.trim() || mediaFallbackTitle(parsed.url);
+    const title = titleHint?.trim() || meta?.title?.trim() || mediaFallbackTitle(parsed.url);
     const queue = await this.repo.listQueue(roomId);
-    if (duplicateQueue(queue.map((item) => item.url), parsed.url)) {
+    if (duplicateQueue(queue.filter((item) => !item.played).map((item) => item.url), parsed.url)) {
       throw new RoomFailure("conflict");
     }
     const last = queue[queue.length - 1];

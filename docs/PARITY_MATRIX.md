@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 114 |
+| Done | 115 |
 | Done (needs creds) | 13 |
-| Partial | 8 |
+| Partial | 7 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -85,7 +85,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F066 | Video detect endpoint | Done | POST /video/detect uses the caller's saved premium flag. The live queue shows source and plan. |
 | F067 | Shared queue | Done | Reorder, a pending line, and a duplicate URL rejection are in place. |
 | F068 | Queue history | Done | The live queue shows the last played items from the persisted history, reloads after the host advances, and the host can clear it. GET and DELETE /rooms/:id/history cap the list at 50 and delete only for the host. |
-| F069 | Queue recommendations | Partial | The live queue can show the first discovery title. It does not add that suggestion. |
+| F069 | Queue recommendations | Done | GET /me/discovery?roomId omits videos already waiting in that room's live queue. The live queue lists up to four history or favourite suggestions with a real «В очередь» control that adds the video and its title through the socket queue path, then persists it as a QueueItem. |
 | F070 | Auto-advance | Done | When the host's player ends, the next queue item starts. |
 | F071 | Chat text | Done | Chat messages are limited to 500 characters. |
 | F072 | Replies | Done | replyToId is stored and shown. |

@@ -61,8 +61,11 @@ export function createRoomApi(baseUrl: string) {
         body: { messageId, emoji },
       });
     },
-    addQueue(token: string, roomId: string, url: string) {
-      return request<RoomSession>(token, `/rooms/${roomId}/queue`, { method: "POST", body: { url } });
+    addQueue(token: string, roomId: string, url: string, title?: string) {
+      return request<RoomSession>(token, `/rooms/${roomId}/queue`, {
+        method: "POST",
+        body: title ? { url, title } : { url },
+      });
     },
     playNext(token: string, roomId: string) {
       return request<RoomSession>(token, `/rooms/${roomId}/queue/next`, { method: "POST", body: {} });
