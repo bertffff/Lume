@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("a persisted recommendation can be added back into the live queue", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("lobby-name").fill("Рекомендации");
+  await page.getByTestId("lobby-name").fill(`Рекомендации ${Date.now()}`);
   await page.getByTestId("lobby-sign-in").click();
   await page.getByTestId("lobby-title").fill("Рекомендации");
   await page.getByTestId("lobby-create").click();
