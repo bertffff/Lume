@@ -133,10 +133,54 @@ describe("stream proxy", () => {
     expect(disallowed.statusCode).toBe(403);
     expect(disallowed.json()).toMatchObject({ error: "host_not_allowed" });
 
+    // The browser player needs CORS on the proxied media, including range headers.
+    const cors = await app.inject({
+      method: "GET",
+      url: `/video/range?url=${encodeURIComponent(`${base}/ok`)}`,
+      headers: { range: "bytes=0-4", origin: "http://localhost:5173" },
+    });
+    expect(cors.statusCode).toBe(206);
+    expect(cors.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(String(cors.headers["access-control-expose-headers"])).toContain("content-range");
+
     const noRange = await app.inject({
       method: "GET",
       url: `/video/range?url=${encodeURIComponent(`${base}/ok`)}`,
     });
     expect(noRange.statusCode).toBe(416);
+  });
+
+  it("blocks bracketed IPv6 and special IPv4 literals before fetching", async () => {
+    const env = loadApiEnv({
+      NODE_ENV: "test",
+      JWT_SECRET: "stream-ssrf-secret",
+      WEB_ORIGIN: "http://127.0.0.1:5173",
+      STREAM_ALLOWLIST: "127.0.0.1",
+    });
+    app = await buildApp(env);
+
+    for (const target of [
+      "http://[::1]:1/video.mp4",
+      "http://[::ffff:127.0.0.1]:1/video.mp4",
+      "http://[fd00::1]:1/video.mp4",
+      "http://[fe80::1]:1/video.mp4",
+      "http://0.0.0.0:1/video.mp4",
+      "http://2130706433/video.mp4",
+    ]) {
+      const blocked = await app.inject({
+        method: "GET",
+        url: `/video/range?url=${encodeURIComponent(target)}`,
+        headers: { range: "bytes=0-4" },
+      });
+      expect(blocked.statusCode).toBe(400);
+      expect(blocked.json()).toMatchObject({ error: "blocked" });
+    }
+
+    const manifest = await app.inject({
+      method: "GET",
+      url: `/video/hls-proxy?url=${encodeURIComponent("http://[::1]:1/live.m3u8")}`,
+    });
+    expect(manifest.statusCode).toBe(400);
+    expect(manifest.json()).toMatchObject({ error: "blocked" });
   });
 });

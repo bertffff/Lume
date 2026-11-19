@@ -176,6 +176,21 @@ describe("parity rules", () => {
     expect(hostnameBlocked("app.local")).toBe(true);
     expect(urlBlocked("http://169.254.1.1/x")).toBe(true);
     expect(urlBlocked("file:///etc/passwd")).toBe(true);
+    // Bracketed IPv6 literals arrive from URL.hostname and must not bypass the check.
+    expect(urlBlocked("http://[::1]/x")).toBe(true);
+    expect(urlBlocked("http://[0:0:0:0:0:0:0:1]/x")).toBe(true);
+    expect(urlBlocked("http://[::]/x")).toBe(true);
+    expect(urlBlocked("http://[::ffff:127.0.0.1]/x")).toBe(true);
+    expect(urlBlocked("http://[::ffff:7f00:1]/x")).toBe(true);
+    expect(urlBlocked("http://[fd00::1]/x")).toBe(true);
+    expect(urlBlocked("http://[fe80::1]/x")).toBe(true);
+    expect(urlBlocked("http://[ff02::1]/x")).toBe(true);
+    expect(urlBlocked("http://[2002:7f00:0001::]/x")).toBe(true);
+    expect(ipBlocked("[::1]")).toBe(true);
+    expect(ipBlocked("::ffff:10.0.0.1")).toBe(true);
+    expect(urlBlocked("http://0.0.0.0/x")).toBe(true);
+    expect(urlBlocked("http://2130706433/x")).toBe(true);
+    expect(urlBlocked("http://[2606:4700:4700::1111]/x")).toBe(false);
   });
 
   it("rewrites HLS lines and gates premium-only sources", () => {

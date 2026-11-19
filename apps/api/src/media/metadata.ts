@@ -17,6 +17,7 @@ export interface MetadataOptions {
 
 const mediaFile = /\.(mp4|webm|ogg|m3u8|mpd|mkv|avi|mov)(?:$|[?#])/i;
 const pageReadCap = 512 * 1024;
+const jsonReadCap = 1024 * 1024;
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 
 /** Literal host check plus DNS pinning so a public name cannot resolve to a private address. */
@@ -119,10 +120,21 @@ function oEmbedUrl(item: ParsedEmbed, baseUrl?: string): string | null {
 }
 
 async function fetchJson(url: string, timeoutMs: number): Promise<Record<string, unknown> | null> {
-  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) }).catch(() => null);
+  const response = await fetch(url, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(timeoutMs),
+  }).catch(() => null);
   if (!response?.ok) return null;
-  const body = (await response.json().catch(() => null)) as unknown;
-  return body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+  const declared = Number(response.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > jsonReadCap) return null;
+  const text = await readCapped(response, jsonReadCap).catch(() => "");
+  if (!text) return null;
+  try {
+    const body: unknown = JSON.parse(text);
+    return body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchOpenGraph(url: string, timeoutMs: number, allowPrivate: boolean): Promise<ResolvedMetadata | null> {

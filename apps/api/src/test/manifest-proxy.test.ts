@@ -54,6 +54,14 @@ describe("manifest proxy", () => {
         response.end("<html>not a playlist</html>");
         return;
       }
+      if (url.pathname === "/huge.m3u8") {
+        // No content-length: the cap must be enforced while reading, not only from the header.
+        response.writeHead(200, { "content-type": "application/vnd.apple.mpegurl" });
+        response.write("#EXTM3U\n");
+        response.write("a".repeat(1_100_000));
+        response.end();
+        return;
+      }
       if (url.pathname === "/manifest.mpd") {
         response.writeHead(200, { "content-type": "application/dash+xml" });
         response.end(`<?xml version="1.0"?>
@@ -117,5 +125,9 @@ describe("manifest proxy", () => {
     const soft404 = await app.inject({ method: "GET", url: `/video/hls-proxy?url=${encodeURIComponent(`${base}/soft404.m3u8`)}&source=direct` });
     expect(soft404.statusCode).toBe(200);
     expect(soft404.body).toContain("not a playlist");
+
+    const huge = await app.inject({ method: "GET", url: `/video/hls-proxy?url=${encodeURIComponent(`${base}/huge.m3u8`)}&source=direct` });
+    expect(huge.statusCode).toBe(413);
+    expect(huge.json()).toMatchObject({ error: "too_large" });
   });
 });

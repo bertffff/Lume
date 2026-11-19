@@ -1,7 +1,8 @@
-import { detectSource, hostAllowed, needsRange, parseAllowlist, planPlayback, refreshKeepsPlayback, rewriteDashManifest, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
+import { detectSource, dnsPinned, hostAllowed, needsRange, parseAllowlist, planPlayback, refreshKeepsPlayback, rewriteDashManifest, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
 import { verifyAccessToken } from "@lume/contracts/node";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
+import { lookup } from "node:dns/promises";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { z } from "zod";
@@ -11,11 +12,21 @@ type StreamTarget = { response: Response } | { error: "blocked" | "host_not_allo
 
 const redirectCodes = new Set([301, 302, 303, 307, 308]);
 
+/** A public hostname may still resolve to a private address; resolve it on every hop. */
+async function resolvesPublic(hostname: string): Promise<boolean> {
+  return dnsPinned(hostname, async (host) => {
+    const rows = await lookup(host, { all: true, verbatim: true });
+    return rows.map((row) => row.address);
+  }).catch(() => false);
+}
+
 async function openStream(url: string, range: string, env: ApiEnv, allowlist: readonly string[], hop = 0): Promise<StreamTarget> {
   if (hop > 3) return { error: "upstream" };
   const parsed = new URL(url);
+  const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
   if (urlBlocked(url) && !env.STREAM_ALLOW_PRIVATE_HOSTS) return { error: "blocked" };
-  if (!hostAllowed(parsed.hostname, allowlist)) return { error: "host_not_allowed" };
+  if (!hostAllowed(hostname, allowlist)) return { error: "host_not_allowed" };
+  if (!env.STREAM_ALLOW_PRIVATE_HOSTS && !(await resolvesPublic(hostname))) return { error: "blocked" };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), env.STREAM_HEADER_TIMEOUT_MS);
   const response = await fetch(url, {
@@ -58,25 +69,32 @@ function cappedBody(body: ReadableStream<Uint8Array>, maxBytes: number): Readabl
 
 const textLikeContent = /^(text\/|application\/(xml|json|x-mpegurl|vnd\.apple\.mpegurl|dash\+xml|octet-stream))/i;
 const binaryExtension = /\.(ts|m4s|mp4|m4a|m4v|aac|webm|vtt|key|bin|jpg|jpeg|png|gif)(?:$|[?#])/i;
+const manifestReadCap = 1024 * 1024;
 
-async function boundedText(response: Response, limit = 2 * 1024 * 1024): Promise<string> {
-  if (!response.body) return "";
+async function boundedText(response: Response, limit = manifestReadCap): Promise<{ text: string; truncated: boolean }> {
+  if (!response.body) return { text: "", truncated: false };
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
+  let truncated = false;
   try {
     while (total < limit) {
       const { done, value } = await reader.read();
       if (done) break;
       if (!value) continue;
       const slice = value.byteLength > limit - total ? value.slice(0, limit - total) : value;
+      if (slice.byteLength < value.byteLength) truncated = true;
       chunks.push(slice);
       total += slice.byteLength;
+    }
+    if (!truncated && total >= limit) {
+      const extra = await reader.read();
+      if (!extra.done && extra.value && extra.value.byteLength > 0) truncated = true;
     }
   } finally {
     await reader.cancel().catch(() => undefined);
   }
-  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8");
+  return { text: Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8"), truncated };
 }
 
 export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null = null): void {
@@ -180,23 +198,31 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     const contentType = upstream.headers.get("content-type") ?? "";
     const sniffText = !binaryExtension.test(pathname) && !/^(video|audio|image)\//i.test(contentType);
     if (sniffText) {
+      const declared = Number(upstream.headers.get("content-length") ?? "0");
+      if (Number.isFinite(declared) && declared > manifestReadCap) {
+        return reply.code(413).send({ error: "too_large" });
+      }
       const body = await boundedText(upstream);
-      if (body.includes("#EXTM3U")) {
+      if (body.truncated) {
+        return reply.code(413).send({ error: "too_large" });
+      }
+      const manifest = body.text;
+      if (manifest.includes("#EXTM3U")) {
         return reply
           .header("cache-control", "private, max-age=60")
           .type("application/vnd.apple.mpegurl")
-          .send(rewriteHlsManifest(body, query.data.url, query.data.source, "/video/hls-proxy"));
+          .send(rewriteHlsManifest(manifest, query.data.url, query.data.source, "/video/hls-proxy"));
       }
-      if (body.includes("<MPD")) {
+      if (manifest.includes("<MPD")) {
         return reply
           .header("cache-control", "private, max-age=60")
           .type("application/dash+xml")
-          .send(rewriteDashManifest(body, query.data.url, query.data.source, "/video/hls-proxy"));
+          .send(rewriteDashManifest(manifest, query.data.url, query.data.source, "/video/hls-proxy"));
       }
       return reply
         .header("cache-control", "private, max-age=60")
         .type(textLikeContent.test(contentType) ? contentType : "text/plain")
-        .send(body);
+        .send(manifest);
     }
     reply.header("cache-control", "private, max-age=300");
     reply.header("accept-ranges", "bytes");
