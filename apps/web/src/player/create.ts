@@ -6,6 +6,7 @@ export async function createPlayerAdapter(
   parentHost: string,
 ): Promise<PlayerAdapter> {
   const kind = playerKind(item);
+  const apiBase = import.meta.env.VITE_API_URL || "http://127.0.0.1:3001";
   if (kind === "youtube") {
     const { createYouTubeAdapter } = await import("./youtube.js");
     return createYouTubeAdapter(item.externalId, mount);
@@ -28,10 +29,9 @@ export async function createPlayerAdapter(
   }
   if (kind === "dash") {
     const { createDashAdapter } = await import("./dash.js");
-    return createDashAdapter(item.url, mount);
+    return createDashAdapter(hlsProxyUrl(apiBase, item.url), mount);
   }
   const { createHtml5Adapter } = await import("./html5.js");
-  const apiBase = import.meta.env.VITE_API_URL || "http://127.0.0.1:3001";
   const source = kind === "hls" ? hlsProxyUrl(apiBase, item.url) : kind === "file" ? streamProxyUrl(apiBase, item.url) : item.url;
   return createHtml5Adapter(source, mount, kind === "hls");
 }

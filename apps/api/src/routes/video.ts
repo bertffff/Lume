@@ -1,4 +1,4 @@
-import { detectSource, hostAllowed, needsRange, parseAllowlist, planPlayback, refreshKeepsPlayback, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
+import { detectSource, hostAllowed, needsRange, parseAllowlist, planPlayback, refreshKeepsPlayback, rewriteDashManifest, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
 import { verifyAccessToken } from "@lume/contracts/node";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
@@ -19,7 +19,7 @@ async function openStream(url: string, range: string, env: ApiEnv, allowlist: re
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), env.STREAM_HEADER_TIMEOUT_MS);
   const response = await fetch(url, {
-    headers: { range, accept: "*/*" },
+    headers: range ? { range, accept: "*/*" } : { accept: "*/*" },
     redirect: "manual",
     signal: controller.signal,
   }).catch(() => null);
@@ -54,6 +54,29 @@ function cappedBody(body: ReadableStream<Uint8Array>, maxBytes: number): Readabl
   const source = Readable.fromWeb(body as never);
   void pipeline(source, limiter).catch(() => undefined);
   return limiter;
+}
+
+const textLikeContent = /^(text\/|application\/(xml|json|x-mpegurl|vnd\.apple\.mpegurl|dash\+xml|octet-stream))/i;
+const binaryExtension = /\.(ts|m4s|mp4|m4a|m4v|aac|webm|vtt|key|bin|jpg|jpeg|png|gif)(?:$|[?#])/i;
+
+async function boundedText(response: Response, limit = 2 * 1024 * 1024): Promise<string> {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < limit) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      const slice = value.byteLength > limit - total ? value.slice(0, limit - total) : value;
+      chunks.push(slice);
+      total += slice.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8");
 }
 
 export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null = null): void {
@@ -139,22 +162,48 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
   });
 
   app.get("/video/hls-proxy", async (request, reply) => {
-    if (env.FF_EXTRACTORS !== "true") {
-      return reply.code(404).send({ error: "extractors_disabled" });
-    }
     const query = z.object({ url: z.string().url(), source: z.string().default("direct") }).safeParse(request.query);
-    if (!query.success || urlBlocked(query.data.url)) {
-      return reply.code(400).send({ error: "blocked" });
+    if (!query.success) return reply.code(400).send({ error: "blocked" });
+    if (urlBlocked(query.data.url) && !env.STREAM_ALLOW_PRIVATE_HOSTS) return reply.code(400).send({ error: "blocked" });
+    const requestedRange = typeof request.headers.range === "string" ? request.headers.range : "";
+    const opened = await openStream(query.data.url, requestedRange, env, allowlist);
+    if ("error" in opened) {
+      const status = opened.error === "host_not_allowed" ? 403 : opened.error === "blocked" ? 400 : 502;
+      return reply.code(status).send({ error: opened.error });
     }
-    const upstream = await fetch(query.data.url, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
-    if (!upstream) return reply.code(502).send({ error: "upstream" });
+    const upstream = opened.response;
     if (upstream.status === 403 || upstream.status === 410) {
       return reply.code(410).header("x-lume-retry", "true").send({ error: "expired" });
     }
-    const body = await upstream.text();
-    if (body.includes("#EXTM3U") || body.includes("<MPD")) {
-      return reply.type("application/vnd.apple.mpegurl").send(rewriteHlsManifest(body, query.data.url, query.data.source, "/video/hls-proxy"));
+    if (!upstream.ok) return reply.code(502).send({ error: "upstream" });
+    const pathname = new URL(query.data.url).pathname;
+    const contentType = upstream.headers.get("content-type") ?? "";
+    const sniffText = !binaryExtension.test(pathname) && !/^(video|audio|image)\//i.test(contentType);
+    if (sniffText) {
+      const body = await boundedText(upstream);
+      if (body.includes("#EXTM3U")) {
+        return reply
+          .header("cache-control", "private, max-age=60")
+          .type("application/vnd.apple.mpegurl")
+          .send(rewriteHlsManifest(body, query.data.url, query.data.source, "/video/hls-proxy"));
+      }
+      if (body.includes("<MPD")) {
+        return reply
+          .header("cache-control", "private, max-age=60")
+          .type("application/dash+xml")
+          .send(rewriteDashManifest(body, query.data.url, query.data.source, "/video/hls-proxy"));
+      }
+      return reply
+        .header("cache-control", "private, max-age=60")
+        .type(textLikeContent.test(contentType) ? contentType : "text/plain")
+        .send(body);
     }
-    return reply.send(body);
+    reply.header("cache-control", "private, max-age=300");
+    reply.header("accept-ranges", "bytes");
+    if (upstream.headers.get("content-range")) reply.header("content-range", upstream.headers.get("content-range") ?? "");
+    if (upstream.headers.get("content-type")) reply.header("content-type", upstream.headers.get("content-type") ?? "application/octet-stream");
+    if (upstream.headers.get("content-length")) reply.header("content-length", upstream.headers.get("content-length") ?? "");
+    if (!upstream.body) return reply.code(upstream.status).send();
+    return reply.code(upstream.status).send(cappedBody(upstream.body, env.STREAM_MAX_BYTES));
   });
 }

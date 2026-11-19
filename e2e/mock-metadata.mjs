@@ -18,6 +18,26 @@ const server = createServer((request, response) => {
     response.end(JSON.stringify({ status: "ok" }));
     return;
   }
+  if (url.pathname === "/manifest.mpd") {
+    response.writeHead(200, { "content-type": "application/dash+xml" });
+    response.end(`<?xml version="1.0"?><MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static"><BaseURL>dash/</BaseURL><Period><AdaptationSet><Representation><SegmentTemplate media="seg-$Number$.m4s" initialization="init.mp4" /></Representation></AdaptationSet></Period></MPD>`);
+    return;
+  }
+  if (url.pathname === "/master.m3u8") {
+    response.writeHead(200, { "content-type": "application/vnd.apple.mpegurl" });
+    response.end("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\nvariant.m3u8\n");
+    return;
+  }
+  if (url.pathname === "/variant.m3u8") {
+    response.writeHead(200, { "content-type": "application/vnd.apple.mpegurl" });
+    response.end("#EXTM3U\n#EXT-X-TARGETDURATION:4\n#EXTINF:4,\nseg.ts\n#EXT-X-ENDLIST\n");
+    return;
+  }
+  if (url.pathname === "/seg.ts") {
+    response.writeHead(200, { "content-type": "video/mp2t" });
+    response.end(Buffer.from([0, 1, 2, 255, 10]));
+    return;
+  }
   if (url.pathname === "/stream.mp4") {
     const body = Buffer.from("range-body-fixture");
     const range = request.headers.range;

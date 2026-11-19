@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 113 |
+| Done | 114 |
 | Done (needs creds) | 13 |
-| Partial | 9 |
+| Partial | 8 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -77,7 +77,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F058 | Metadata resolver | Done | POST /rooms/:id/queue resolves provider oEmbed JSON for title, poster and duration, then falls back to OpenGraph and schema.org duration. QueueItem.durationMs and RoomHistoryItem.durationMs are persisted, and the live queue renders the resolved name and duration instead of a raw oEmbed URL. The page fallback is DNS-checked, re-checks every redirect hop, caps the page read, and refuses private hosts; tests use a local `node:http` metadata server. |
 | F059 | Premium extraction gate | Done | The live queue reads isPremium from /me and blocks the 13 extraction-only platforms with a Premium notice. POST /rooms/:id/queue and /video/resolve read the saved isPremium flag, so the socket path is gated too and a client cannot claim premium in the body. |
 | F060 | Stream proxy | Done | GET /video/range checks a provider host allowlist, refuses private hosts and redirect hops that leave it, caps the body at STREAM_MAX_BYTES, and streams the ranged upstream body instead of buffering it. The live player sends direct files through this proxy. |
-| F061 | HLS/DASH manifest rewrite | Partial | Settings has a sentence about HLS. The proxy still requires FF_EXTRACTORS and does not cover every chain. |
+| F061 | HLS/DASH manifest rewrite | Done | GET /video/hls-proxy serves HLS master and media playlists plus DASH manifests without FF_EXTRACTORS. Variant, segment, key URI, BaseURL and SegmentTemplate references are rewritten to the proxy through the master → media → segment chain; segments stream through as binary with Range forwarded. The live HLS player and the existing DASH adapter both load their manifests through this endpoint. |
 | F062 | CDN offload | Missing | Documented in docs/ROADMAP.md. Not built. |
 | F063 | SSRF protection | Done | Private hosts and resolved private addresses are refused before a fetch. |
 | F064 | SearXNG search | Done (needs creds) | The queue has a search box. It stays empty until SEARXNG_URL is set. |
