@@ -4,6 +4,7 @@ import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
 import { useRoomActions } from "../room/live.js";
+import { runVoicePreflight, saveVoicePreflight, type VoicePreflightResult } from "../voice/preflight.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { EmojiPicker } from "./EmojiPicker.js";
 import { posterFor } from "./posters.js";
@@ -46,6 +47,8 @@ export function RoomStage({
   const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }>>([]);
   const [recommendations, setRecommendations] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
   const [iceUrl, setIceUrl] = useState<string | null>(null);
+  const [preflight, setPreflight] = useState<VoicePreflightResult | null>(null);
+  const [preflightBusy, setPreflightBusy] = useState(false);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
   const voiceSecondsRef = useRef(0);
   const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
@@ -104,6 +107,20 @@ export function RoomStage({
       window.removeEventListener("resize", onResize);
     };
   }, []);
+  useEffect(() => {
+    const token = live?.accessToken;
+    if (!token) return;
+    let stopped = false;
+    void fetch(`${apiUrl}/voice/preflight`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { preflight?: VoicePreflightResult | null }) => {
+        if (!stopped) setPreflight(payload.preflight ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      stopped = true;
+    };
+  }, [live?.accessToken]);
   useEffect(() => {
     voiceSecondsRef.current = 0;
     setVoiceSeconds(0);
@@ -252,6 +269,20 @@ export function RoomStage({
       .catch(() => undefined);
   }
 
+  async function testVoice() {
+    if (!live || preflightBusy) return;
+    setPreflightBusy(true);
+    const result = await runVoicePreflight();
+    setPreflight(result);
+    try {
+      setPreflight(await saveVoicePreflight(live.accessToken, result));
+    } catch {
+      // The local result stays visible when only the write failed.
+    } finally {
+      setPreflightBusy(false);
+    }
+  }
+
   function sendChat(event: FormEvent) {
     event.preventDefault();
     const body = draft.trim();
@@ -394,9 +425,27 @@ export function RoomStage({
                 </ul>
                 <div className="vbtns">
                   <button type="button" className="vbtn" data-testid="voice-join" onClick={() => void voice.join()}>Войти</button>
-                <button type="button" className="vbtn" data-testid="voice-test" onClick={() => void navigator.mediaDevices?.getUserMedia({ audio: true }).then((stream) => stream.getTracks().forEach((track) => track.stop()))}>Тест</button>
+                <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? "Проверяем" : "Проверка"}</button>
                 <button type="button" className="vbtn" data-testid="voice-toggle" onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
                   <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>✕</button>
+                </div>
+                <div
+                  className="voice-preflight"
+                  data-testid="voice-preflight"
+                  data-state={preflight ? "done" : "idle"}
+                  data-network={preflight?.network ?? ""}
+                  data-mic={preflight ? String(preflight.mic) : ""}
+                  data-speaker={preflight ? String(preflight.speaker) : ""}
+                >
+                  {preflight ? (
+                    <>
+                      <span data-testid="voice-preflight-mic">Микрофон: {preflight.mic ? `уровень ${preflight.micLevel}%` : "нет доступа"}</span>
+                      <span data-testid="voice-preflight-speaker">Динамики: {preflight.speaker ? "слышно" : "не найдены"}</span>
+                      <span data-testid="voice-preflight-network" data-network={preflight.network}>Сеть: {preflight.network === "good" ? "хорошая" : preflight.network === "fair" ? "средняя" : "слабая"}</span>
+                    </>
+                  ) : (
+                    <span>Проверьте микрофон, динамики и сеть перед входом в голос.</span>
+                  )}
                 </div>
               </div>
             </div>

@@ -53,7 +53,7 @@ export async function buildApp(
   registerHealthRoutes(app, env);
   registerAuthRoutes(app, env, options?.prisma);
   registerRoomRoutes(app, env, service, options?.prisma ?? null);
-  registerVoiceRoutes(app, env, service);
+  registerVoiceRoutes(app, env, service, options?.prisma ?? null);
   registerSocialRoutes(app, env, options?.prisma ?? null, service);
   registerVideoRoutes(app, env, options?.prisma ?? null);
   registerExtraRoutes(app, env, options?.prisma ?? null);

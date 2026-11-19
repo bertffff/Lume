@@ -93,6 +93,8 @@ model User {
   hideOtherReactions    Boolean      @default(false)
   quickEmojis           Json?
   recentEmojis          Json?
+  voicePreflight        Json?
+  voicePreflightAt      DateTime?
   quickReaction         String       @default("❤️")
   timezone              String       @default("UTC")
   isPremium             Boolean      @default(false)

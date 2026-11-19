@@ -106,11 +106,15 @@ export {
 export { chatMessageSchema, chatReactSchema, chatSendSchema, type ChatMessage } from "./chat.js";
 export { queueAddSchema, queueItemSchema, queueNextSchema, type QueueItem } from "./queue.js";
 export {
+  classifyNetworkPreflight,
+  preflightNetworks,
   voiceDisconnectSchema,
   voiceJoinSchema,
   voiceMemberSchema,
   voiceMuteSchema,
   voiceStateSchema,
+  type NetworkPreflightInput,
+  type PreflightNetwork,
   type VoiceMember,
 } from "./voice.js";
 export {

@@ -1,4 +1,5 @@
 import { canActOnMember, canModerate } from "@lume/contracts";
+import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { requireUser } from "../auth/guard.js";
@@ -10,6 +11,13 @@ import { liveKitConfigured, liveKitRoomName, mintLiveKitToken } from "../voice/l
 
 const roomSchema = z.object({ roomId: z.string().min(1).max(80) });
 const targetSchema = roomSchema.extend({ userId: z.string().min(1) });
+const preflightSchema = z.object({
+  mic: z.boolean(),
+  micLevel: z.number().min(0).max(100).optional(),
+  speaker: z.boolean(),
+  network: z.enum(["good", "fair", "poor"]),
+  devices: z.object({ input: z.number().int().min(0), output: z.number().int().min(0) }).optional(),
+});
 
 async function guardRoom(service: RoomService, userId: string, roomId: string, reply: FastifyReply) {
   try {
@@ -23,8 +31,53 @@ async function guardRoom(service: RoomService, userId: string, roomId: string, r
   }
 }
 
-export function registerVoiceRoutes(app: FastifyInstance, env: ApiEnv, service: RoomService | null): void {
+export function registerVoiceRoutes(
+  app: FastifyInstance,
+  env: ApiEnv,
+  service: RoomService | null,
+  prisma: PrismaClient | null = null,
+): void {
   app.get("/voice/livekit", async () => ({ enabled: liveKitConfigured(env), stub: env.ALLOW_STUB_VOICE }));
+
+  app.get("/voice/preflight", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: actor.userId },
+      select: { voicePreflight: true, voicePreflightAt: true },
+    });
+    if (!user) return reply.code(404).send({ error: "not_found" });
+    const preflight = user.voicePreflight && typeof user.voicePreflight === "object"
+      ? { ...(user.voicePreflight as Record<string, unknown>), checkedAt: user.voicePreflightAt?.toISOString() ?? null }
+      : null;
+    return reply.send({ preflight });
+  });
+
+  app.post("/voice/preflight", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const body = preflightSchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const checkedAt = new Date();
+    const preflight = {
+      mic: body.data.mic,
+      ...(body.data.micLevel === undefined ? {} : { micLevel: body.data.micLevel }),
+      speaker: body.data.speaker,
+      network: body.data.network,
+      ...(body.data.devices ? { devices: body.data.devices } : {}),
+    };
+    await prisma.user.update({
+      where: { id: actor.userId },
+      data: { voicePreflight: preflight, voicePreflightAt: checkedAt },
+    });
+    return reply.send({ preflight: { ...preflight, checkedAt: checkedAt.toISOString() } });
+  });
 
   app.post("/voice/livekit/token", async (request, reply) => {
     if (!liveKitConfigured(env)) {
