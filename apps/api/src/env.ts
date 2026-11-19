@@ -43,6 +43,8 @@ export const apiEnvSchema = z.object({
   COBALT_API_URL: optionalString,
   YTDLP_PATH: optionalString,
   FF_EXTRACTORS: optionalString,
+  OEMBED_BASE_URL: optionalString,
+  METADATA_ALLOW_PRIVATE_HOSTS: boolFromEnv.default(false),
   SMTP_HOST: optionalString,
   VAPID_PUBLIC_KEY: optionalString,
   SENTRY_DSN: optionalString,

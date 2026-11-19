@@ -243,6 +243,7 @@ model QueueItem {
   externalId     String
   title          String
   thumbnail      String?
+  durationMs     Int?
   position       Int
   addedById      String
   played         Boolean  @default(false)
@@ -471,10 +472,11 @@ model WatchSession {
 model RoomHistoryItem {
   id        String   @id @default(cuid())
   roomId    String
-  url       String
-  title     String?
-  source    String
-  watchedAt DateTime @default(now())
+  url        String
+  title      String?
+  source     String
+  durationMs Int?
+  watchedAt  DateTime @default(now())
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@index([roomId, watchedAt])

@@ -1,4 +1,4 @@
-import { emojiCategories, getNextRoomPanel, layoutAspectGroup, oEmbedEndpoint, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
+import { emojiCategories, getNextRoomPanel, layoutAspectGroup, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -19,6 +19,10 @@ function clock(ms: number): string {
   const seconds = total % 60;
   const body = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   return hours > 0 ? `${hours}:${body}` : body;
+}
+
+function durationLabel(durationMs: number | null): string {
+  return durationMs === null ? "—" : clock(durationMs);
 }
 
 export function RoomStage({
@@ -388,13 +392,13 @@ export function RoomStage({
                     <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider}>
                       <div className="im" style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }} />
                       <b>{item.title}</b>
+                      <small data-testid="queue-item-duration" data-duration-ms={item.durationMs ?? ""}>{durationLabel(item.durationMs)}</small>
                     </li>
                   ))}
                 </ol>
                 <form className="qi add" onSubmit={addUrl}>
                   <input data-testid="queue-input" value={url} onChange={(event) => { setUrl(event.target.value); setPremiumBlocked(false); }} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
                   {detected ? <small>{detected}</small> : null}
-                  {detected === "youtube" ? <small>{oEmbedEndpoint({ provider: "youtube", externalId: "video", url: url || "https://youtu.be/video", titleHint: "video" })}</small> : null}
                   {premiumUrl ? <small data-testid="premium-gate">Нужен Premium для этой платформы</small> : null}
                   {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
                   <button type="submit" data-testid="queue-add">{t("queue.add")}</button>

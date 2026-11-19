@@ -51,6 +51,7 @@ export interface RoomDetail {
 export interface ResolvedMeta {
   title: string | null;
   thumbnailUrl: string | null;
+  durationMs: number | null;
 }
 
 export type TitleResolver = (item: ParsedEmbed) => Promise<ResolvedMeta | null>;
@@ -68,6 +69,7 @@ function toQueueItem(item: QueueRecord): QueueItem {
     externalId: item.externalId,
     title: item.title,
     thumbnailUrl: item.thumbnailUrl,
+    durationMs: item.durationMs,
     position: item.position,
     addedById: item.addedById,
   };
@@ -378,6 +380,7 @@ export class RoomService {
       externalId: parsed.externalId,
       title,
       thumbnailUrl: meta?.thumbnailUrl ?? null,
+      durationMs: meta?.durationMs ?? null,
       position: (last?.position ?? 0) + 1,
       addedById: actor.userId,
       played: false,

@@ -406,6 +406,8 @@ export function registerRoomRoutes(
         provider: parsed?.provider ?? "direct",
         externalId: parsed?.externalId ?? history.url,
         title: history.title ?? parsed?.titleHint ?? history.url,
+        thumbnail: null,
+        durationMs: history.durationMs,
         position: (last?.position ?? 0) + 1,
         addedById: actor.userId,
       },
@@ -431,7 +433,7 @@ export function registerRoomRoutes(
       if (prisma && detail.room.nowPlaying) {
         const playing = detail.room.nowPlaying;
         await prisma.roomHistoryItem.create({
-          data: { roomId: params.data.id, url: playing.url, title: playing.title, source: playing.provider },
+          data: { roomId: params.data.id, url: playing.url, title: playing.title, source: playing.provider, durationMs: playing.durationMs },
         });
         const members = await prisma.roomMember.findMany({ where: { roomId: params.data.id, leftAt: null } });
         for (const member of members) {

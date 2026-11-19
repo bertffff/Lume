@@ -4,7 +4,7 @@ import type { PrismaClient } from "@lume/db";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiEnv } from "./env.js";
 import { limitFor, takeMemoryLimit, takeRedisLimit } from "./http/limit.js";
-import { fetchOEmbedTitle } from "./media/oembed.js";
+import { resolveMetadata } from "./media/metadata.js";
 import { createPrismaRepository } from "./rooms/prisma-repo.js";
 import { RoomService } from "./rooms/service.js";
 import { registerAuthRoutes } from "./routes/auth.js";
@@ -23,7 +23,12 @@ export async function buildApp(
     logger: env.NODE_ENV !== "test",
   });
   const service = options?.prisma
-    ? new RoomService(createPrismaRepository(options.prisma), undefined, undefined, fetchOEmbedTitle)
+    ? new RoomService(createPrismaRepository(options.prisma), undefined, undefined, (item) =>
+        resolveMetadata(item, {
+          ...(env.OEMBED_BASE_URL ? { oEmbedBaseUrl: env.OEMBED_BASE_URL } : {}),
+          allowPrivateHosts: env.METADATA_ALLOW_PRIVATE_HOSTS,
+        }),
+      )
     : null;
 
   await app.register(cors, {

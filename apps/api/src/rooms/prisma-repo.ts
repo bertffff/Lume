@@ -217,6 +217,7 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
           externalId: item.externalId,
           title: item.title,
           thumbnail: item.thumbnailUrl,
+          durationMs: item.durationMs,
           position: item.position,
           addedById: item.addedById,
           played: item.played,
@@ -262,6 +263,7 @@ function mapQueue(row: {
   externalId: string;
   title: string;
   thumbnail: string | null;
+  durationMs: number | null;
   position: number;
   addedById: string;
   played: boolean;
@@ -274,6 +276,7 @@ function mapQueue(row: {
     externalId: row.externalId,
     title: row.title,
     thumbnailUrl: row.thumbnail,
+    durationMs: row.durationMs,
     position: row.position,
     addedById: row.addedById,
     played: row.played,

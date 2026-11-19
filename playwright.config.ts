@@ -14,6 +14,7 @@ const sharedEnv = {
   ALLOW_STUB_VOICE: "true",
   WEB_ORIGIN: "http://127.0.0.1:5173",
   API_URL: "http://127.0.0.1:3001",
+  OEMBED_BASE_URL: "http://127.0.0.1:3099/oembed",
 };
 
 export default defineConfig({
@@ -25,6 +26,12 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: [
+    {
+      command: "node e2e/mock-metadata.mjs",
+      url: "http://127.0.0.1:3099/health",
+      reuseExistingServer: !process.env.CI,
+      env: sharedEnv,
+    },
     {
       command: "pnpm --filter @lume/api start",
       url: "http://127.0.0.1:3001/health",

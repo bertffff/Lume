@@ -53,6 +53,7 @@ export interface QueueRecord {
   externalId: string;
   title: string;
   thumbnailUrl: string | null;
+  durationMs: number | null;
   position: number;
   addedById: string;
   played: boolean;

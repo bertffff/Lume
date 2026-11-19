@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 111 |
+| Done | 112 |
 | Done (needs creds) | 13 |
-| Partial | 11 |
+| Partial | 10 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -74,7 +74,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F055 | Twitch GQL | Done (needs creds) | Twitch playback URLs are parsed from a fixture. Live GQL stays off without credentials. |
 | F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
 | F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
-| F058 | Metadata resolver | Partial | The queue prints a YouTube oEmbed URL string. It does not resolve title or duration. |
+| F058 | Metadata resolver | Done | POST /rooms/:id/queue resolves provider oEmbed JSON for title, poster and duration, then falls back to OpenGraph and schema.org duration. QueueItem.durationMs and RoomHistoryItem.durationMs are persisted, and the live queue renders the resolved name and duration instead of a raw oEmbed URL. The page fallback is DNS-checked, re-checks every redirect hop, caps the page read, and refuses private hosts; tests use a local `node:http` metadata server. |
 | F059 | Premium extraction gate | Done | The live queue reads isPremium from /me and blocks the 13 extraction-only platforms with a Premium notice. POST /rooms/:id/queue and /video/resolve read the saved isPremium flag, so the socket path is gated too and a client cannot claim premium in the body. |
 | F060 | Stream proxy | Partial | GET /video/range rejects a missing Range and blocks localhost. It does not enforce an allowlist, a size cap, or stream the body. |
 | F061 | HLS/DASH manifest rewrite | Partial | Settings has a sentence about HLS. The proxy still requires FF_EXTRACTORS and does not cover every chain. |
