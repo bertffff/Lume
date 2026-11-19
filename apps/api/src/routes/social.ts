@@ -1081,15 +1081,46 @@ export function registerSocialRoutes(
     return reply.send({ ok: true });
   });
 
-  app.get("/stats/leaderboard", async (_request, reply) => {
+  app.get("/stats/leaderboard", async (request, reply) => {
     if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
-    const users = await prisma.user.findMany({
-      where: { deletedAt: null },
-      orderBy: { xp: "desc" },
-      take: 20,
-      select: { id: true, displayName: true, xp: true, totalMessages: true, totalReactions: true, totalVoiceSeconds: true },
+    const query = z.object({ limit: z.coerce.number().int().min(1).max(50).default(5) }).safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: "invalid_body" });
+    const limit = query.data.limit;
+    const [messageRows, reactionRows, voiceRows, users] = await Promise.all([
+      prisma.message.groupBy({ by: ["userId"], _count: { id: true } }),
+      prisma.reaction.groupBy({ by: ["userId"], _count: { id: true } }),
+      prisma.user.findMany({
+        where: { deletedAt: null, totalVoiceSeconds: { gt: 0 } },
+        orderBy: [{ totalVoiceSeconds: "desc" }, { id: "asc" }],
+        take: limit,
+        select: { id: true, displayName: true, totalVoiceSeconds: true },
+      }),
+      prisma.user.findMany({
+        where: { deletedAt: null },
+        orderBy: { xp: "desc" },
+        take: 20,
+        select: { id: true, displayName: true, xp: true, totalMessages: true, totalReactions: true, totalVoiceSeconds: true },
+      }),
+    ]);
+
+    const ranked = (rows: Array<{ userId: string; count: number }>) =>
+      rows
+        .sort((left, right) => right.count - left.count || left.userId.localeCompare(right.userId))
+        .slice(0, limit);
+    const messages = ranked(messageRows.map((row) => ({ userId: row.userId, count: row._count.id })));
+    const reactions = ranked(reactionRows.map((row) => ({ userId: row.userId, count: row._count.id })));
+    const ids = [...new Set([...messages, ...reactions].map((row) => row.userId))];
+    const named = await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, displayName: true } });
+    const names = new Map(named.map((user) => [user.id, user.displayName]));
+    const board = (rows: Array<{ userId: string; count: number }>) =>
+      rows.map((row) => ({ userId: row.userId, displayName: names.get(row.userId) ?? "Гость", value: row.count }));
+
+    return reply.send({
+      messages: board(messages),
+      reactions: board(reactions),
+      voice: voiceRows.map((row) => ({ userId: row.id, displayName: row.displayName, value: row.totalVoiceSeconds })),
+      users,
     });
-    return reply.send({ users });
   });
 
   app.post("/me/voice-seconds", async (request, reply) => {

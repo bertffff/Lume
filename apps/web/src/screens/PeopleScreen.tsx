@@ -19,6 +19,7 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
   const [topFriends, setTopFriends] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   const [digestCount, setDigestCount] = useState(0);
+  const [boards, setBoards] = useState<Leaderboards>({ messages: [], reactions: [], voice: [] });
   const [bio, setBio] = useState("");
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [resume, setResume] = useState<string | null>(null);
@@ -50,6 +51,14 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
     setBio(typeof profile.bio === "string" ? profile.bio : "");
     const preview = await fetch(`${apiUrl}/notifications/digest-preview`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json());
     setDigestCount(preview.count ?? 0);
+    void fetch(`${apiUrl}/stats/leaderboard`, { headers: { authorization: `Bearer ${session.accessToken}` } })
+      .then((response) => response.json())
+      .then((payload: Partial<Leaderboards>) => setBoards({
+        messages: Array.isArray(payload.messages) ? payload.messages : [],
+        reactions: Array.isArray(payload.reactions) ? payload.reactions : [],
+        voice: Array.isArray(payload.voice) ? payload.voice : [],
+      }))
+      .catch(() => setBoards({ messages: [], reactions: [], voice: [] }));
     if (profile.role === "ADMIN" || profile.role === "SUPERADMIN") {
       const overview = await fetch(`${apiUrl}/admin/overview`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json());
       setAdmin(`${t("admin.title")} ${overview.users ?? 0}`);
@@ -121,6 +130,23 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
         {platforms.map((item) => <li key={item.source}>{item.source} {item.count}</li>)}
       </ul>
       <p data-testid="host-stats">{t("studio.hosted")} {hostRooms}</p>
+      <section data-testid="leaderboards">
+        <h3>{t("people.leaderboard")}</h3>
+        {(["messages", "reactions", "voice"] as const).map((board) => (
+          <div key={board} data-testid={`leaderboard-${board}`}>
+            <b>{board === "messages" ? t("people.leaderboardMessages") : board === "reactions" ? t("people.leaderboardReactions") : t("people.leaderboardVoice")}</b>
+            {boards[board].length === 0 ? <p className="tr-empty">{t("people.empty")}</p> : (
+              <ol>
+                {boards[board].map((row) => (
+                  <li key={row.userId} data-testid={`leaderboard-${board}-row`} data-user-id={row.userId} data-value={row.value}>
+                    {row.displayName} · {row.value}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        ))}
+      </section>
       <ul data-testid="top-friends">
         {topFriends.map((friend) => <li key={friend.partnerId}>{friend.partnerId} {friend.seconds}</li>)}
       </ul>
@@ -339,6 +365,18 @@ export function PeopleScreen({ session, onOpen }: { session: ClientSession; onOp
       </ul>
     </section>
   );
+}
+
+interface LeaderboardRow {
+  userId: string;
+  displayName: string;
+  value: number;
+}
+
+interface Leaderboards {
+  messages: LeaderboardRow[];
+  reactions: LeaderboardRow[];
+  voice: LeaderboardRow[];
 }
 
 interface PublicProfile {

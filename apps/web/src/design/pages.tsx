@@ -185,10 +185,17 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
   } | null>(null);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
-  const [ranks, setRanks] = useState<Array<{ id: string; displayName: string; xp: number }>>([]);
+  const [boards, setBoards] = useState<{ messages: LeaderboardRow[]; reactions: LeaderboardRow[]; voice: LeaderboardRow[] }>({ messages: [], reactions: [], voice: [] });
   useEffect(() => {
     if (!token || !apiUrl) return;
-    void fetch(`${apiUrl}/stats`).then((response) => response.json()).then((payload: { watchers?: Array<{ id: string; displayName: string; xp: number }> }) => setRanks(payload.watchers ?? [])).catch(() => setRanks([]));
+    void fetch(`${apiUrl}/stats/leaderboard`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { messages?: LeaderboardRow[]; reactions?: LeaderboardRow[]; voice?: LeaderboardRow[] }) => setBoards({
+        messages: payload.messages ?? [],
+        reactions: payload.reactions ?? [],
+        voice: payload.voice ?? [],
+      }))
+      .catch(() => setBoards({ messages: [], reactions: [], voice: [] }));
     void fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { platforms?: Array<{ source: string; count: number }>; topFriends?: Array<{ partnerId: string; seconds: number }> }) => {
@@ -292,7 +299,16 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
           <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
         </div>
         <h3>Таблица</h3>
-        {ranks.length === 0 ? <p>Пока пусто</p> : ranks.map((row) => <p key={row.id}>{row.displayName} · {row.xp}</p>)}
+        <div data-testid="profile-leaderboards">
+          {(["messages", "reactions", "voice"] as const).map((board) => (
+            <div key={board} data-testid={`profile-leaderboard-${board}`}>
+              <b>{board === "messages" ? "Сообщения" : board === "reactions" ? "Реакции" : "Голос"}</b>
+              {boards[board].length === 0 ? <p>Пока пусто</p> : boards[board].map((row) => (
+                <p key={row.userId} data-testid={`profile-leaderboard-${board}-row`} data-user-id={row.userId} data-value={row.value}>{row.displayName} · {row.value}</p>
+              ))}
+            </div>
+          ))}
+        </div>
         <h3>История просмотров</h3>
         <ul data-testid="profile-history">
           {history.length === 0 ? <li>Пока пусто</li> : history.map((item) => (
@@ -321,6 +337,12 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
       </main>
     </div>
   );
+}
+
+interface LeaderboardRow {
+  userId: string;
+  displayName: string;
+  value: number;
 }
 
 function formatSeconds(seconds: number): string {
