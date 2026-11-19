@@ -9,6 +9,7 @@ import {
   type PlaybackSnapshot,
 } from "@lume/contracts";
 import { playbackKey } from "./keys.js";
+import { listViewerPhases, type ViewerRedis } from "./viewers.js";
 
 interface PlaybackRedis {
   get(key: string): Promise<string | null>;
@@ -19,6 +20,17 @@ interface PlaybackRedis {
     expected: string,
     nextJson: string,
   ): Promise<unknown>;
+}
+
+interface HeldPlayRedis extends PlaybackRedis, ViewerRedis {
+  set(key: string, value: string, mode: "PX", ttlMs: number): Promise<unknown>;
+  del(key: string): Promise<unknown>;
+}
+
+const heldPlayTtlMs = 2 * 60_000;
+
+function heldPlayKey(roomId: string): string {
+  return `lume:room:${roomId}:held-play`;
 }
 
 const CAS_LUA = `
@@ -120,4 +132,46 @@ export async function commitPlayback(
     }
   }
   return "version_conflict";
+}
+
+/** Remembers a play that was converted into a pause because a viewer was buffering. */
+export async function rememberHeldPlay(redis: HeldPlayRedis, roomId: string, actorId: string): Promise<void> {
+  await redis.set(heldPlayKey(roomId), actorId, "PX", heldPlayTtlMs);
+}
+
+export async function clearHeldPlay(redis: Pick<HeldPlayRedis, "del">, roomId: string): Promise<void> {
+  await redis.del(heldPlayKey(roomId));
+}
+
+async function takeHeldPlay(redis: Pick<HeldPlayRedis, "get" | "del">, roomId: string): Promise<string | null> {
+  const actorId = await redis.get(heldPlayKey(roomId));
+  if (!actorId) {
+    return null;
+  }
+  await redis.del(heldPlayKey(roomId));
+  return actorId;
+}
+
+/**
+ * Resumes the play that was held for buffering viewers once the room has no
+ * buffering viewer left. Returns `null` when there is nothing to resume.
+ */
+export async function resumeHeldPlayback(
+  redis: HeldPlayRedis,
+  roomId: string,
+): Promise<PlaybackSnapshot | "version_conflict" | null> {
+  const viewers = await listViewerPhases(redis, roomId);
+  if (viewers.some((viewer) => viewer.phase === "buffering")) {
+    return null;
+  }
+  const actorId = await takeHeldPlay(redis, roomId);
+  if (!actorId) {
+    return null;
+  }
+  const resumed = await commitPlayback(redis, roomId, { type: "play", actorId });
+  if (resumed === "version_conflict") {
+    // Keep the intent so a later viewer change can retry instead of leaving the room paused.
+    await rememberHeldPlay(redis, roomId, actorId);
+  }
+  return resumed;
 }

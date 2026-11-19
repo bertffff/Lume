@@ -27,9 +27,10 @@ import { z } from "zod";
 import type { Server, Socket } from "socket.io";
 import type { RealtimeEnv } from "../env.js";
 import type { RedisPair } from "../redis.js";
-import { commitPlayback, readPlayback, snapshotFor } from "../rooms/playback.js";
+import { commitPlayback, readPlayback, snapshotFor, clearHeldPlay, rememberHeldPlay, resumeHeldPlayback } from "../rooms/playback.js";
 import { joinRoom, leaveRoom, listMembers } from "../rooms/presence.js";
 import { listViewerPhases, setViewerPhase, clearViewerPhase } from "../rooms/viewers.js";
+import { listVoicePresence } from "../rooms/voice.js";
 import { ApiFailure, createRoomApi, type RoomApi, type RoomSession } from "./api.js";
 import { clearVoiceOnDepart, registerVoiceEvents } from "./voice.js";
 
@@ -267,6 +268,11 @@ async function join(
     fail(socket, { code: "not_owner", message: "room writes are pinned to another replica", ownerIndex });
     return;
   }
+  const previous = bindings.get(socket.id);
+  if (previous && previous.roomId !== parsed.data.roomId) {
+    // A socket that switches rooms must not leave presence or viewer state behind.
+    await depart(io, redis, socket, previous.roomId, previous.userId);
+  }
   let session: RoomSession;
   try {
     session = await api.session(actor.token, parsed.data.roomId);
@@ -274,6 +280,9 @@ async function join(
     fail(socket, { code: mapFailure(error), message: "room:join" });
     return;
   }
+  // Do not clear or resume on join: a socket.io reconnect can arrive while the
+  // viewer is still genuinely buffering, and the player will not re-report until
+  // its phase changes. Disconnect/leave/kick clear the phase; ready resumes.
   const joined = await joinRoom(redis.pub, parsed.data.roomId, {
     userId: actor.userId,
     displayName: actor.displayName,
@@ -293,7 +302,15 @@ async function join(
     queue: session.queue,
     playback: snapshotFor(parsed.data.roomId, anchor, Date.now()),
   });
+  socket.emit("playback:viewers", {
+    roomId: parsed.data.roomId,
+    viewers: await listViewerPhases(redis.pub, parsed.data.roomId),
+  });
   io.to(parsed.data.roomId).emit("room:presence", { roomId: parsed.data.roomId, members: joined.members });
+  io.to(parsed.data.roomId).emit("voice:presence", {
+    roomId: parsed.data.roomId,
+    members: await listVoicePresence(redis.pub, parsed.data.roomId),
+  });
 }
 
 async function control(
@@ -340,8 +357,17 @@ async function control(
         ? { type: op.type, actorId: actor.userId }
         : { type: op.type, actorId: actor.userId, positionMs: parsed.data.positionMs };
   const held = holdPlaybackOp(requested, buffering);
+  if (requested.type === "play" && held.type === "pause") {
+    // Remember the intent so the room can resume as soon as the buffer clears.
+    await rememberHeldPlay(redis.pub, parsed.data.roomId, actor.userId);
+  } else if (requested.type === "play" || requested.type === "pause") {
+    await clearHeldPlay(redis.pub, parsed.data.roomId);
+  }
   const result = await commitPlayback(redis.pub, parsed.data.roomId, held);
   if (result === "version_conflict") {
+    if (held.type === "pause") {
+      await clearHeldPlay(redis.pub, parsed.data.roomId);
+    }
     fail(socket, { code: "version_conflict", message: "playback write lost the race" });
     return;
   }
@@ -505,7 +531,14 @@ async function moderate(
     }
     if (kind === "kick") {
       await leaveRoom(redis.pub, data.roomId, data.userId);
+      await clearViewerPhase(redis.pub, data.roomId, data.userId);
+      await clearVoiceOnDepart(io, redis, data.roomId, data.userId);
       io.to(data.roomId).emit("room:kicked", { roomId: data.roomId, userId: data.userId });
+      io.to(data.roomId).emit("playback:viewers", {
+        roomId: data.roomId,
+        viewers: await listViewerPhases(redis.pub, data.roomId),
+      });
+      await resumeHeld(io, redis, data.roomId);
     } else {
       const current = (await listMembers(redis.pub, data.roomId)).find((member) => member.userId === data.userId);
       const next = session.members.find((member) => member.userId === data.userId);
@@ -536,6 +569,8 @@ async function onLeave(
     const role = await roleOf(redis, parsed.data.roomId, actor.userId);
     await api.leave(actor.token, parsed.data.roomId);
     if (hostLeavePauses(role ?? "")) {
+      // Host departure intentionally pauses; a remembered play must not override it.
+      await clearHeldPlay(redis.pub, parsed.data.roomId);
       const paused = await commitPlayback(redis.pub, parsed.data.roomId, { type: "pause", actorId: actor.userId });
       if (paused !== "version_conflict") {
         io.to(parsed.data.roomId).emit("playback:state", paused);
@@ -564,6 +599,14 @@ async function depart(io: Server, redis: RedisPair, socket: Socket, roomId: stri
   const members = await leaveRoom(redis.pub, roomId, userId);
   io.to(roomId).emit("room:presence", { roomId, members });
   io.to(roomId).emit("playback:viewers", { roomId, viewers: await listViewerPhases(redis.pub, roomId) });
+  await resumeHeld(io, redis, roomId);
+}
+
+async function resumeHeld(io: Server, redis: RedisPair, roomId: string): Promise<void> {
+  const resumed = await resumeHeldPlayback(redis.pub, roomId).catch(() => null);
+  if (resumed && resumed !== "version_conflict") {
+    io.to(roomId).emit("playback:state", resumed);
+  }
 }
 
 async function reportViewer(io: Server, redis: RedisPair | null, socket: Socket, payload: unknown): Promise<void> {
@@ -577,6 +620,7 @@ async function reportViewer(io: Server, redis: RedisPair | null, socket: Socket,
     roomId: parsed.data.roomId,
     viewers: await listViewerPhases(redis.pub, parsed.data.roomId),
   });
+  await resumeHeld(io, redis, parsed.data.roomId);
 }
 
 async function roleOf(redis: RedisPair, roomId: string, userId: string): Promise<MemberRole | null> {

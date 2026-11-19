@@ -26,6 +26,11 @@ test("play is held while another viewer is buffering", async ({ browser }) => {
   await host.getByTestId("playback-play").click();
   await expect(host.getByTestId("playback-status")).not.toContainText("идёт");
 
-  await hostContext.close();
+  // A buffering viewer who disconnects must not leave the room stuck on pause:
+  // the phase is cleared and the held play resumes.
   await guestContext.close();
+  await expect(host.getByTestId("playback-status")).not.toContainText("Ждём", { timeout: 15_000 });
+  await expect(host.getByTestId("playback-status")).toContainText("идёт", { timeout: 15_000 });
+
+  await hostContext.close();
 });
