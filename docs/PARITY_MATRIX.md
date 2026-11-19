@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 117 |
+| Done | 118 |
 | Done (needs creds) | 13 |
-| Partial | 5 |
+| Partial | 4 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -106,7 +106,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F087 | Moderation log | Done | The voice panel lists the persisted moderation log for a host or mod. |
 | F088 | Member action sheet | Done | The member row can kick, mute, promote, transfer host, and report. |
 | F089 | Blacklist management | Done | GET /users/:id/blacklist lists the owner's global bans (roomId null) separately from friend blocks, and POST /users/:id/blacklist/remove lifts one. The live room profile can blacklist a member everywhere, and settings has a global blacklist section with a working remove. |
-| F090 | Moderation presets | Partial | Create chips only copy a preset into the title. They do not apply privacy or moderation. |
+| F090 | Moderation presets | Done | The create chips send a preset id, and the API resolves it into privacy, member cap, hide-reactions, slow mode, and all six viewer defaults before the room is created. The wizard previews the same resolved rights. A closed preset joins with chat but without queue or voice rights. |
 | F091 | Voice chat | Done | Voice joins, mutes, and lists devices through LiveKit. The room has join and mute controls. |
 | F092 | Voice preflight | Partial | A test button calls getUserMedia. There is no speaker check or network score. |
 | F093 | Voice mute broadcast | Partial | The card counts local seconds and toggles mute. Mute is not broadcast as a voice-session duration. |

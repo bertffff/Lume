@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { favouriteLine, linkedLabel, viewerPermissionKeys } from "@lume/contracts";
+import { favouriteLine, linkedLabel, roomPresetById, roomPresets, viewerPermissionKeys, type RoomPresetId } from "@lume/contracts";
 import type { ModeId, StyleId } from "./theme.js";
 import { heatCells } from "./fixtures.js";
 
@@ -408,29 +408,55 @@ export function NotificationsScreen() {
   );
 }
 
-export function CreateScreen({ title, onTitle, onSubmit }: { title: string; onTitle: (value: string) => void; onSubmit: (event: FormEvent) => void }) {
+export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit }: {
+  title: string;
+  onTitle: (value: string) => void;
+  preset: RoomPresetId | null;
+  onPreset: (value: RoomPresetId) => void;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  const chosen = preset ? roomPresetById(preset) : null;
   return (
     <div className="overlay docked"><form className="modal lg" onSubmit={onSubmit}>
       <div className="mh"><h2>Создать комнату</h2><span className="sp" /></div>
       <div className="mb">
         <div className="steps"><span className="on" /><span className="on" /><span /></div>
         <label className="field">Название<input data-testid="lobby-title" value={title || "Ночной кинозал"} onChange={(event) => onTitle(event.target.value)} /></label>
-        <label className="choice-label">Кто может войти</label>
-        <div className="choices">
-          <div className="choice"><b>Друзья</b><p>По ссылке, только из списка друзей</p></div>
-          <div className="choice on"><b>По коду</b><p>Кто знает код 7KQ-2M</p></div>
-          <div className="choice"><b>Публичная</b><p>Видна в открытых комнатах</p></div>
-        </div>
-        <div className="chips">
-          {["Киноночь", "Вечеринка", "Закрытый", "С модерацией"].map((preset) => (
-            <button key={preset} type="button" className="pill" onClick={() => onTitle(preset)}>{preset}</button>
+        <label className="choice-label">Пресет модерации</label>
+        <div className="chips" data-testid="create-presets">
+          {roomPresets.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={preset === item.id ? "pill on" : "pill"}
+              data-testid={`create-preset-${item.id}`}
+              onClick={() => {
+                onPreset(item.id);
+                onTitle(item.title);
+              }}
+            >
+              {item.title}
+            </button>
           ))}
         </div>
-        <label className="choice-label">Права зрителей по умолчанию</label>
+        <label className="choice-label">Кто может войти</label>
         <div className="choices">
-          <div className="choice on"><b>Очередь</b><p>Могут добавлять видео</p></div>
-          <div className="choice on"><b>Чат</b><p>Писать и ставить реакции</p></div>
-          <div className="choice"><b>Пульт</b><p>Пауза и перемотка</p></div>
+          <div className={chosen && !chosen.isPublic ? "choice on" : "choice"}><b>По коду</b><p>Кто знает код комнаты</p></div>
+          <div className={chosen?.isPublic ? "choice on" : "choice"}><b>Публичная</b><p>Видна в открытых комнатах</p></div>
+        </div>
+        {chosen ? (
+          <p className="lead" data-testid="create-preset-summary" data-max={chosen.maxMembers} data-public={chosen.isPublic ? "true" : "false"} data-slow={chosen.slowModeSeconds}>
+            {chosen.hint} Лимит {chosen.maxMembers}.
+          </p>
+        ) : null}
+        <label className="choice-label">Права зрителей по умолчанию</label>
+        <div className="choices" data-testid="create-preset-rights">
+          {viewerPermissionKeys.map((key) => (
+            <div key={key} className={chosen?.defaults[key] ? "choice on" : "choice"}>
+              <b>{key}</b>
+              <p>{chosen ? (chosen.defaults[key] ? "Разрешено" : "Запрещено") : "Из пресета"}</p>
+            </div>
+          ))}
         </div>
       </div>
       <div className="mf"><button type="button" className="btn btn-ghost">Назад</button><button className="btn btn-primary" type="submit" data-testid="lobby-create">Создать комнату</button></div>

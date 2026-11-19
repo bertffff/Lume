@@ -9,7 +9,9 @@ import {
   mediaFallbackTitle,
   parseEmbedInput,
   roomOverMemberCap,
+  roomPresetById,
   FREE_ROOM_MEMBER_CAP,
+  type RoomPresetId,
   type ChatMessage,
   type MemberPermissionFlags,
   type MemberRole,
@@ -120,9 +122,10 @@ export class RoomService {
     this.titles = titles ?? (async () => null);
   }
 
-  async createRoom(actor: Actor, input: { title: string; isPublic?: boolean }): Promise<RoomDetail> {
+  async createRoom(actor: Actor, input: { title: string; isPublic?: boolean; preset?: RoomPresetId }): Promise<RoomDetail> {
     const code = await this.freshCode();
     const createdAt = this.now().toISOString();
+    const preset = input.preset ? roomPresetById(input.preset) : null;
     const room: RoomRecord = {
       id: this.ids(),
       code,
@@ -130,8 +133,11 @@ export class RoomService {
       hostId: actor.userId,
       ownerId: actor.userId,
       status: "open",
-      isPublic: input.isPublic ?? false,
-      maxMembers: FREE_ROOM_MEMBER_CAP,
+      isPublic: preset?.isPublic ?? input.isPublic ?? false,
+      maxMembers: preset?.maxMembers ?? FREE_ROOM_MEMBER_CAP,
+      hideReactions: preset?.hideReactions ?? false,
+      slowModeSeconds: preset?.slowModeSeconds ?? 0,
+      defaultPermissions: preset ? { ...preset.defaults } : null,
       createdAt,
       nowPlayingId: null,
     };

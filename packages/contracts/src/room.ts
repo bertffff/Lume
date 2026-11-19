@@ -32,6 +32,7 @@ export type RoomSummary = z.infer<typeof roomSummarySchema>;
 export const createRoomSchema = z.object({
   title: z.string().trim().min(1).max(120),
   isPublic: z.boolean().optional(),
+  preset: z.enum(["cinema", "party", "closed", "moderated"]).optional(),
 });
 
 export const joinRoomSchema = z.object({

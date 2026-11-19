@@ -9,6 +9,8 @@ export interface RoomRecord {
   status: "open" | "live" | "ended";
   isPublic: boolean;
   maxMembers: number;
+  hideReactions?: boolean;
+  slowModeSeconds?: number;
   defaultPermissions?: Record<string, boolean> | null;
   createdAt: string;
   nowPlayingId: string | null;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { legacyText } from "../i18n/legacy.js";
@@ -67,6 +68,7 @@ export function DesignApp({
   const [mode, setMode] = useState<ModeId>(params.get("mode") === "light" || params.get("mode") === "system" || params.get("mode") === "dark" ? params.get("mode") as ModeId : readStoredMode);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
+  const [preset, setPreset] = useState<RoomPresetId | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Array<{ id: string; title: string; code: string; memberCount?: number }>>([]);
@@ -199,14 +201,13 @@ export function DesignApp({
   async function createRoom(event: FormEvent) {
     event.preventDefault();
     if (!session) return;
-    const result = await api.createRoom(session.accessToken, title.trim() || "Кинозал", true);
-    if (title.includes("модерац")) {
-      await fetch(`${apiUrl}/rooms/${result.room.id}/slow-mode`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" },
-        body: JSON.stringify({ seconds: 10 }),
-      });
-    }
+    const chosen = preset ? roomPresetById(preset) : null;
+    const result = await api.createRoom(
+      session.accessToken,
+      title.trim() || chosen?.title || "Кинозал",
+      chosen?.isPublic ?? true,
+      preset ?? undefined,
+    );
     onOpen(result.room.id);
     go("/");
   }
@@ -232,6 +233,7 @@ export function DesignApp({
   }
 
   const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
+  const chosenPreset = preset ? roomPresetById(preset) : null;
   const shownRooms = rooms.filter((roomItem) => {
     const q = query.trim().toLowerCase();
     if (q && !roomItem.title.toLowerCase().includes(q) && !roomItem.code.includes(q)) return false;
@@ -333,6 +335,29 @@ export function DesignApp({
                   <h3>{text.create}</h3>
                   <p>{text.createHint}</p>
                   {demo ? null : <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />}
+                  {demo ? null : (
+                    <div className="chips" data-testid="lobby-presets">
+                      {roomPresets.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={preset === item.id ? "pill on" : "pill"}
+                          data-testid={`lobby-preset-${item.id}`}
+                          onClick={() => {
+                            setPreset(item.id);
+                            setTitle(item.title);
+                          }}
+                        >
+                          {item.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {demo || !chosenPreset ? null : (
+                    <small data-testid="lobby-preset-summary" data-public={chosenPreset.isPublic ? "true" : "false"} data-max={chosenPreset.maxMembers} data-slow={chosenPreset.slowModeSeconds}>
+                      {chosenPreset.hint}
+                    </small>
+                  )}
                   {demo ? null : <button type="submit" data-testid="lobby-create">{text.create}</button>}
                 </form>
                 <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
@@ -438,7 +463,7 @@ export function DesignApp({
               <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => go("/")}><b>{item.title || item.url}</b></button>)}</div>
             </form>
           ) : null}
-          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} onSubmit={(event) => void createRoom(event)} /> : null}
+          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} /> : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
           {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}

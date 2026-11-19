@@ -16,6 +16,8 @@ function mapRoom(room: {
   status: "open" | "live" | "ended";
   isPublic: boolean;
   maxMembers: number;
+  hideReactions: boolean;
+  slowModeSeconds: number;
   defaultPermissions: unknown;
   createdAt: Date;
   nowPlayingId: string | null;
@@ -29,6 +31,8 @@ function mapRoom(room: {
     status: room.status,
     isPublic: room.isPublic,
     maxMembers: room.maxMembers,
+    hideReactions: room.hideReactions,
+    slowModeSeconds: room.slowModeSeconds,
     defaultPermissions:
       room.defaultPermissions && typeof room.defaultPermissions === "object"
         ? (room.defaultPermissions as Record<string, boolean>)
@@ -51,6 +55,9 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
           status: room.status,
           isPublic: room.isPublic,
           maxMembers: room.maxMembers,
+          hideReactions: room.hideReactions ?? false,
+          slowModeSeconds: room.slowModeSeconds ?? 0,
+          ...(room.defaultPermissions ? { defaultPermissions: room.defaultPermissions } : {}),
           layout: defaultRoomLayout,
           videoAspect: defaultRoomLayout.videoAspect,
           createdAt: new Date(room.createdAt),

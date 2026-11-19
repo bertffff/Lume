@@ -78,7 +78,11 @@ export function registerRoomRoutes(
     return run(reply, async () => {
       const created = await service.createRoom(
         { userId: actor.userId, displayName: actor.displayName },
-        { title: body.data.title, ...(body.data.isPublic === undefined ? {} : { isPublic: body.data.isPublic }) },
+        {
+          title: body.data.title,
+          ...(body.data.isPublic === undefined ? {} : { isPublic: body.data.isPublic }),
+          ...(body.data.preset ? { preset: body.data.preset } : {}),
+        },
       );
       if (prisma) {
         await trackStat(prisma, actor.userId, "roomsCreated", 1, env.TELEGRAM_BOT_TOKEN);

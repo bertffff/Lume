@@ -1,4 +1,4 @@
-import type { RoomSummary, User } from "@lume/contracts";
+import type { RoomPresetId, RoomSummary, User } from "@lume/contracts";
 
 export const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:3001";
 
@@ -55,11 +55,11 @@ export const api = {
     const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
     return request<{ rooms: RoomSummary[] }>(`/rooms${suffix}`);
   },
-  createRoom(token: string, title: string, isPublic: boolean) {
+  createRoom(token: string, title: string, isPublic: boolean, preset?: RoomPresetId) {
     return request<{ room: RoomSummary } & Record<string, unknown>>("/rooms", {
       method: "POST",
       token,
-      body: { title, isPublic },
+      body: { title, isPublic, ...(preset ? { preset } : {}) },
     });
   },
   joinRoom(token: string, code: string) {
