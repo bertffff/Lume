@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 119 |
+| Done | 120 |
 | Done (needs creds) | 13 |
-| Partial | 3 |
+| Partial | 2 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -109,7 +109,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F090 | Moderation presets | Done | The create chips send a preset id, and the API resolves it into privacy, member cap, hide-reactions, slow mode, and all six viewer defaults before the room is created. The wizard previews the same resolved rights. A closed preset joins with chat but without queue or voice rights. |
 | F091 | Voice chat | Done | Voice joins, mutes, and lists devices through LiveKit. The room has join and mute controls. |
 | F092 | Voice preflight | Done | The live voice card checks the mic level, looks for an audio output and plays a short test tone, and scores the network good/fair/poor. POST /voice/preflight stores the result on the account and GET returns it with checkedAt. |
-| F093 | Voice mute broadcast | Partial | The card counts local seconds and toggles mute. Mute is not broadcast as a voice-session duration. |
+| F093 | Voice mute broadcast | Done | voice:state broadcasts the microphone status, and Redis presence keeps each participant's join time. Every client derives one shared session clock from the earliest voice join, shows who is muted, and flushes its own seconds to POST /me/voice-seconds on leave. |
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
 | F095 | TURN/STUN endpoint | Partial | The card can show the STUN URL. LiveKit still owns voice ICE. |
 | F096 | Friends | Done | Home search renders the people returned by GET /users/search, excluding the caller. |

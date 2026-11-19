@@ -28,6 +28,21 @@ export const voiceMemberSchema = z.object({
 
 export type VoiceMember = z.infer<typeof voiceMemberSchema>;
 
+export interface VoiceSessionMember {
+  joinedAtMs: number;
+}
+
+/** The oldest voice participant defines the one session clock everyone sees. */
+export function voiceSessionStartedAt(members: readonly VoiceSessionMember[]): number | null {
+  if (members.length === 0) return null;
+  return Math.min(...members.map((member) => member.joinedAtMs));
+}
+
+export function sharedVoiceSeconds(members: readonly VoiceSessionMember[], nowMs: number): number {
+  const startedAt = voiceSessionStartedAt(members);
+  return startedAt === null ? 0 : Math.max(0, Math.floor((nowMs - startedAt) / 1000));
+}
+
 export const preflightNetworks = ["good", "fair", "poor"] as const;
 export type PreflightNetwork = (typeof preflightNetworks)[number];
 

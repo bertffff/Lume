@@ -108,6 +108,8 @@ export { queueAddSchema, queueItemSchema, queueNextSchema, type QueueItem } from
 export {
   classifyNetworkPreflight,
   preflightNetworks,
+  sharedVoiceSeconds,
+  voiceSessionStartedAt,
   voiceDisconnectSchema,
   voiceJoinSchema,
   voiceMemberSchema,
@@ -116,6 +118,7 @@ export {
   type NetworkPreflightInput,
   type PreflightNetwork,
   type VoiceMember,
+  type VoiceSessionMember,
 } from "./voice.js";
 export {
   canActOnMember,

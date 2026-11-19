@@ -1,4 +1,4 @@
-import { emojiCategories, getNextRoomPanel, layoutAspectGroup, planPlayback, roomSheetPanels, shouldHoldForReady, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
+import { emojiCategories, getNextRoomPanel, layoutAspectGroup, planPlayback, roomSheetPanels, sharedVoiceSeconds, shouldHoldForReady, voiceSessionStartedAt, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -50,6 +50,7 @@ export function RoomStage({
   const [preflight, setPreflight] = useState<VoicePreflightResult | null>(null);
   const [preflightBusy, setPreflightBusy] = useState(false);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
+  const [voiceClock, setVoiceClock] = useState(() => Date.now());
   const voiceSecondsRef = useRef(0);
   const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
   const [playerError, setPlayerError] = useState<string | null>(null);
@@ -121,6 +122,10 @@ export function RoomStage({
       stopped = true;
     };
   }, [live?.accessToken]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setVoiceClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
   useEffect(() => {
     voiceSecondsRef.current = 0;
     setVoiceSeconds(0);
@@ -212,6 +217,8 @@ export function RoomStage({
   const bufferingCount = live.state.viewers.filter((viewer) => viewer.phase === "buffering").length;
   const waiting = shouldHoldForReady(bufferingCount > 0, bufferingCount);
   const status = waiting ? "Ждём готовности" : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
+  const sharedVoice = sharedVoiceSeconds(live.state.voice, voiceClock);
+  const sharedVoiceStart = voiceSessionStartedAt(live.state.voice);
   const unread = Math.max(0, live.state.messages.length - seenCount);
   const firstUnreadIndex = Math.min(seenCount, live.state.messages.length);
   const pendingPlan = url ? planPlayback({ url, premium }) : null;
@@ -406,22 +413,29 @@ export function RoomStage({
           <div className={narrow ? "sheet" : "low"}>
             {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Панели</button> : null}
             <div className="card voice-card">
-              <div className="ct">Голосовой {voice.joined ? <small>{`в эфире ${voiceSeconds}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{iceUrl}</small>}</div>
+              <div className="ct">Голосовой {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{iceUrl}</small>}</div>
               <div className="voice">
                 <ul className="voice" data-testid="member-list">
-                  {members.map((member) => (
-                    <li key={member.userId}>
-                      <button
-                        type="button"
-                        className="vp"
-                        data-testid={`member-${member.userId}`}
-                        onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}
-                      >
-                        <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
-                        {member.displayName}
-                      </button>
-                    </li>
-                  ))}
+                  {members.map((member) => {
+                    const channel = live.state.voice.find((item) => item.userId === member.userId);
+                    return (
+                      <li key={member.userId}>
+                        <button
+                          type="button"
+                          className={channel?.speaking ? "vp spk" : "vp"}
+                          data-testid={`member-${member.userId}`}
+                          data-in-voice={channel ? "true" : "false"}
+                          data-muted={channel ? String(channel.muted) : "none"}
+                          data-speaking={channel ? String(channel.speaking) : "false"}
+                          onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}
+                        >
+                          <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
+                          {member.displayName}
+                          {channel?.muted ? <em data-testid={`member-muted-${member.userId}`}> выкл</em> : null}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
                 <div className="vbtns">
                   <button type="button" className="vbtn" data-testid="voice-join" onClick={() => void voice.join()}>Войти</button>

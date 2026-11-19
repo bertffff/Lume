@@ -34,7 +34,7 @@ export interface LiveRoom {
   queue: QueueItem[];
   playback: PlaybackSnapshot;
   viewers: { userId: string; phase: "buffering" | "ready" }[];
-  voice: { userId: string; muted: boolean; speaking: boolean }[];
+  voice: { userId: string; muted: boolean; speaking: boolean; joinedAtMs: number }[];
 }
 
 export type ChannelStatus = "off" | "connecting" | "online" | "error";
@@ -173,14 +173,27 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
           const parsed = z
             .object({
               members: z.array(
-                z.object({ userId: z.string(), muted: z.boolean(), speaking: z.boolean() }),
+                z.object({
+                  userId: z.string(),
+                  muted: z.boolean(),
+                  speaking: z.boolean(),
+                  joinedAtMs: z.number().int().nonnegative().optional(),
+                }),
               ),
             })
             .safeParse(payload);
           if (!parsed.success) {
             return;
           }
-          setState((current) => (current ? { ...current, voice: parsed.data.members } : current));
+          const now = Date.now();
+          setState((current) =>
+            current
+              ? {
+                  ...current,
+                  voice: parsed.data.members.map((member) => ({ ...member, joinedAtMs: member.joinedAtMs ?? now })),
+                }
+              : current,
+          );
         });
         client.on("voice:force", (payload: unknown) => {
           const parsed = z

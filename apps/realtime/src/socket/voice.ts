@@ -60,6 +60,7 @@ async function join(io: Server, redis: RedisPair | null, socket: Socket, payload
     userId: actor.userId,
     muted: false,
     speaking: false,
+    joinedAtMs: Date.now(),
   });
   broadcast(io, parsed.data.roomId, members);
 }
