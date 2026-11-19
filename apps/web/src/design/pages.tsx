@@ -12,6 +12,8 @@ export function SettingsScreen({
   apiUrl,
   blocked = [],
   onUnblock,
+  globalBans = [],
+  onRemoveGlobalBan,
 }: {
   style: StyleId;
   mode: ModeId;
@@ -21,6 +23,8 @@ export function SettingsScreen({
   apiUrl?: string;
   blocked?: Array<{ id: string; displayName: string }>;
   onUnblock?: (id: string) => void;
+  globalBans?: Array<{ id: string; userId: string; displayName: string; reason: string | null }>;
+  onRemoveGlobalBan?: (userId: string) => void;
 }) {
   const [telegramId, setTelegramId] = useState("");
   const [linked, setLinked] = useState("…");
@@ -132,7 +136,20 @@ export function SettingsScreen({
           </label>
         </div>
         <div className="set-row">
-          <div><b>Чёрный список</b>{blocked.map((row) => <small key={row.id}>{row.displayName} <button type="button" onClick={() => onUnblock?.(row.id)}>убрать</button></small>)}{blocked.length === 0 ? <small>Пусто</small> : null}</div>
+          <div><b>Заблокированные друзья</b><small>Личная блокировка друга. На вход в комнаты не влияет.</small>{blocked.map((row) => <small key={row.id}>{row.displayName} <button type="button" onClick={() => onUnblock?.(row.id)}>убрать</button></small>)}{blocked.length === 0 ? <small>Пусто</small> : null}</div>
+        </div>
+        <div className="set-row" data-testid="global-blacklist">
+          <div>
+            <b>Глобальный чёрный список</b>
+            <small>Баны, которые закрывают вход во все комнаты, где вы владелец.</small>
+            {globalBans.length === 0 ? <small data-testid="global-blacklist-empty">Пусто</small> : null}
+            {globalBans.map((row) => (
+              <small key={row.id} data-testid="global-ban-row" data-user-id={row.userId}>
+                {row.displayName}{row.reason ? ` · ${row.reason}` : ""}{" "}
+                <button type="button" data-testid="global-ban-remove" onClick={() => onRemoveGlobalBan?.(row.userId)}>убрать</button>
+              </small>
+            ))}
+          </div>
         </div>
         <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
         <div className="set-row"><div><b>Сервисы извлечения</b><small>{services.length === 0 ? "Cobalt не задан" : services.join(", ")}</small></div></div>

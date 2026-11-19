@@ -12,12 +12,14 @@ export function RoomProfileModal({
   roomId,
   token,
   selfId,
+  canBan = false,
   onClose,
 }: {
   member: InRoomProfile;
   roomId: string;
   token: string;
   selfId: string;
+  canBan?: boolean;
   onClose: () => void;
 }) {
   const [reason, setReason] = useState("");
@@ -74,6 +76,22 @@ export function RoomProfileModal({
     }
   }
 
+  async function blacklist() {
+    setBusy(true);
+    try {
+      const response = await fetch(`${apiUrl}/rooms/${roomId}/ban`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify({ userId: member.userId, type: "blacklist", reason: "глобальная блокировка" }),
+      });
+      setNote(response.ok ? "Заблокирован во всех ваших комнатах" : "Не получилось заблокировать");
+    } catch {
+      setNote("Не получилось заблокировать");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const roleLabel = member.role === "host" ? "ведущий" : member.role === "mod" ? "модератор" : "смотрит";
 
   return (
@@ -95,6 +113,14 @@ export function RoomProfileModal({
                   Добавить
                 </button>
               </div>
+              {canBan ? (
+                <div className="set-row">
+                  <div><b>Глобальный чёрный список</b><small>Отдельно от блокировки друзей. Закрывает вход во все ваши комнаты.</small></div>
+                  <button type="button" className="btn btn-outline" data-testid="profile-global-ban" disabled={busy} onClick={() => void blacklist()}>
+                    Заблокировать везде
+                  </button>
+                </div>
+              ) : null}
               <form
                 className="set-row"
                 onSubmit={(event) => {

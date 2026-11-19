@@ -622,6 +622,7 @@ export function RoomStage({
           roomId={room.id}
           token={live.accessToken}
           selfId={live.selfId}
+          canBan={live.state.self.role === "host"}
           onClose={() => setProfile(null)}
         />
       ) : null}

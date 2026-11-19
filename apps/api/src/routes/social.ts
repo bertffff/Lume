@@ -560,6 +560,69 @@ export function registerSocialRoutes(
     });
   });
 
+  app.get("/users/:id/blacklist", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (params.id !== actor.userId) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
+    const now = new Date();
+    const rows = await prisma.ban.findMany({
+      where: {
+        ownerId: actor.userId,
+        type: "blacklist",
+        roomId: null,
+        liftedAt: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+      include: { user: { select: { id: true, displayName: true, avatarUrl: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    return reply.send({
+      entries: rows.map((row) => ({
+        id: row.id,
+        userId: row.userId,
+        displayName: row.user.displayName,
+        avatarUrl: row.user.avatarUrl,
+        reason: row.reason,
+        createdAt: row.createdAt.toISOString(),
+      })),
+    });
+  });
+
+  app.post("/users/:id/blacklist/remove", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = z.object({ id: z.string() }).parse(request.params);
+    if (params.id !== actor.userId) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
+    const body = z.object({ bannedUserId: z.string().min(1) }).safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+    const removed = await prisma.ban.updateMany({
+      where: {
+        ownerId: actor.userId,
+        userId: body.data.bannedUserId,
+        type: "blacklist",
+        roomId: null,
+        liftedAt: null,
+      },
+      data: { liftedAt: new Date() },
+    });
+    if (removed.count === 0) {
+      return reply.code(404).send({ error: "not_found" });
+    }
+    return reply.send({ removed: removed.count });
+  });
+
   app.post("/friends/request", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {

@@ -74,6 +74,7 @@ export function DesignApp({
   const [statsReady, setStatsReady] = useState(false);
   const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
   const [blocked, setBlocked] = useState<Array<{ id: string; displayName: string }>>([]);
+  const [globalBans, setGlobalBans] = useState<Array<{ id: string; userId: string; displayName: string; reason: string | null }>>([]);
   const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [heat, setHeat] = useState<Array<{ day: string; score: number }>>([]);
   const [level, setLevel] = useState(1);
@@ -163,6 +164,22 @@ export function DesignApp({
       })
       .catch(() => undefined);
   }, [session]);
+
+  useEffect(() => {
+    if (!session || !path.startsWith("/settings")) return;
+    let stopped = false;
+    void fetch(`${apiUrl}/users/${session.user.id}/blacklist`, { headers: { authorization: `Bearer ${session.accessToken}` } })
+      .then((response) => response.json())
+      .then((payload: { entries?: Array<{ id: string; userId: string; displayName: string; reason: string | null }> }) => {
+        if (!stopped) setGlobalBans(payload.entries ?? []);
+      })
+      .catch(() => {
+        if (!stopped) setGlobalBans([]);
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [path, session]);
 
   function go(next: string) {
     window.history.pushState({}, "", next);
@@ -423,7 +440,7 @@ export function DesignApp({
           ) : null}
           {view === "create" ? <CreateScreen title={title} onTitle={setTitle} onSubmit={(event) => void createRoom(event)} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} /> : null}
-          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} /> : null}
+          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
           {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
           {view === "profile" ? <ProfileScreen token={session?.accessToken} apiUrl={apiUrl} userId={session?.user.id} displayName={session?.user.displayName} /> : null}
           {view === "premium" ? <PremiumScreen /> : null}
