@@ -18,6 +18,10 @@ const sharedEnv = {
   STREAM_ALLOWLIST: "127.0.0.1",
   STREAM_ALLOW_PRIVATE_HOSTS: "true",
   STREAM_MAX_BYTES: "1048576",
+  STUN_URLS: process.env.STUN_URLS ?? "stun:127.0.0.1:3478",
+  TURN_URLS: process.env.TURN_URLS ?? "turn:127.0.0.1:3478,turns:127.0.0.1:5349",
+  TURN_USERNAME: process.env.TURN_USERNAME ?? "lume-turn",
+  TURN_CREDENTIAL: process.env.TURN_CREDENTIAL ?? "lume-turn-test",
 };
 
 export default defineConfig({

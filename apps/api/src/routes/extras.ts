@@ -74,10 +74,6 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     extractors: env.FF_EXTRACTORS === "true",
   }));
 
-  app.get("/ice-servers", async () => ({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  }));
-
   app.get("/video/services", async () => ({
     services: cobaltServices(env.COBALT_API_URL),
     unavailable: !env.COBALT_API_URL,

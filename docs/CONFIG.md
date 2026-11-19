@@ -5,6 +5,7 @@ Empty values keep the feature off. Tests never call these services.
 | Variable | Feature | When it is empty |
 | --- | --- | --- |
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Voice | The panel says voice is off |
+| `STUN_URLS`, `TURN_URLS`, `TURN_URL`, `TURN_USERNAME`, `TURN_CREDENTIAL` | GET /ice-servers | Google STUN only, with no TURN relay |
 | `TELEGRAM_BOT_TOKEN` | Telegram notifications and Mini App verification | In-app notices still save. Dev initData can be stubbed |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email | `email` delivery returns `skipped`. Magic links are returned in the API response |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web push | The service worker is registered. Push send returns `skipped` |

@@ -46,7 +46,7 @@ export function RoomStage({
   const [detected, setDetected] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }>>([]);
   const [recommendations, setRecommendations] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
-  const [iceUrl, setIceUrl] = useState<string | null>(null);
+  const [iceUrls, setIceUrls] = useState<string[]>([]);
   const [preflight, setPreflight] = useState<VoicePreflightResult | null>(null);
   const [preflightBusy, setPreflightBusy] = useState(false);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
@@ -86,7 +86,14 @@ export function RoomStage({
         })
         .catch(() => undefined);
     }
-    void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIceUrl(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIceUrl(null));
+    if (token) {
+      void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${token}` } })
+        .then((response) => response.json())
+        .then((payload: { iceServers?: Array<{ urls?: string | string[] }> }) => {
+          setIceUrls((payload.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : [])));
+        })
+        .catch(() => setIceUrls([]));
+    }
     if (token) {
       void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
         .then((response) => response.json())
@@ -413,7 +420,9 @@ export function RoomStage({
           <div className={narrow ? "sheet" : "low"}>
             {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Панели</button> : null}
             <div className="card voice-card">
-              <div className="ct">Голосовой {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : <small>{iceUrl}</small>}</div>
+              <div className="ct">Голосовой {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled">{t("voice.disabled")}</small> : null}
+                <small data-testid="voice-ice" data-count={iceUrls.length}>{iceUrls.join(" · ")}</small>
+              </div>
               <div className="voice">
                 <ul className="voice" data-testid="member-list">
                   {members.map((member) => {

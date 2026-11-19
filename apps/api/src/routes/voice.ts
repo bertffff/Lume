@@ -7,6 +7,7 @@ import type { ApiEnv } from "../env.js";
 import type { RoomService } from "../rooms/service.js";
 import { RoomFailure } from "../rooms/types.js";
 import { disconnectVoiceIdentity, muteVoiceIdentities } from "../voice/admin.js";
+import { iceServersFor } from "../voice/ice.js";
 import { liveKitConfigured, liveKitRoomName, mintLiveKitToken } from "../voice/livekit.js";
 
 const roomSchema = z.object({ roomId: z.string().min(1).max(80) });
@@ -37,6 +38,17 @@ export function registerVoiceRoutes(
   service: RoomService | null,
   prisma: PrismaClient | null = null,
 ): void {
+  app.get("/ice-servers", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor) {
+      return;
+    }
+    return reply.send({
+      iceServers: iceServersFor(env),
+      livekit: { configured: liveKitConfigured(env), url: env.LIVEKIT_URL ?? null },
+    });
+  });
+
   app.get("/voice/livekit", async () => ({ enabled: liveKitConfigured(env), stub: env.ALLOW_STUB_VOICE }));
 
   app.get("/voice/preflight", async (request, reply) => {

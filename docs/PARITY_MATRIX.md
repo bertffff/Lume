@@ -5,9 +5,9 @@ Source of the feature list: [PARITY.md](./PARITY.md). Legacy copy: [legacy-local
 
 | Status | Count |
 | --- | ---: |
-| Done | 120 |
+| Done | 121 |
 | Done (needs creds) | 13 |
-| Partial | 2 |
+| Partial | 1 |
 | Redesign | 0 |
 | Missing | 2 |
 
@@ -111,7 +111,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F092 | Voice preflight | Done | The live voice card checks the mic level, looks for an audio output and plays a short test tone, and scores the network good/fair/poor. POST /voice/preflight stores the result on the account and GET returns it with checkedAt. |
 | F093 | Voice mute broadcast | Done | voice:state broadcasts the microphone status, and Redis presence keeps each participant's join time. Every client derives one shared session clock from the earliest voice join, shows who is muted, and flushes its own seconds to POST /me/voice-seconds on leave. |
 | F094 | Active speaker | Done | LiveKit active speakers still drive the speaking dot. |
-| F095 | TURN/STUN endpoint | Partial | The card can show the STUN URL. LiveKit still owns voice ICE. |
+| F095 | TURN/STUN endpoint | Done | GET /ice-servers is auth-gated and returns STUN from STUN_URLS (Google by default), a STUN entry for the configured LiveKit host, and TURN/TURNS URLs plus username and credential from env. The live voice card shows the issued list. |
 | F096 | Friends | Done | Home search renders the people returned by GET /users/search, excluding the caller. |
 | F097 | Friend presence | Done | A friend row shows the room they are in. |
 | F098 | Top friends | Done | Top friends from shared watch time are listed. |

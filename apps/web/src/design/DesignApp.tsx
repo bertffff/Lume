@@ -114,8 +114,14 @@ export function DesignApp({
 
   useEffect(() => {
     void api.listRooms(query).then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
-    void fetch(`${apiUrl}/ice-servers`).then((response) => response.json()).then((payload: { iceServers?: Array<{ urls?: string }> }) => setIce(payload.iceServers?.[0]?.urls ?? null)).catch(() => setIce(null));
-  }, [query, path, roomId]);
+    void fetch(`${apiUrl}/ice-servers`, session ? { headers: { authorization: `Bearer ${session.accessToken}` } } : undefined)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { iceServers?: Array<{ urls?: string | string[] }> } | null) => {
+        const urls = (payload?.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : []));
+        setIce(urls.length > 0 ? urls.join(" · ") : null);
+      })
+      .catch(() => setIce(null));
+  }, [query, path, roomId, session?.accessToken]);
 
   useEffect(() => {
     let stopped = false;
