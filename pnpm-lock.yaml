@@ -185,9 +185,6 @@ importers:
       '@lume/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@lume/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@vimeo/player':
         specifier: ^2.30.4
         version: 2.30.4
@@ -321,22 +318,6 @@ importers:
       prisma:
         specifier: 6.19.3
         version: 6.19.3(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
-  packages/ui:
-    dependencies:
-      '@lume/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.20.5
-      eslint:
-        specifier: 'catalog:'
-        version: 9.39.5(jiti@2.7.0)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

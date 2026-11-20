@@ -205,6 +205,7 @@ export function DesignApp({
   function go(next: string) {
     window.history.pushState({}, "", next);
     setPath(next);
+    window.dispatchEvent(new PopStateEvent("popstate"));
   }
 
   async function signIn(event: FormEvent) {
