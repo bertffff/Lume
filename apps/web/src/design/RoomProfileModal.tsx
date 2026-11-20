@@ -99,7 +99,8 @@ export function RoomProfileModal({
       <div className="modal">
         <div className="mh">
           <h2 data-testid="profile-modal-name">{member.displayName}</h2>
-          <button type="button" data-testid="profile-modal-close" onClick={onClose}>×</button>
+          <span className="sp" />
+          <button type="button" data-testid="profile-modal-close" onClick={onClose} aria-label="Закрыть">×</button>
         </div>
         <div className="mb">
           <p>{roleLabel}</p>

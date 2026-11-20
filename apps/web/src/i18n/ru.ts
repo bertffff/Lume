@@ -54,7 +54,7 @@ export const ru = {
   "chat.sample2": "Звук чуть тише голоса, так лучше.",
   "voice.title": "Голос",
   "voice.livekit": "LiveKit выключен",
-  "voice.disabled": "Голос выключен. Задайте LIVEKIT_URL, LIVEKIT_API_KEY и LIVEKIT_API_SECRET.",
+  "voice.disabled": "Голосовой канал выключен администратором комнаты.",
   "voice.join": "Войти в голос",
   "voice.leave": "Выйти из голоса",
   "voice.mic": "Микрофон",

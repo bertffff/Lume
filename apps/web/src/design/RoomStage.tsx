@@ -7,6 +7,7 @@ import { useRoomActions } from "../room/live.js";
 import { runVoicePreflight, saveVoicePreflight, type VoicePreflightResult } from "../voice/preflight.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { EmojiPicker } from "./EmojiPicker.js";
+import { permissionLabel, viewersWord } from "./copy.js";
 import { posterFor } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
 import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
@@ -75,6 +76,7 @@ export function RoomStage({
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<RoomSheetPanel>("chat");
+  const [railTab, setRailTab] = useState<"chat" | "people" | "queue">("chat");
   const [seenCount, setSeenCount] = useState(0);
   const seenReady = useRef(false);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -252,6 +254,9 @@ export function RoomStage({
   const pendingPlan = url ? planPlayback({ url, premium }) : null;
   const premiumUrl = pendingPlan?.type === "error" && pendingPlan.code === "premium_required";
   const voiceReady = voice.enabled !== false || voice.stub;
+  const progress = room.nowPlaying?.durationMs && room.nowPlaying.durationMs > 0
+    ? Math.min(100, Math.max(0, (live.positionMs / room.nowPlaying.durationMs) * 100))
+    : 0;
 
   function jumpToUnread() {
     const anchor = chatRef.current?.querySelector<HTMLElement>('[data-unread="true"]');
@@ -338,35 +343,31 @@ export function RoomStage({
           </>
         ) : (
           <>
-            <button type="button" className="logo" onClick={onLeave}><i />lume</button>
-            <div className="crumb"><b data-testid="room-title">{roomTitle ?? room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span></div>
+            <button type="button" className="logo" onClick={onLeave} aria-label="Выйти на главную"><i />lume</button>
+            <div className="crumb"><b data-testid="room-title">{roomTitle ?? room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span><span className="room-viewers">{members.length} {viewersWord(members.length)}</span></div>
             <span className="spacer" />
-            <div className="sync sync-pill"><span className="dot" /><b>{synced ? "Синхронно" : "…"}</b> <span data-testid="playback-status">{status}</span>
-              <button type="button" data-testid="sync-incident" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) }))}>Сбой</button>
-              <button type="button" data-testid="report-buffering" onClick={() => live.reportViewer("buffering")}>Буфер</button>
+            <div className="sync sync-pill">
+              <span className="dot" />
+              <b>{synced ? "Синхронно" : "Подключение"}</b>
+              <span data-testid="playback-status">{status}</span>
+              <button type="button" data-testid="sync-incident" title="Сообщить о рассинхронизации" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) }))}>Сбой</button>
+              <button type="button" data-testid="report-buffering" title="Сообщить о буферизации" onClick={() => live.reportViewer("buffering")}>Буфер</button>
               <button type="button" data-testid="hide-other-reactions" onClick={() => {
                 const next = !hideOther;
                 quietly(fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: next }) })
                   .then(() => fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${live.accessToken}` } }))
                   .then((response) => response.json())
                   .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions))));
-              }}>Скрыть чужие</button>
+              }}>{hideOther ? "Показать чужие" : "Скрыть чужие"}</button>
               {live.state.self.role === "host" ? (
                 <button type="button" data-testid="room-settings-open" onClick={() => setSettingsOpen(true)}>Настройки</button>
               ) : null}
             </div>
-            <div className="who">
-              <div className="stack">
-                {members.slice(0, 4).map((member) => (
-                  <span key={member.userId} className={`av sm p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
-                ))}
-              </div>
-              смотрят
-            </div>
-            <div className="layout-switch" role="group" aria-label="layout presets">
+            <div className="layout-switch" role="group" aria-label="Раскладка комнаты">
               <button type="button" className={layout.preset === "theater" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-theater" onClick={() => onLayout(withLayoutPreset(layout, "theater"))}>Обычный</button>
               <button type="button" className={layout.preset === "enlarged" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-enlarged" onClick={() => onLayout(withLayoutPreset(layout, "enlarged"))}>Шире</button>
               <button type="button" className={layout.preset === "immersive" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-immersive" onClick={() => onLayout(withLayoutPreset(layout, "immersive"))}>Погружение</button>
+              <span style={{ width: 1, height: 20, background: "var(--line-2)", display: "inline-block", margin: "0 2px" }} />
               <button type="button" className={layoutAspectGroup(layout.videoAspect) === "horizontal" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-horizontal" onClick={() => onLayout(withVideoAspect(layout, 16 / 9))}>16:9</button>
               <button type="button" className={layoutAspectGroup(layout.videoAspect) === "vertical" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-vertical" onClick={() => onLayout(withVideoAspect(layout, 9 / 16))}>9:16</button>
             </div>
@@ -403,8 +404,10 @@ export function RoomStage({
               <div className="unavail" data-testid="player-error">
                 <h2>Видео недоступно</h2>
                 <p>{playerError}</p>
-                <button type="button" data-testid="player-retry" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) }))}>Обновить ссылку</button>
-                <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) })); }}>Открыть на платформе</button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                  <button type="button" data-testid="player-retry" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) }))}>Обновить ссылку</button>
+                  <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) })); }}>Открыть на платформе</button>
+                </div>
                 <form onSubmit={(event) => { event.preventDefault(); const next = String(new FormData(event.currentTarget).get("url") ?? ""); if (!next) return; live.addQueue(next); setPlayerError(null); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "replace", url: next }) })); }}>
                   <input data-testid="player-replace-url" name="url" placeholder="Новая ссылка" />
                   <button type="submit" data-testid="player-replace">Заменить видео</button>
@@ -417,36 +420,54 @@ export function RoomStage({
               ))}
             </div>
           </div>
-          <div className="ctl">
-            <button
-              type="button"
-              className="play"
-              data-testid="playback-play"
-              onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)}
-            >
-              {playing ? "II" : "▶"}
-            </button>
-            <span className="time">{clock(live.positionMs)} <span>/ 02:03:10</span></span>
-            <div className="tlw">
-              <div className="track"><div className="buf" /><div className="prog" style={{ width: "32%" }} /></div>
-              <div className="head" style={{ left: "32%" }} />
-              {members.slice(0, 2).map((member, index) => (
-                <span key={member.userId} className="fh" style={{ left: `${40 + index * 8}%` }}>
-                  <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName).slice(0, 1)}</span>
-                </span>
-              ))}
-            </div>
-            <span className="pill mono">1×</span>
-            <span className="pill">1080p</span>
-          </div>
-          <div className={narrow ? "sheet" : "low"}>
-            {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Панели</button> : null}
-            <div className="card voice-card">
-              <div className="ct">Голосовой {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled" data-stub={voice.stub ? "true" : "false"}>{t("voice.disabled")}</small> : null}
-                <small data-testid="voice-ice" data-count={iceUrls.length}>{iceUrls.join(" · ")}</small>
+          {room.nowPlaying ? (
+            <div className="ctl">
+              <button
+                type="button"
+                className="play"
+                data-testid="playback-play"
+                onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)}
+                aria-label={playing ? "Пауза" : "Играть"}
+              >
+                {playing ? "II" : "▶"}
+              </button>
+              <span className="time">{clock(live.positionMs)}{room.nowPlaying.durationMs ? <span> / {durationLabel(room.nowPlaying.durationMs)}</span> : null}</span>
+              <div className="tlw">
+                <div className="track"><div className="buf" style={{ width: `${Math.max(progress, 6)}%` }} /><div className="prog" style={{ width: `${progress}%` }} /></div>
+                <div className="head" style={{ left: `${progress}%` }} />
+                {members.slice(0, 2).map((member, index) => (
+                  <span key={member.userId} className="fh" style={{ left: `${Math.min(94, progress + 6 + index * 8)}%` }}>
+                    <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName).slice(0, 1)}</span>
+                  </span>
+                ))}
               </div>
-              <div className="voice">
-                <ul className="voice" data-testid="member-list">
+              <span className="pill mono">1×</span>
+            </div>
+          ) : (
+            <div className="ctl ctl-empty">
+              <button
+                type="button"
+                className="play"
+                data-testid="playback-play"
+                onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)}
+                aria-label={playing ? "Пауза" : "Играть"}
+              >
+                {playing ? "II" : "▶"}
+              </button>
+              <span className="empty-title"><i />Плеер свободен</span>
+              <span className="ctl-empty-hint">Вставьте ссылку в сцене или добавьте видео в очередь</span>
+              <span className="pill mono">1×</span>
+            </div>
+          )}
+          <div className={narrow ? "sheet" : "low"}>
+            {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Открыть панели</button> : null}
+            <div className="card voice-card">
+              <div className="ct">Голос
+                {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled" data-stub={voice.stub ? "true" : "false"}>{t("voice.disabled")}</small> : null}
+                <small data-testid="voice-ice" data-count={iceUrls.length} title={iceUrls.join(" · ")}>{iceUrls.length > 0 ? iceUrls.join(" · ") : "STUN по умолчанию"}</small>
+              </div>
+              <div className="voice-body">
+                <ul className="voice-list" data-testid="member-list">
                   {members.map((member) => {
                     const channel = live.state.voice.find((item) => item.userId === member.userId);
                     return (
@@ -459,20 +480,21 @@ export function RoomStage({
                           data-muted={channel ? String(channel.muted) : "none"}
                           data-speaking={channel ? String(channel.speaking) : "false"}
                           onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}
+                          title={member.displayName}
                         >
                           <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
-                          {member.displayName}
-                          {channel?.muted ? <em data-testid={`member-muted-${member.userId}`}> выкл</em> : null}
+                          <span>{member.displayName}</span>
+                          {channel?.muted ? <em data-testid={`member-muted-${member.userId}`}>выкл</em> : null}
                         </button>
                       </li>
                     );
                   })}
                 </ul>
-                <div className="vbtns">
+                <div className="voice-controls">
                   <button type="button" className="vbtn" data-testid="voice-join" disabled={!voiceReady || voice.busy} onClick={() => void voice.join()}>Войти</button>
-                <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? "Проверяем" : "Проверка"}</button>
-                <button type="button" className="vbtn" data-testid="voice-toggle" disabled={!voiceReady} onClick={() => void voice.toggleMute()}>{voice.muted ? "Выкл" : "Вкл"}</button>
-                  <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>✕</button>
+                  <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? "Проверяем" : "Проверка"}</button>
+                  <button type="button" className="vbtn" data-testid="voice-toggle" disabled={!voiceReady} onClick={() => void voice.toggleMute()}>{voice.muted ? "Микрофон: вкл" : "Микрофон: выкл"}</button>
+                  <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>Выйти</button>
                 </div>
                 {voice.error ? <small className="voice-error" data-testid="voice-error" data-code={voice.error}>{voiceErrorText(voice.error)}</small> : null}
                 <div
@@ -496,28 +518,38 @@ export function RoomStage({
               </div>
             </div>
             <div className="card queue-card">
-              <div className="ct">Дальше в очереди <small>{queue.length}</small>{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
-              <div className="q">
-                <ol className="tr-queue q">
-                  {queue.slice(0, 2).map((item) => (
-                    <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider} data-title={item.title}>
-                      <div className="im" style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }} />
-                      <b>{item.title}</b>
-                      <small data-testid="queue-item-duration" data-duration-ms={item.durationMs ?? ""}>{durationLabel(item.durationMs)}</small>
-                    </li>
-                  ))}
-                </ol>
-                <form className="qi add" onSubmit={addUrl}>
-                  <input data-testid="queue-input" value={url} onChange={(event) => { setUrl(event.target.value); setPremiumBlocked(false); }} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
-                  {detected ? <small>{detected}</small> : null}
-                  {premiumUrl ? <small data-testid="premium-gate">Нужен Premium для этой платформы</small> : null}
-                  {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
-                  <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
-                </form>
+              <div className="ct">Очередь <small>{queue.length}</small>{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
+              <div className="queue-section">
+                <h4>Сейчас и далее <small>{queue.length + (room.nowPlaying ? 1 : 0)}</small></h4>
+                <div className="q">
+                  {room.nowPlaying ? (
+                    <div className="queue-now">
+                      <div className="im" style={{ backgroundImage: `url(${posterFor(room.nowPlaying.id, room.nowPlaying.thumbnailUrl)})` }} />
+                      <div><small>в эфире</small><b>{room.nowPlaying.title}</b></div>
+                      <span className="pill mono">{clock(live.positionMs)}</span>
+                    </div>
+                  ) : null}
+                  <ol className="tr-queue q">
+                    {queue.slice(0, 3).map((item) => (
+                      <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider} data-title={item.title}>
+                        <div className="im" style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }} />
+                        <b>{item.title}</b>
+                        <small data-testid="queue-item-duration" data-duration-ms={item.durationMs ?? ""}>{durationLabel(item.durationMs)}</small>
+                      </li>
+                    ))}
+                  </ol>
+                  <form className="qi add" onSubmit={addUrl}>
+                    <input data-testid="queue-input" value={url} onChange={(event) => { setUrl(event.target.value); setPremiumBlocked(false); }} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
+                    <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
+                    {detected ? <small>{detected}</small> : null}
+                    {premiumUrl ? <small data-testid="premium-gate">Нужен Premium для этой платформы</small> : null}
+                    {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
+                  </form>
+                </div>
               </div>
-              <div className="queue-recommendations" data-testid="queue-recommendations">
-                <div className="ct">Рекомендации <small>{recommended.length}</small></div>
-                {recommended.length === 0 ? <p className="tr-empty">Пока пусто</p> : (
+              <div className="queue-section" data-testid="queue-recommendations">
+                <h4>Рекомендации <small>{recommended.length}</small></h4>
+                {recommended.length === 0 ? <p className="empty-note">Пока пусто — рекомендации появятся после первых просмотров.</p> : (
                   <ol className="recommendations-list">
                     {recommended.map((item) => (
                       <li key={item.url} data-testid="queue-recommendation" data-url={item.url} data-reason={item.reason}>
@@ -529,14 +561,14 @@ export function RoomStage({
                   </ol>
                 )}
               </div>
-              <div className="queue-history" data-testid="queue-history">
-                <div className="ct">
+              <div className="queue-section queue-history" data-testid="queue-history">
+                <h4>
                   История <small data-testid="queue-history-count">{history.length}</small>
                   {live.state.self.role === "host" && history.length > 0 ? (
-                    <button type="button" data-testid="history-clear" onClick={() => void clearHistory()}>Очистить историю</button>
+                    <button type="button" data-testid="history-clear" onClick={() => void clearHistory()}>Очистить</button>
                   ) : null}
-                </div>
-                {history.length === 0 ? <p className="tr-empty">История пуста</p> : (
+                </h4>
+                {history.length === 0 ? <p className="empty-note">История пуста</p> : (
                   <ol className="tr-queue history-list">
                     {history.map((item) => (
                       <li key={item.id} data-testid="queue-history-item" data-url={item.url}>
@@ -549,94 +581,154 @@ export function RoomStage({
                 )}
               </div>
               {live.canControl ? (
-                <form data-testid="room-defaults" onSubmit={(event) => {
-                  event.preventDefault();
-                  quietly(fetch(`${apiUrl}/rooms/${room.id}/defaults`, {
-                    method: "POST",
-                    headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
-                    body: JSON.stringify(permissions),
-                  }));
-                }}>
-                  {(Object.keys(permissions) as Array<keyof typeof permissions>).map((key) => (
-                    <label key={key}>
-                      <input data-testid={`perm-${key}`} type="checkbox" checked={permissions[key]} onChange={(event) => setPermissions((current) => ({ ...current, [key]: event.target.checked }))} />
-                      {key}
-                    </label>
-                  ))}
-                  <button type="submit" data-testid="perm-save">Права</button>
-                </form>
+                <>
+                  <div className="queue-section">
+                    <h4>Права зрителей</h4>
+                    <form className="perms" data-testid="room-defaults" onSubmit={(event) => {
+                      event.preventDefault();
+                      quietly(fetch(`${apiUrl}/rooms/${room.id}/defaults`, {
+                        method: "POST",
+                        headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
+                        body: JSON.stringify(permissions),
+                      }));
+                    }}>
+                      {(Object.keys(permissions) as Array<keyof typeof permissions>).map((key) => (
+                        <label key={key}>
+                          <input data-testid={`perm-${key}`} type="checkbox" checked={permissions[key]} onChange={(event) => setPermissions((current) => ({ ...current, [key]: event.target.checked }))} />
+                          {permissionLabel(key)}
+                        </label>
+                      ))}
+                      <button type="submit" data-testid="perm-save">Сохранить</button>
+                    </form>
+                  </div>
+                  <div className="queue-section">
+                    <h4>Жалоба на участника</h4>
+                    <form className="report-form" data-testid="report-form" onSubmit={(event) => {
+                      event.preventDefault();
+                      const data = new FormData(event.currentTarget);
+                      const reason = String(data.get("reason") ?? "").trim();
+                      const target = String(data.get("target") ?? "");
+                      if (!reason || !target || target === live.selfId) return;
+                      quietly(fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) }));
+                      event.currentTarget.reset();
+                    }}>
+                      <select data-testid="report-target" name="target" aria-label="На кого жалоба">
+                        {members.filter((member) => member.userId !== live.selfId).map((member) => (
+                          <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                        ))}
+                      </select>
+                      <input data-testid="report-reason" name="reason" placeholder="Причина жалобы" aria-label="Причина жалобы" />
+                      <button type="submit" data-testid="report-send">Пожаловаться</button>
+                    </form>
+                  </div>
+                  <div className="queue-actions">
+                    <button type="button" className="btn btn-outline" data-testid="queue-next" onClick={live.playNext}>{t("queue.next")}</button>
+                  </div>
+                </>
               ) : null}
-              {live.canControl ? <button type="button" data-testid="queue-next" onClick={live.playNext}>{t("queue.next")}</button> : null}
-              <form data-testid="report-form" onSubmit={(event) => {
-                event.preventDefault();
-                const data = new FormData(event.currentTarget);
-                const reason = String(data.get("reason") ?? "").trim();
-                const target = String(data.get("target") ?? "");
-                if (!reason || !target || target === live.selfId) return;
-                quietly(fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) }));
-                event.currentTarget.reset();
-              }}>
-                <select data-testid="report-target" name="target" aria-label="report target">
-                  {members.filter((member) => member.userId !== live.selfId).map((member) => (
-                    <option key={member.userId} value={member.userId}>{member.displayName}</option>
-                  ))}
-                </select>
-                <input data-testid="report-reason" name="reason" placeholder="Жалоба" aria-label="report" />
-                <button type="submit" data-testid="report-send">Пожаловаться</button>
-              </form>
             </div>
           </div>
         </section>
         <aside className={gruv ? "pane irc" : "rail"}>
-          <div className="tabs">
-            <span className="tab on">Чат <span className="n">{live.state.messages.length}</span></span>
-            <span className="tab">Люди <span className="n">{members.length}</span></span>
-            <span className="tab">Очередь <span className="n">{queue.length}</span></span>
+          <div className="tabs" role="tablist" aria-label="Панели комнаты">
+            <button type="button" role="tab" aria-selected={railTab === "chat"} className={railTab === "chat" ? "tab on" : "tab"} onClick={() => setRailTab("chat")}>Чат <span className="n">{live.state.messages.length}</span></button>
+            <button type="button" role="tab" aria-selected={railTab === "people"} className={railTab === "people" ? "tab on" : "tab"} onClick={() => setRailTab("people")}>Люди <span className="n">{members.length}</span></button>
+            <button type="button" role="tab" aria-selected={railTab === "queue"} className={railTab === "queue" ? "tab on" : "tab"} onClick={() => setRailTab("queue")}>Очередь <span className="n">{queue.length}</span></button>
             {unread > 0 ? (
               <button type="button" className="unread-anchor" data-testid="unread-anchor" onClick={jumpToUnread}>
                 К новым · {unread}
               </button>
             ) : null}
           </div>
-          <div className="log" data-testid="chat-log" ref={chatRef}>
-            {live.state.messages.map((message, index) => {
-              const mine = message.userId === live.selfId;
-              const hue = personHue(message.userId);
-              return (
-                <Fragment key={message.id}>
-                  {index === firstUnreadIndex && unread > 0 ? (
-                    <span className="unread-divider" data-testid="unread-divider">Непрочитанные</span>
-                  ) : null}
-                  <div
-                    className={mine ? "m mine" : "m"}
-                    data-testid="chat-message"
-                    data-unread={index >= firstUnreadIndex && unread > 0 ? "true" : "false"}
-                  >
-                    {mine ? null : <span className={`av p-${hue}`}>{initials(message.displayName)}</span>}
-                    <div className="bu">
-                      {mine ? null : <div className={`n p-${hue}`}>{message.displayName}</div>}
-                      {message.body}
-                    </div>
-                  </div>
-                </Fragment>
-              );
-            })}
-          </div>
-          <div className="quick">{Object.values(emojiCategories).flat().map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)}>{emoji}</button>)}</div>
-          {emojiOpen ? <EmojiPicker recent={recentEmojis} onPick={pickEmoji} /> : null}
-          <form className="comp" onSubmit={sendChat}>
-            <button
-              type="button"
-              className="emoji-toggle"
-              data-testid="emoji-picker-toggle"
-              aria-expanded={emojiOpen}
-              onClick={() => setEmojiOpen((value) => !value)}
-            >
-              😊
-            </button>
-            <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder="Написать в комнату…" />
-            <button type="submit" className="send" data-testid="chat-send">{t("chat.send")}</button>
-          </form>
+          {railTab === "chat" ? (
+            <>
+              <div className="log" data-testid="chat-log" ref={chatRef}>
+                {live.state.messages.length === 0 ? <p className="rail-empty">Пока тихо. Напишите первым.</p> : null}
+                {live.state.messages.map((message, index) => {
+                  const mine = message.userId === live.selfId;
+                  const hue = personHue(message.userId);
+                  return (
+                    <Fragment key={message.id}>
+                      {index === firstUnreadIndex && unread > 0 ? (
+                        <span className="unread-divider" data-testid="unread-divider">Непрочитанные</span>
+                      ) : null}
+                      <div
+                        className={mine ? "m mine" : "m"}
+                        data-testid="chat-message"
+                        data-unread={index >= firstUnreadIndex && unread > 0 ? "true" : "false"}
+                      >
+                        {mine ? null : <span className={`av p-${hue}`}>{initials(message.displayName)}</span>}
+                        <div className="bu">
+                          {mine ? null : <div className={`n p-${hue}`}>{message.displayName}</div>}
+                          {message.body}
+                        </div>
+                      </div>
+                    </Fragment>
+                  );
+                })}
+              </div>
+              <div className="quick">{Object.values(emojiCategories).flat().slice(0, 7).map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)} aria-label={`Реакция ${emoji}`}>{emoji}</button>)}</div>
+              {emojiOpen ? <EmojiPicker recent={recentEmojis} onPick={pickEmoji} /> : null}
+              <form className="comp" onSubmit={sendChat}>
+                <button
+                  type="button"
+                  className="emoji-toggle"
+                  data-testid="emoji-picker-toggle"
+                  aria-expanded={emojiOpen}
+                  aria-label="Эмодзи"
+                  onClick={() => setEmojiOpen((value) => !value)}
+                >
+                  😊
+                </button>
+                <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder="Написать в комнату…" aria-label="Сообщение" />
+                <button type="submit" className="send" data-testid="chat-send" aria-label={t("chat.send")}>➤</button>
+              </form>
+            </>
+          ) : null}
+          {railTab === "people" ? (
+            <div className="log" data-testid="rail-people">
+              <div className="rail-section">
+                <h4>Ведущий</h4>
+                {members.filter((member) => member.role === "host").map((member) => {
+                  const channel = live.state.voice.find((item) => item.userId === member.userId);
+                  return (
+                    <button key={member.userId} type="button" className="rail-member" onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}>
+                      <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
+                      <div><b>{member.displayName}</b><small>{channel?.speaking ? "говорит" : channel ? "в голосе" : "в комнате"}</small></div>
+                      <span className="mini">Профиль</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="rail-section">
+                <h4>В комнате · {members.length}</h4>
+                {members.map((member) => {
+                  const channel = live.state.voice.find((item) => item.userId === member.userId);
+                  return (
+                    <button key={member.userId} type="button" className="rail-member" onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}>
+                      <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
+                      <div><b>{member.displayName}{member.userId === live.selfId ? " · вы" : ""}</b><small>{channel ? (channel.muted ? "микрофон выкл" : "в голосе") : "смотрит"}</small></div>
+                      <span className="mini">Профиль</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          {railTab === "queue" ? (
+            <div className="log" data-testid="rail-queue">
+              <div className="rail-section">
+                <h4>Сейчас</h4>
+                {room.nowPlaying ? <div className="rail-queue-item"><b>{room.nowPlaying.title}</b><small>{clock(live.positionMs)} / {durationLabel(room.nowPlaying.durationMs)}</small></div> : <div className="rail-empty">Ничего не играет</div>}
+              </div>
+              <div className="rail-section">
+                <h4>Далее · {queue.length}</h4>
+                {queue.length === 0 ? <div className="rail-empty">Очередь пуста</div> : queue.map((item) => (
+                  <div key={item.id} className="rail-queue-item"><b>{item.title}</b><small>{durationLabel(item.durationMs)} · {item.provider}</small></div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {gruv ? (
             <form className="status" onSubmit={(event) => { event.preventDefault(); if (command.trim()) live.sendChat(command.trim()); setCommand(""); }}>
               <span className="sl-mode">ROOM</span>

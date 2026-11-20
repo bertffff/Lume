@@ -56,7 +56,7 @@ export const en: Record<MessageKey, string> = {
   "chat.sample2": "Keep the film quieter than the voices.",
   "voice.title": "Voice",
   "voice.livekit": "LiveKit is off",
-  "voice.disabled": "Voice is off. Set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET.",
+  "voice.disabled": "Voice is turned off by the room host.",
   "voice.join": "Join voice",
   "voice.leave": "Leave voice",
   "voice.mic": "Microphone",

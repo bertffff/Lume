@@ -56,6 +56,7 @@ export function PlayerPanel({
   const [hideFloats, setHideFloats] = useState(() => window.localStorage.getItem("lume-hide-floats") === "1");
   const [hideRoomFloats, setHideRoomFloats] = useState(false);
   const [quality, setQuality] = useState(() => window.localStorage.getItem("lume-quality") ?? "auto");
+  const [emptyUrl, setEmptyUrl] = useState("");
   const [lowBandwidth, setLowBandwidth] = useState(() => window.localStorage.getItem("lume-low-bandwidth") === "1");
   const live = useRoomActions();
   useEffect(() => {
@@ -325,7 +326,32 @@ export function PlayerPanel({
   if (bare) {
     return (
       <div className="tr-frame bare-stage" ref={frameRef}>
-        {nowPlaying ? <div ref={mountRef} className="tr-embed" data-testid="player-mount" /> : <p className="tr-empty">{t("player.empty")}</p>}
+        {nowPlaying ? (
+          <div ref={mountRef} className="tr-embed" data-testid="player-mount" />
+        ) : (
+          <div className="player-empty" data-testid="player-empty">
+            <span className="pe-ic" aria-hidden="true">▶</span>
+            <h2>Пока ничего не играет</h2>
+            <p>Вставьте ссылку на видео — оно встанет в очередь. Запустить может ведущий комнаты.</p>
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              const next = emptyUrl.trim();
+              if (!next) return;
+              live?.addQueue(next);
+              setEmptyUrl("");
+            }}>
+              <input
+                value={emptyUrl}
+                onChange={(event) => setEmptyUrl(event.target.value)}
+                placeholder="https://youtube.com/watch?v=…"
+                aria-label="Ссылка на видео"
+                data-testid="player-empty-url"
+              />
+              <button type="submit" className="btn btn-primary" data-testid="player-empty-add">Добавить в очередь</button>
+            </form>
+            <span className="pe-hint">YouTube · VK · Rutube · прямая ссылка на файл</span>
+          </div>
+        )}
       </div>
     );
   }

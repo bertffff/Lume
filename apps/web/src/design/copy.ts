@@ -8,7 +8,7 @@ const ru = {
   create: "Создать комнату",
   createHint: "Ссылка, друзья — и смотрим",
   join: "Войти по коду",
-  joinHint: "Код комнаты из шести знаков",
+  joinHint: "Код комнаты из приглашения",
   enter: "Войти",
   rooms: "Открытые комнаты",
   all: "Все",
@@ -59,7 +59,7 @@ const en: typeof ru = {
   create: "Create a room",
   createHint: "A link, friends, and we watch",
   join: "Join with a code",
-  joinHint: "A six-character room code",
+  joinHint: "The room code from your invitation",
   enter: "Join",
   rooms: "Open rooms",
   all: "All",
@@ -104,4 +104,23 @@ const en: typeof ru = {
 
 export function copy(locale: Locale) {
   return locale === "en" ? en : ru;
+}
+
+export const permissionLabels: Record<string, string> = {
+  canChat: "Чат",
+  canQueue: "Очередь",
+  canSpeak: "Голос",
+  canReact: "Реакции",
+  canSeek: "Перемотка",
+  canInvite: "Приглашения",
+};
+
+export function permissionLabel(key: string): string {
+  return permissionLabels[key] ?? "Право";
+}
+
+export function viewersWord(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  return count === 1 || (mod10 === 1 && mod100 !== 11) ? "смотрит" : "смотрят";
 }

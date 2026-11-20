@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { viewerPermissionKeys } from "@lume/contracts";
 import { apiUrl } from "../api/client.js";
+import { permissionLabel } from "./copy.js";
 
 export interface RoomSettings {
   title: string;
@@ -100,7 +101,8 @@ export function RoomSettingsSheet({
       >
         <div className="mh">
           <h2>Настройки комнаты</h2>
-          <button type="button" data-testid="room-settings-close" onClick={onClose}>×</button>
+          <span className="sp" />
+          <button type="button" data-testid="room-settings-close" onClick={onClose} aria-label="Закрыть">×</button>
         </div>
         <div className="mb">
           <label className="field">
@@ -145,7 +147,7 @@ export function RoomSettingsSheet({
           </div>
           {viewerPermissionKeys.map((key) => (
             <label className="set-row" key={key}>
-              <div><b>{key}</b></div>
+              <div><b>{permissionLabel(key)}</b><small>{key === "canSeek" ? "Можно перематывать видео" : "Разрешено зрителям по умолчанию"}</small></div>
               <input
                 data-testid={`settings-default-${key}`}
                 type="checkbox"

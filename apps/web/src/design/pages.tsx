@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { favouriteLine, linkedLabel, roomPresetById, roomPresets, viewerPermissionKeys, type RoomPresetId } from "@lume/contracts";
+import { permissionLabel } from "./copy.js";
+import { initials, personHue } from "./theme.js";
 import type { ModeId, StyleId } from "./theme.js";
-import { heatCells } from "./fixtures.js";
 
 export function SettingsScreen({
   style,
@@ -27,7 +28,7 @@ export function SettingsScreen({
   onRemoveGlobalBan?: (userId: string) => void;
 }) {
   const [telegramId, setTelegramId] = useState("");
-  const [linked, setLinked] = useState("…");
+  const [linked, setLinked] = useState("не привязан");
   const [services, setServices] = useState<string[]>([]);
   const [friendsPublic, setFriendsPublic] = useState(true);
   const [historyPublic, setHistoryPublic] = useState(true);
@@ -99,9 +100,11 @@ export function SettingsScreen({
         </div>
         <div className="set-row">
           <div><b>Telegram</b><small>{linked}. Отвязка только если есть почта.</small></div>
-          <input value={telegramId} onChange={(event) => setTelegramId(event.target.value)} placeholder="id" aria-label="telegram id" />
-          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/link-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ telegramId }) }); }}>Привязать</button>
-          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/unlink-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Отвязать</button>
+          <div className="inline-actions">
+            <input value={telegramId} onChange={(event) => setTelegramId(event.target.value)} placeholder="Telegram ID" aria-label="Telegram ID" />
+            <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/link-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ telegramId }) }); }}>Привязать</button>
+            <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/unlink-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Отвязать</button>
+          </div>
         </div>
         <div className="set-row"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
         <div className="set-row">
@@ -185,6 +188,8 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
   } | null>(null);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
+  const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string }>>([]);
+  const [heat, setHeat] = useState<Array<{ day: string; score: number }>>([]);
   const [boards, setBoards] = useState<{ messages: LeaderboardRow[]; reactions: LeaderboardRow[]; voice: LeaderboardRow[] }>({ messages: [], reactions: [], voice: [] });
   useEffect(() => {
     if (!token || !apiUrl) return;
@@ -198,11 +203,16 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
       .catch(() => setBoards({ messages: [], reactions: [], voice: [] }));
     void fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
-      .then((payload: { platforms?: Array<{ source: string; count: number }>; topFriends?: Array<{ partnerId: string; seconds: number }> }) => {
+      .then((payload: { platforms?: Array<{ source: string; count: number }>; topFriends?: Array<{ partnerId: string; seconds: number }>; heatmap?: Array<{ day: string; score: number }> }) => {
         setPlatforms(payload.platforms ?? []);
         setFriendsWatch(payload.topFriends ?? []);
+        setHeat(Array.isArray(payload.heatmap) ? payload.heatmap : []);
       })
       .catch(() => undefined);
+    void fetch(`${apiUrl}/friends`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { friends?: Array<{ id: string; userId: string; displayName: string }> }) => setFriends(payload.friends ?? []))
+      .catch(() => setFriends([]));
     void fetch(`${apiUrl}/me/favourites`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number }> }) => setFavourites(payload.items ?? []))
@@ -238,7 +248,7 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
     <div className="profile-wrap">
       <aside className="side-p">
         <div className="card" style={{ textAlign: "center" }}>
-          <span className="av p-me ring" style={{ width: 80, height: 80, fontSize: 26, margin: "0 auto 10px" }}>{(displayName ?? "Вы").slice(0, 2).toUpperCase()}</span>
+          <span className="av p-me ring" style={{ width: 80, height: 80, fontSize: 26, margin: "0 auto 10px" }}>{initials(displayName ?? "Вы")}</span>
           <b className="nm p-me" style={{ display: "block", font: "600 18px/22px var(--font-display)" }}>{displayName ?? "Вы"}</b>
           <div style={{ color: "var(--text-2)", fontSize: 13, marginTop: 4 }}>
             <span data-testid="profile-level">Уровень {level}</span> · <span data-testid="profile-xp">{totalXp} XP</span>
@@ -258,16 +268,20 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
         </div>
         <div className="card">
           <h3>Друзья</h3>
-          <div className="fr"><span className="av lg p-lisa">ЛМ</span><div><div className="n p-lisa">Лиза</div><div className="s">ведёт кинозал</div></div></div>
-          <div className="fr"><span className="av lg p-artem">АТ</span><div><div className="n p-artem">Артём</div><div className="s">в зале</div></div></div>
+          {friends.length > 0 ? friends.slice(0, 5).map((friend) => (
+            <div className="fr" key={friend.id}>
+              <span className={`av lg p-${personHue(friend.userId)}`}>{initials(friend.displayName)}</span>
+              <div><div className={`n p-${personHue(friend.userId)}`}>{friend.displayName}</div><div className="s">в lume</div></div>
+            </div>
+          )) : <p className="empty-note">Пока никого нет — найдите друзей в комнате или по имени.</p>}
         </div>
       </aside>
       <main>
         <div className="tabs2"><button type="button" className="tab on">Обзор</button><button type="button" className="tab">История</button><button type="button" className="tab">Друзья</button><button type="button" className="tab">Достижения</button></div>
         <div className="grid3">
-          <div className="stat"><small>Сеансов в этом году</small><b>142</b></div>
-          <div className="stat"><small>Стрик</small><b>14 дней</b></div>
-          <div className="stat"><small>Вечеров вместе</small><b>38</b></div>
+          <div className="stat"><small>Уровень</small><b>{level}</b></div>
+          <div className="stat"><small>Опыт</small><b>{totalXp} XP</b></div>
+          <div className="stat"><small>Достижения</small><b>{earnedCount} из {totalAchievements}</b></div>
         </div>
         <div className="card" data-testid="profile-engagement">
           <div className="heat-top"><h3>Вовлечённость</h3></div>
@@ -295,8 +309,12 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
         </div>
         <div className="card heat-wrap">
           <div className="heat-top"><h3>Ваш сезон</h3></div>
-          <div className="stats"><b>14 дней</b> подряд · 142 сеанса</div>
-          <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
+          {heat.length > 0 ? (
+            <>
+              <div className="stats">{heat.filter((cell) => cell.score > 0).length} дней с сеансами · {heat.reduce((total, cell) => total + cell.score, 0)} сеансов</div>
+              <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
+            </>
+          ) : <p className="empty-note">Проведите первый сеанс — здесь появится карта сезона.</p>}
         </div>
         <h3>Таблица</h3>
         <div data-testid="profile-leaderboards">
@@ -329,11 +347,14 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             </p>
           ))}
         </div>
-        <h3>Недавние комнаты</h3>
-        <div className="rooms">
-          <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }} /><div className="bd"><b>Ночной кинозал</b><small>Пустая дорога</small></div></div>
-          <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }} /><div className="bd"><b>Пятничный звук</b><small>Концерт на крыше</small></div></div>
-        </div>
+        <h3>Недавние видео</h3>
+        {history.length > 0 ? (
+          <div className="rooms">
+            {history.slice(0, 3).map((item) => (
+              <div key={item.url} className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }} /><div className="bd"><b>{item.title || item.url}</b><div className="meta"><span className="viewers">просмотрено {item.watchCount} раз</span></div></div></div>
+            ))}
+          </div>
+        ) : <p className="empty-note">Пока нет недавних комнат.</p>}
       </main>
     </div>
   );
@@ -421,82 +442,118 @@ export function NotificationsScreen() {
     ["p-me", "АВ", "Достижение «Ночной экран»", "Вы посмотрели 10 сеансов после полуночи", "3 дня назад"],
   ];
   return (
-    <aside className="npanel">
-      <div className="mh"><h2>Уведомления</h2><span className="sp" /><span>все</span></div>
-      {items.map(([hue, initials, title, body, ago]) => (
-        <div className="nitem" key={title}><span className={`av ${hue}`}>{initials}</span><div><div className="t">{title}</div><div className="s">{body}</div><div className="ago">{ago}</div></div></div>
-      ))}
-    </aside>
+    <div className="notifications-page">
+      <aside className="npanel">
+        <div className="mh"><h2>Уведомления</h2><span className="sp" /><span>все</span></div>
+        {items.map(([hue, initials, title, body, ago]) => (
+          <div className="nitem" key={title}><span className={`av ${hue}`}>{initials}</span><div><div className="t">{title}</div><div className="s">{body}</div><div className="ago">{ago}</div></div></div>
+        ))}
+      </aside>
+    </div>
   );
 }
 
-export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit }: {
+export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit, onCancel }: {
   title: string;
   onTitle: (value: string) => void;
   preset: RoomPresetId | null;
   onPreset: (value: RoomPresetId) => void;
   onSubmit: (event: FormEvent) => void;
+  onCancel?: () => void;
 }) {
   const chosen = preset ? roomPresetById(preset) : null;
   return (
-    <div className="overlay docked"><form className="modal lg" onSubmit={onSubmit}>
-      <div className="mh"><h2>Создать комнату</h2><span className="sp" /></div>
-      <div className="mb">
-        <div className="steps"><span className="on" /><span className="on" /><span /></div>
-        <label className="field">Название<input data-testid="lobby-title" value={title || "Ночной кинозал"} onChange={(event) => onTitle(event.target.value)} /></label>
-        <label className="choice-label">Пресет модерации</label>
-        <div className="chips" data-testid="create-presets">
-          {roomPresets.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={preset === item.id ? "pill on" : "pill"}
-              data-testid={`create-preset-${item.id}`}
-              onClick={() => {
-                onPreset(item.id);
-                onTitle(item.title);
-              }}
-            >
-              {item.title}
-            </button>
-          ))}
+    <div className="overlay docked" role="dialog" aria-modal="true" aria-label="Создание комнаты">
+      <form className="modal lg" onSubmit={onSubmit}>
+        <div className="mh">
+          <div>
+            <h2>Создать комнату</h2>
+            <small style={{ color: "var(--text-2)", fontSize: 12 }}>Шаг 1 из 2 · название и правила</small>
+          </div>
+          <span className="sp" />
+          <button type="button" aria-label="Закрыть" onClick={onCancel}>×</button>
         </div>
-        <label className="choice-label">Кто может войти</label>
-        <div className="choices">
-          <div className={chosen && !chosen.isPublic ? "choice on" : "choice"}><b>По коду</b><p>Кто знает код комнаты</p></div>
-          <div className={chosen?.isPublic ? "choice on" : "choice"}><b>Публичная</b><p>Видна в открытых комнатах</p></div>
-        </div>
-        {chosen ? (
-          <p className="lead" data-testid="create-preset-summary" data-max={chosen.maxMembers} data-public={chosen.isPublic ? "true" : "false"} data-slow={chosen.slowModeSeconds}>
-            {chosen.hint} Лимит {chosen.maxMembers}.
-          </p>
-        ) : null}
-        <label className="choice-label">Права зрителей по умолчанию</label>
-        <div className="choices" data-testid="create-preset-rights">
-          {viewerPermissionKeys.map((key) => (
-            <div key={key} className={chosen?.defaults[key] ? "choice on" : "choice"}>
-              <b>{key}</b>
-              <p>{chosen ? (chosen.defaults[key] ? "Разрешено" : "Запрещено") : "Из пресета"}</p>
+        <div className="mb">
+          <div className="steps"><span className="on" /><span className="on" /><span /></div>
+          <label className="field">Название
+            <input data-testid="lobby-title" value={title} onChange={(event) => onTitle(event.target.value)} placeholder="Ночной кинозал" />
+          </label>
+          <div>
+            <div className="choice-label">Пресет модерации</div>
+            <div className="chips" data-testid="create-presets">
+              {roomPresets.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={preset === item.id ? "pill on" : "pill"}
+                  data-testid={`create-preset-${item.id}`}
+                  onClick={() => {
+                    onPreset(item.id);
+                    onTitle(item.title);
+                  }}
+                >
+                  {item.title}
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+          <div>
+            <div className="choice-label">Кто может войти</div>
+            <div className="choices">
+              <div className={chosen && !chosen.isPublic ? "choice on" : "choice"}><b>По коду</b><p>Кто знает код комнаты</p></div>
+              <div className={chosen?.isPublic ? "choice on" : "choice"}><b>Публичная</b><p>Видна в открытых комнатах</p></div>
+            </div>
+          </div>
+          {chosen ? (
+            <p className="lead" data-testid="create-preset-summary" data-max={chosen.maxMembers} data-public={chosen.isPublic ? "true" : "false"} data-slow={chosen.slowModeSeconds}>
+              {chosen.hint} Лимит {chosen.maxMembers}.
+            </p>
+          ) : null}
+          <div>
+            <div className="choice-label">Права зрителей по умолчанию</div>
+            <div className="choices" data-testid="create-preset-rights">
+              {viewerPermissionKeys.map((key) => (
+                <div key={key} className={chosen?.defaults[key] ? "choice on" : "choice"}>
+                  <b>{permissionLabel(key)}</b>
+                  <p>{chosen ? (chosen.defaults[key] ? "Разрешено" : "Запрещено") : "Из пресета"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="mf"><button type="button" className="btn btn-ghost">Назад</button><button className="btn btn-primary" type="submit" data-testid="lobby-create">Создать комнату</button></div>
-    </form></div>
+        <div className="mf">
+          <button type="button" className="btn btn-ghost" onClick={onCancel}>Назад</button>
+          <button className="btn btn-primary" type="submit" data-testid="lobby-create">Создать комнату</button>
+        </div>
+      </form>
+    </div>
   );
 }
 
-export function JoinScreen({ code, onCode, onSubmit }: { code: string; onCode: (value: string) => void; onSubmit: (event: FormEvent) => void }) {
+export function JoinScreen({ code, onCode, onSubmit, onCancel }: { code: string; onCode: (value: string) => void; onSubmit: (event: FormEvent) => void; onCancel?: () => void }) {
   return (
-    <div className="overlay docked"><form className="modal" onSubmit={onSubmit}>
-      <div className="mh"><h2>Войти по коду</h2></div>
-      <div className="mb">
-        <p>Введите код комнаты — шесть знаков, как в приглашении.</p>
-        <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i>2</i><i className="blank">_</i></div>
-        <input className="inbox mono" data-testid="lobby-code" value={code} onChange={(event) => onCode(event.target.value)} aria-label="code" />
-      </div>
-      <div className="mf"><button type="button" className="btn btn-ghost">Отмена</button><button className="btn btn-social" type="submit" data-testid="lobby-join">Войти</button></div>
-    </form></div>
+    <div className="overlay docked" role="dialog" aria-modal="true" aria-label="Вход по коду">
+      <form className="modal" onSubmit={onSubmit}>
+        <div className="mh">
+          <div>
+            <h2>Войти по коду</h2>
+            <small style={{ color: "var(--text-2)", fontSize: 12 }}>Код из приглашения</small>
+          </div>
+          <span className="sp" />
+          <button type="button" aria-label="Закрыть" onClick={onCancel}>×</button>
+        </div>
+        <div className="mb">
+          <label className="field">Код комнаты
+            <input className="mono" data-testid="lobby-code" value={code} onChange={(event) => onCode(event.target.value)} placeholder="a7psyqm9" maxLength={12} autoComplete="off" style={{ height: 52, fontSize: 20, letterSpacing: ".2em", textAlign: "center" }} />
+          </label>
+          <p className="lead">Код не чувствителен к регистру. Если код не подходит — попросите новое приглашение у ведущего.</p>
+        </div>
+        <div className="mf">
+          <button type="button" className="btn btn-ghost" onClick={onCancel}>Отмена</button>
+          <button className="btn btn-primary" type="submit" data-testid="lobby-join">Войти</button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -547,7 +604,7 @@ export function RoomSettingsScreen({ onSave, token, apiUrl, roomId }: { onSave: 
         <div className="set-row"><div><b>Голос</b><small>Зрители могут говорить</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
         <div className="set-row"><div><b>Медленный режим</b><small>Одно сообщение в 10 секунд</small></div></div>
         {viewerPermissionKeys.map((key) => (
-          <div className="set-row" key={key}><div><b>{key}</b></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
+          <div className="set-row" key={key}><div><b>{permissionLabel(key)}</b><small>Разрешено зрителям по умолчанию</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
         ))}
         <button className="btn btn-primary" type="submit">Сохранить</button>
         <h3>Сбои синхронизации</h3>
@@ -576,29 +633,70 @@ export function EmptyScreen({ title, body, action }: { title: string; body?: str
   );
 }
 
-export function MobileHome() {
+export function MobileHome({
+  session,
+  demo = false,
+  rooms = [],
+  name,
+  onName,
+  onSignIn,
+  onTelegram,
+  onCreate,
+  onOpenRoom,
+  code,
+  onCode,
+  onJoin,
+}: {
+  session: { user: { displayName: string } } | null;
+  demo?: boolean;
+  rooms?: Array<{ id: string; title: string; code: string; memberCount?: number }>;
+  name: string;
+  onName: (value: string) => void;
+  onSignIn: (event: FormEvent) => void;
+  onTelegram: () => void;
+  onCreate: () => void;
+  onOpenRoom: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
+  code: string;
+  onCode: (value: string) => void;
+  onJoin: (event: FormEvent) => void;
+}) {
   return (
     <div className="pad mobile-home">
-      <div className="greet"><h1>Добрый вечер</h1><div className="sub">Трое друзей сейчас смотрят</div></div>
-      <div className="stories">
-        <div className="st new"><div className="ring">+</div>Своя</div>
-        <div className="st p-lisa"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }} /></div>Лиза</div>
-        <div className="st p-sonya"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }} /></div>Соня</div>
-        <div className="st p-dasha"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }} /></div>Даша</div>
-        <div className="st p-nick"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /></div>Ник</div>
-      </div>
+      <div className="greet"><h1>Добрый вечер{session ? `, ${session.user.displayName}` : ""}</h1><div className="sub">{session ? "Открытые комнаты и быстрый вход" : "Представьтесь, чтобы создать комнату"}</div></div>
+      {!session && !demo ? (
+        <form className="tile auth" onSubmit={onSignIn}>
+          <div className="tile-head"><span className="tile-ic">☺</span><div><h3>Вход в lume</h3><p>Имя увидит только ваша компания.</p></div></div>
+          <label>Ваше имя<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder="Например, Альберт" autoComplete="nickname" /></label>
+          <div className="actions">
+            <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">Войти</button>
+            <button type="button" className="btn btn-telegram" onClick={onTelegram}>Войти через Telegram</button>
+          </div>
+        </form>
+      ) : null}
       <div className="acts">
-        <div className="tile resume"><div className="c"><div className="eyebrow">Продолжить</div><h2>Пустая дорога</h2><div className="sub">Ночной кинозал · 01:12:44</div><div className="pb"><i /></div></div></div>
-        <div className="tile create"><div className="ic">+</div><h3>Создать комнату</h3><p>Ссылка, друзья — и смотрим</p></div>
-        <div className="tile join"><div className="ic">#</div><h3>Войти по коду</h3>
-          <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i className="blank">2</i><i className="blank">M</i></div>
-          <button type="button" className="go">Войти</button>
+        <div className="tile create">
+          <div className="tile-head"><span className="tile-ic">+</span><div><h3>Создать комнату</h3><p>Ссылка, друзья — и смотрим</p></div></div>
+          <div className="actions"><button type="button" className="btn btn-primary" onClick={onCreate}>Открыть мастер</button></div>
         </div>
+        <form className="tile join" onSubmit={onJoin}>
+          <div className="tile-head"><span className="tile-ic">#</span><div><h3>Войти по коду</h3><p>Код из приглашения</p></div></div>
+          <label>Код комнаты<input data-testid="lobby-code" className="mono" value={code} onChange={(event) => onCode(event.target.value)} placeholder="a7psyqm9" maxLength={12} autoComplete="off" /></label>
+          <div className="actions"><button type="submit" className="btn btn-social" data-testid="lobby-join">Войти</button></div>
+        </form>
       </div>
       <div className="sec"><h3>Открытые комнаты</h3></div>
       <div className="rooms">
-        <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }} /><div><b>Пятничный звук</b><small>38 смотрят · Соня</small></div></div>
-        <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><div><b>Нуар по средам</b><small>12 смотрят · Ник</small></div></div>
+        {demo ? (
+          <>
+            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }} /><div className="bd"><b>Пятничный звук</b><div className="meta"><span className="viewers">38 смотрят · Соня</span><span className="code">9AX-4K</span></div></div></div>
+            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><div className="bd"><b>Нуар по средам</b><div className="meta"><span className="viewers">12 смотрят · Ник</span><span className="code">2MN-7Q</span></div></div></div>
+          </>
+        ) : rooms.length > 0 ? rooms.map((room) => (
+          <button key={room.id} type="button" className="rc" onClick={() => onOpenRoom(room)}>
+            <div className="th" style={{ backgroundImage: `url(/dev-seed/desert.jpg)` }} />
+            <div className="bd"><b>{room.title}</b><div className="meta"><span className="viewers">{room.memberCount ?? 0} в комнате</span><span className="code">{room.code}</span></div></div>
+          </button>
+        )) : <p className="empty-note">Открытых комнат пока нет. Создайте свою.</p>}
       </div>
     </div>
   );

@@ -2,10 +2,9 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
-import { legacyText } from "../i18n/legacy.js";
 import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
-import { copy } from "./copy.js";
+import { copy, viewersWord } from "./copy.js";
 import { heatCells } from "./fixtures.js";
 import { AuthScreen, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
 import { posterFor } from "./posters.js";
@@ -262,27 +261,65 @@ export function DesignApp({
               <span className="kbd">/</span>
             </label>
           )}
-          <div style={{ flex: 1 }} />
-          <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><i className="ph ph-bell" /><span className="badge-dot" /></button>
-          <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><i className="ph ph-sun" /><i className="ph ph-moon" /></button>
-          <button type="button" className="me" onClick={() => go("/profile")}>
-            <span className="av p-me">{demo ? "АВ" : initials(session?.user.displayName ?? "?")}</span>
-            <span className="nm p-me">{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
-          </button>
+          <div className="nav-actions">
+            <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><i className="ph ph-bell" /><span className="badge-dot" /></button>
+            <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><i className="ph ph-sun" /><i className="ph ph-moon" /></button>
+            <button type="button" className="me" onClick={() => go("/profile")}>
+              <span className="av p-me">{demo ? "АВ" : initials(session?.user.displayName ?? "?")}</span>
+              <span className="nm p-me">{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
+            </button>
+          </div>
         </nav>
       )}
       {view === "room" && roomId ? room : null}
-      {(view === "room" || view === "notifications" || view === "members" || view === "queue" || view === "unavailable") && !roomId ? (
+      {(view === "room" || view === "members" || view === "queue" || view === "unavailable") && !roomId ? (
         <RoomPreview rail={view === "members" ? "people" : view === "queue" ? "queue" : "chat"} unavailable={view === "unavailable"} />
       ) : null}
-      {view === "home" && style === "gruvbox" ? <GruvboxHome demo={demo} /> : null}
-      {view === "home" && narrow && style !== "gruvbox" ? <MobileHome /> : null}
+      {view === "home" && style === "gruvbox" ? (
+        <GruvboxHome
+          demo={demo}
+          session={session}
+          rooms={shownRooms}
+          heat={heat}
+          resume={resume}
+          name={name}
+          onName={setName}
+          onSignIn={(event) => void signIn(event)}
+          onGo={go}
+          code={code}
+          onCode={setCode}
+          onJoin={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}
+          onOpen={(item) => { if (!session) { go("/auth"); return; } void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}
+        />
+      ) : null}
+      {view === "home" && narrow && style !== "gruvbox" ? (
+        <MobileHome
+          session={session}
+          demo={demo}
+          rooms={shownRooms}
+          name={name}
+          onName={setName}
+          onSignIn={(event) => void signIn(event)}
+          onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)}
+          onCreate={() => go(session ? "/create" : "/auth")}
+          onOpenRoom={(item) => { if (!session) { go("/auth"); return; } void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}
+          code={code}
+          onCode={setCode}
+          onJoin={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}
+        />
+      ) : null}
       {(view === "home" || view === "create" || view === "join" || view === "onboarding") && style !== "gruvbox" && !narrow ? (
         <div className="wrap screen-scroll">
           <main>
-            <div className="greet">
-              <h1>{text.evening}{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1>
-              <p className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : `${legacyText(locale, "common", "nav.home")} · ${text.friendsWatching}`}</p>
+            <div className="home-hero">
+              <div className="greet">
+                <h1>{text.evening}{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1>
+                <p className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : session ? "Комнаты друзей, ваши сеансы и открытые залы — всё на одном экране" : "Представьтесь, чтобы создать комнату или войти по коду"}</p>
+              </div>
+              <div className="hero-actions">
+                <button type="button" className="btn btn-outline" onClick={() => go("/search")}>Найти видео</button>
+                <button type="button" className="btn btn-primary" onClick={() => go(session ? "/create" : "/auth")}>Создать комнату</button>
+              </div>
             </div>
             {!demo ? (
               <section className="global-stats" data-testid="global-stats" data-ready={statsReady ? "true" : "false"}>
@@ -303,23 +340,44 @@ export function DesignApp({
             ) : null}
             {!session && !demo ? (
               <div className="acts">
-                <form className="tile" onSubmit={(event) => void signIn(event)}>
-                  <div className="eyebrow">{text.signIn}</div>
+                <form className="tile auth" onSubmit={(event) => void signIn(event)}>
+                  <div className="tile-head">
+                    <span className="tile-ic"><Icon name="user" /></span>
+                    <div><h3>Вход в lume</h3><p>Как вас представить в комнате? Имя увидит только ваша компания.</p></div>
+                  </div>
                   <label>
-                    {text.name}
-                    <input data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} />
+                    Ваше имя
+                    <input data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Например, Альберт" autoComplete="nickname" />
                   </label>
-                  <button type="submit" className="go" data-testid="lobby-sign-in">{text.signIn}</button>
+                  <div className="actions">
+                    <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">Войти</button>
+                    <button type="button" className="btn btn-telegram" onClick={() => void signIn({ preventDefault() {} } as FormEvent)}>{text.telegram}</button>
+                  </div>
                 </form>
-                <button type="button" className="tile create" onClick={() => document.querySelector<HTMLInputElement>("[data-testid=lobby-name]")?.focus()}>
-                  <h3>{text.create}</h3>
-                  <p>{text.createHint}</p>
-                </button>
-                <form className="tile join" onSubmit={(event) => { event.preventDefault(); go("/auth"); }}>
-                  <h3>{text.join}</h3>
-                  <p>{text.joinHint}</p>
-                  <div className="codein"><i className="blank">·</i><i className="blank">·</i><i className="blank">·</i><span className="dash">–</span><i className="blank">·</i><i className="blank">·</i></div>
-                  <button type="submit" className="go">{text.telegram}</button>
+                <div className="tile create">
+                  <div className="tile-head">
+                    <span className="tile-ic"><Icon name="plus" /></span>
+                    <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
+                  </div>
+                  <p>Выберите пресет модерации, позовите друзей и включите первое видео.</p>
+                  <div className="actions">
+                    <button type="button" className="btn btn-primary" data-testid="home-create-open" onClick={() => go("/auth")}>Открыть мастер</button>
+                    <span className="hint">Сначала нужно представиться</span>
+                  </div>
+                </div>
+                <form className="tile join" onSubmit={(event) => { event.preventDefault(); if (!session) { go("/auth"); return; } void joinRoom(event); }}>
+                  <div className="tile-head">
+                    <span className="tile-ic"><Icon name="key" /></span>
+                    <div><h3>{text.join}</h3><p>{text.joinHint}</p></div>
+                  </div>
+                  <label>
+                    Код комнаты
+                    <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" placeholder="a7psyqm9" maxLength={12} autoComplete="off" />
+                  </label>
+                  <div className="actions">
+                    <button type="submit" className="btn btn-social" data-testid="lobby-join">{text.enter}</button>
+                    <span className="hint">Код есть в приглашении</span>
+                  </div>
                 </form>
               </div>
             ) : (
@@ -333,16 +391,26 @@ export function DesignApp({
                   <div className="c">
                     <div className="eyebrow">{text.resume}</div>
                     <h2>{demo ? "Пустая дорога — режиссёрская версия" : resume ?? text.empty}</h2>
-                    {demo ? <div className="sub">Ночной кинозал · 6 зрителей · 01:12:44 / 02:03:10</div> : null}
+                    {demo ? <div className="sub">Ночной кинозал · 6 зрителей · 01:12:44 / 02:03:10</div> : <div className="sub">{resume ? "Открыть последнюю комнату" : "Начните первый сеанс — он появится здесь"}</div>}
                     {demo ? <div className="pb"><i /></div> : null}
                   </div>
                 </button>
-                <form className="tile create" onSubmit={(event) => void createRoom(event)}>
-                  <div className="ic"><Icon name="plus" /></div>
-                  <h3>{text.create}</h3>
-                  <p>{text.createHint}</p>
-                  {demo ? null : <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={text.create} />}
-                  {demo ? null : (
+                {demo ? (
+                  <div className="tile create">
+                    <div className="tile-head">
+                      <span className="tile-ic"><Icon name="plus" /></span>
+                      <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
+                    </div>
+                    <p>Соберите компанию и включите фильм синхронно.</p>
+                    <div className="actions"><button type="button" className="btn btn-primary">Открыть мастер</button></div>
+                  </div>
+                ) : (
+                  <form className="tile create" onSubmit={(event) => void createRoom(event)}>
+                    <div className="tile-head">
+                      <span className="tile-ic"><Icon name="plus" /></span>
+                      <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
+                    </div>
+                    <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Название комнаты" aria-label="Название комнаты" />
                     <div className="chips" data-testid="lobby-presets">
                       {roomPresets.map((item) => (
                         <button
@@ -359,24 +427,33 @@ export function DesignApp({
                         </button>
                       ))}
                     </div>
-                  )}
-                  {demo || !chosenPreset ? null : (
-                    <small data-testid="lobby-preset-summary" data-public={chosenPreset.isPublic ? "true" : "false"} data-max={chosenPreset.maxMembers} data-slow={chosenPreset.slowModeSeconds}>
-                      {chosenPreset.hint}
-                    </small>
-                  )}
-                  {demo ? null : <button type="submit" data-testid="lobby-create">{text.create}</button>}
-                </form>
-                <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
-                  <div className="ic"><Icon name="key" /></div>
-                  <h3>{text.join}</h3>
-                  <p>{demo ? "Код комнаты из шести знаков" : text.joinHint}</p>
+                    {chosenPreset ? (
+                      <small data-testid="lobby-preset-summary" data-public={chosenPreset.isPublic ? "true" : "false"} data-max={chosenPreset.maxMembers} data-slow={chosenPreset.slowModeSeconds}>
+                        {chosenPreset.hint}
+                      </small>
+                    ) : null}
+                    <div className="actions">
+                      <button type="submit" className="btn btn-primary" data-testid="lobby-create">{text.create}</button>
+                    </div>
+                  </form>
+                )}
+                <form className="tile join" onSubmit={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}>
+                  <div className="tile-head">
+                    <span className="tile-ic"><Icon name="key" /></span>
+                    <div><h3>{text.join}</h3><p>{demo ? "Код комнаты из приглашения" : text.joinHint}</p></div>
+                  </div>
                   {demo ? (
                     <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i className="blank">2</i><i className="blank">M</i></div>
                   ) : (
-                    <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" />
+                    <label>
+                      Код комнаты
+                      <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" placeholder="a7psyqm9" maxLength={12} autoComplete="off" aria-label="Код комнаты" />
+                    </label>
                   )}
-                  <button type="submit" className="go" data-testid="lobby-join">{text.enter}</button>
+                  <div className="actions">
+                    <button type="submit" className="btn btn-social" data-testid="lobby-join">{text.enter}</button>
+                    <span className="hint">Например, 7KQ-2M</span>
+                  </div>
                 </form>
               </div>
             )}
@@ -390,13 +467,14 @@ export function DesignApp({
             </div>
             {demo ? (
               <div className="rooms">
-                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span></div><div className="bd"><div><b>Пятничный звук</b><small>Концерт на крыше</small></div><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span></div></div></div>
-                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span></div><div className="bd"><div><b>Нуар по средам</b><small>Город после дождя</small></div><div className="stack"><span className="av sm p-nick">Н</span></div></div></div>
-                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag">в 22:00</span></div><div className="bd"><div><b>Документалки</b><small>Лес, который помнит</small></div><div className="stack"><span className="av sm p-dasha">Д</span></div></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span></div><div className="bd"><b>Пятничный звук</b><div className="meta"><span className="viewers"><i />Концерт на крыше</span><span className="code">9AX-4K</span></div></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span></div><div className="bd"><b>Нуар по средам</b><div className="meta"><span className="viewers"><i />Город после дождя</span><span className="code">2MN-7Q</span></div></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag">в 22:00</span></div><div className="bd"><b>Документалки</b><div className="meta"><span className="viewers">Лес, который помнит</span><span className="code">5TR-1B</span></div></div></div>
               </div>
             ) : (
               <LiveRoomsCarousel
                 rooms={shownRooms}
+                onCreate={() => go(session ? "/create" : "/auth")}
                 onOpen={(item) => {
                   if (!session) {
                     go("/auth");
@@ -409,12 +487,12 @@ export function DesignApp({
           </main>
           <aside className="side">
             <section className="card">
-              <h3>Друзья онлайн <span>14</span></h3>
-              {demo ? null : <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()).then((payload: { users?: Array<{ id: string; displayName: string }> }) => setPeople(payload.users ?? [])); }}>
-                <input data-testid="friend-search" name="q" placeholder="Найти человека" aria-label="friend search" />
+              <h3>Друзья онлайн <span>{demo ? 14 : friends.length}</span></h3>
+              {!demo && session ? <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()).then((payload: { users?: Array<{ id: string; displayName: string }> }) => setPeople(payload.users ?? [])); }}>
+                <input data-testid="friend-search" name="q" placeholder="Найти человека" aria-label="Поиск друзей" />
                 <button type="submit" data-testid="friend-search-go">Найти</button>
-              </form>}
-              {people.map((person) => <p key={person.id} data-testid="friend-result">{person.displayName}</p>)}
+              </form> : null}
+              {people.map((person) => <p key={person.id} className="friend-result" data-testid="friend-result"><span>{person.displayName}</span><span className="mini">Найден</span></p>)}
               {demo ? (
                 <>
                   <div className="fr"><span className="av lg p-lisa">ЛМ<span className="pres" /></span><div><div className="n p-lisa">Лиза</div><div className="s">ведёт «Ночной кинозал»</div></div><button type="button" className="mini go">Зайти</button></div>
@@ -422,27 +500,30 @@ export function DesignApp({
                   <div className="fr"><span className="av lg p-sonya">СН<span className="pres" /></span><div><div className="n p-sonya">Соня</div><div className="s">в «Пятничном звуке»</div></div><button type="button" className="mini">Зайти</button></div>
                   <div className="fr"><span className="av lg p-nick">НК<span className="pres idle" /></span><div><div className="n p-nick">Ник</div><div className="s">был час назад</div></div><button type="button" className="mini">Позвать</button></div>
                 </>
-              ) : friends.map((row) => (
+              ) : friends.length > 0 ? friends.map((row) => (
                 <div className="fr" key={row.id}>
                   <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
-                  <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? text.empty}</small></div>
-                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } })}>{text.block}</button>
+                  <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? "не в комнате"}</small></div>
+                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } })}>Убрать</button>
                 </div>
-              ))}
+              )) : <p className="empty-note">{session ? "Пока никого нет в сети. Найдите друга по имени выше." : "Войдите, чтобы видеть друзей и их комнаты."}</p>}
             </section>
             <section className="card">
-              <div className="lvl"><div className="mark">{demo ? 7 : level}</div><div><b>{demo ? "Уровень 7" : `${text.level} ${level}`}</b><small>{demo ? "2 340 XP · до 8-го ещё 660" : ""}</small></div></div>
+              <div className="lvl"><div className="mark">{demo ? 7 : level}</div><div><b>{demo ? "Уровень 7" : `${text.level} ${level}`}</b><small>{demo ? "2 340 XP · до 8-го ещё 660" : "Опыт растёт за сеансы, чат и голос"}</small></div></div>
               {demo ? <div className="xp"><i /></div> : null}
               {demo ? <div className="ach"><span className="got">🎞</span><span className="got">☾</span><span className="got">☺</span><span>♛</span><span>⚡</span></div> : null}
+              {!demo ? <div className="actions" style={{ marginTop: 10 }}><button type="button" className="btn btn-ghost" onClick={() => go("/profile")}>Открыть профиль</button></div> : null}
             </section>
             <section className="card">
-              <h3>Напоминания <span>2</span></h3>
+              <h3>Напоминания <span>{demo ? 2 : notes.length}</span></h3>
               {demo ? (
                 <>
                   <div className="ev"><div className="d">сегодня<b>22:00</b></div><div><div className="t">Лес, который помнит</div><div className="h">комната <span className="nm p-dasha">Даши</span></div></div></div>
                   <div className="ev"><div className="d">вт<b>20:30</b></div><div><div className="t">Сериальный вторник</div><div className="h"><span className="nm p-sonya">Соня</span> приглашает</div></div></div>
                 </>
-              ) : notes.slice(0, 3).map((note) => <p key={note.id}>{note.title}</p>)}
+              ) : notes.length > 0 ? notes.slice(0, 3).map((note) => (
+                <div className="ev" key={note.id}><div className="d">lume<b>·</b></div><div><div className="t">{note.title}</div><div className="h">{note.body}</div></div></div>
+              )) : <p className="empty-note">Напоминаний нет. Они появятся, когда друзья позовут в комнату.</p>}
             </section>
             <section className="card heat-wrap heat-compact" aria-label={text.season}>
               <div className="heat-top"><h3>{text.season}</h3></div>
@@ -454,8 +535,10 @@ export function DesignApp({
                   <div className="heat-days"><span>пн</span><span>вт</span><span>ср</span><span>чт</span><span>пт</span><span>сб</span><span>вс</span></div>
                   <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
                 </div>
-              ) : (
+              ) : heat.length > 0 ? (
                 <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
+              ) : (
+                <p className="empty-note">Проведите первый сеанс — здесь появится карта сезона.</p>
               )}
               {demo ? <div className="heat-leg">меньше <i /><i className="a1" /><i className="a2" /><i className="a3" /><i className="a4" /> больше</div> : null}
             </section>
@@ -470,8 +553,8 @@ export function DesignApp({
               <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => go("/")}><b>{item.title || item.url}</b></button>)}</div>
             </form>
           ) : null}
-          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} /> : null}
-          {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} /> : null}
+          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} /> : null}
+          {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
           {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
           {view === "profile" ? <ProfileScreen token={session?.accessToken} apiUrl={apiUrl} userId={session?.user.id} displayName={session?.user.displayName} /> : null}
@@ -504,12 +587,12 @@ export function DesignApp({
           {view === "queue" ? null : null}
         </Page>
       ) : null}
-      {narrow && view === "home" ? (
-        <nav className="tabbar">
-          <button type="button" onClick={() => go("/")}>Главная</button>
-          <button type="button" onClick={() => go("/search")}>Поиск</button>
-          <button type="button" onClick={() => go("/notifications")}>Звонок</button>
-          <button type="button" onClick={() => go("/profile")}>Я</button>
+      {narrow && view !== "room" ? (
+        <nav className="tabbar" aria-label="Основная навигация">
+          <button type="button" className={view === "home" ? "on" : ""} onClick={() => go("/")}><span className="tab-ic">⌂</span>Главная</button>
+          <button type="button" className={view === "search" ? "on" : ""} onClick={() => go("/search")}><span className="tab-ic">⌕</span>Поиск</button>
+          <button type="button" className={view === "notifications" ? "on" : ""} onClick={() => go("/notifications")}><span className="tab-ic">◔</span>События</button>
+          <button type="button" className={view === "profile" ? "on" : ""} onClick={() => go("/profile")}><span className="tab-ic">☺</span>Я</button>
         </nav>
       ) : null}
       {style === "gruvbox" ? (
@@ -671,7 +754,7 @@ function Page({ title, children }: { title: string; onClose: () => void; childre
   return <div className="screen-fill" data-page={title}>{children}</div>;
 }
 
-function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "key" }) {
+function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "key" | "user" }) {
   const path = {
     search: "M11 11l4 4M7.5 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z",
     bell: "M12 20a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-5V10a6 6 0 1 0-12 0v5l-2 2h16z",
@@ -679,6 +762,7 @@ function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "k
     moon: "M16 14.5A6.5 6.5 0 0 1 9.5 4 6.5 6.5 0 1 0 16 14.5z",
     plus: "M12 5v14M5 12h14",
     key: "M14 8a4 4 0 1 0-3.2 6.4L8 17v2H6v2H4v-2.8l6.1-6.1A4 4 0 0 0 14 8z",
+    user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0",
   }[name];
   return (
     <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -689,16 +773,25 @@ function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "k
 
 function LiveRoomsCarousel({
   rooms,
+  onCreate,
   onOpen,
 }: {
   rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
+  onCreate: () => void;
   onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
 }) {
   const track = useRef<HTMLDivElement>(null);
   const scroll = (direction: -1 | 1) => {
     track.current?.scrollBy({ left: direction * 320, behavior: "smooth" });
   };
-  if (rooms.length === 0) return <p className="tr-empty">Открытых комнат пока нет</p>;
+  if (rooms.length === 0) {
+    return (
+      <div className="livestream-empty">
+        <div>Открытых комнат пока нет. Создайте свою — друзья подтянутся.</div>
+        <button type="button" className="btn btn-outline" onClick={onCreate}>Создать комнату</button>
+      </div>
+    );
+  }
   return (
     <div className="live-carousel" data-testid="live-carousel">
       <div className="carousel-track" ref={track}>
@@ -711,39 +804,118 @@ function LiveRoomsCarousel({
             data-code={item.code}
             onClick={() => onOpen(item)}
           >
-            <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}><span className="tag">{item.memberCount ?? 0}</span></div>
-            <div className="bd"><b>{item.title}</b><small className="mono">{item.code}</small></div>
+            <div className="th" style={{ backgroundImage: `url(${posterFor(item.id)})` }}>
+              <span className="tag"><i className="d" />{item.memberCount && item.memberCount > 0 ? `${item.memberCount} ${viewersWord(item.memberCount)}` : "открыта"}</span>
+            </div>
+            <div className="bd">
+              <b>{item.title}</b>
+              <div className="meta">
+                <span className="viewers"><i />{(item.memberCount ?? 0) > 0 ? `${item.memberCount} в комнате` : "ждёт гостей"}</span>
+                <span className="code">{item.code}</span>
+              </div>
+            </div>
           </button>
         ))}
       </div>
       {rooms.length > 1 ? (
         <div className="carousel-nav">
-          <button type="button" data-testid="carousel-prev" onClick={() => scroll(-1)} aria-label="previous rooms">‹</button>
-          <button type="button" data-testid="carousel-next" onClick={() => scroll(1)} aria-label="next rooms">›</button>
+          <button type="button" data-testid="carousel-prev" onClick={() => scroll(-1)} aria-label="Предыдущие комнаты">‹</button>
+          <button type="button" data-testid="carousel-next" onClick={() => scroll(1)} aria-label="Следующие комнаты">›</button>
         </div>
       ) : null}
     </div>
   );
 }
 
-function GruvboxHome({ demo }: { demo: boolean }) {
-  if (!demo) return <p className="lead">Войдите, чтобы открыть сессии.</p>;
+function GruvboxHome({
+  demo,
+  session,
+  rooms,
+  heat,
+  resume,
+  name,
+  onName,
+  onSignIn,
+  onGo,
+  code,
+  onCode,
+  onJoin,
+  onOpen,
+}: {
+  demo: boolean;
+  session: ClientSession | null;
+  rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
+  heat: Array<{ day: string; score: number }>;
+  resume: string | null;
+  name: string;
+  onName: (value: string) => void;
+  onSignIn: (event: FormEvent) => void;
+  onGo: (path: string) => void;
+  code: string;
+  onCode: (value: string) => void;
+  onJoin: (event: FormEvent) => void;
+  onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
+}) {
+  const rows = demo
+    ? [
+        { id: "seed-1", title: "Ночной кинозал", code: "7KQ-2M", memberCount: 6 },
+        { id: "seed-2", title: "Пятничный звук", code: "9AX-4K", memberCount: 38 },
+        { id: "seed-3", title: "Нуар по средам", code: "2MN-7Q", memberCount: 12 },
+        { id: "seed-4", title: "Документалки", code: "5TR-1B" },
+      ]
+    : rooms.slice(0, 7);
   return (
     <div className="g-home wrap">
-      <section className="pane"><div className="pt">#сессии <span className="dim">4</span></div>
-        <div className="srow on"><span>&gt;</span><b>Ночной кинозал</b><span>6</span><span>live</span></div>
-        <div className="srow"><b>Пятничный звук</b><span>38</span><span>live</span></div>
-        <div className="srow"><b>Нуар по средам</b><span>12</span><span>live</span></div>
-        <div className="srow"><b>Документалки</b><span>--</span><span>22:00</span></div>
+      <section className="pane">
+        <div className="pt">#сессии <span className="dim">{rows.length}</span></div>
+        {rows.length === 0 ? <p className="lead">Открытых комнат пока нет.</p> : rows.map((item, index) => (
+          <button key={item.id} type="button" className={index === 0 ? "srow on" : "srow"} onClick={() => onOpen(item)}>
+            <span>{index === 0 ? ">" : " "}</span>
+            <b>{item.title}</b>
+            <span>{item.memberCount ?? "--"}</span>
+            <span>{item.memberCount ? "live" : item.code}</span>
+          </button>
+        ))}
       </section>
-      <section className="pane"><div className="pt">~продолжить</div>
-        <h2>Пустая дорога — режиссёрская версия</h2>
-        <p>ночной кинозал · 6 · 01:12:44</p>
+      <section className="pane">
+        <div className="pt">~продолжить</div>
+        <h2>{resume ?? (demo ? "Пустая дорога — режиссёрская версия" : "Пока нечего продолжать")}</h2>
+        <p>{demo ? "ночной кинозал · 6 · 01:12:44" : "Ваши последние комнаты появятся здесь."}</p>
+        <button type="button" className="go" onClick={() => onGo("/profile")}>Профиль</button>
       </section>
-      <section className="pane"><div className="pt">:new</div><h3>создать комнату</h3><p>:new</p></section>
-      <section className="pane"><div className="pt">:join</div><h3>войти по коду</h3><p>7KQ-2M</p></section>
-      <section className="pane"><div className="pt">#сезон</div><div className="heat-grid">{heatCells.slice(0, 49).map((name, index) => <i key={index} className={name} />)}</div></section>
-      <section className="pane"><div className="pt">#афиша</div><p>Пятничный звук · 38</p></section>
+      <section className="pane">
+        <div className="pt">:new</div>
+        <h3>создать комнату</h3>
+        <p>Название, пресет модерации и приглашение друзьям.</p>
+        <button type="button" className="go" onClick={() => onGo(session ? "/create" : "/auth")}>Открыть мастер</button>
+      </section>
+      <section className="pane">
+        <div className="pt">:join</div>
+        <h3>войти по коду</h3>
+        <form onSubmit={onJoin}>
+          <input data-testid="lobby-code" className="mono" value={code} onChange={(event) => onCode(event.target.value)} placeholder="a7psyqm9" maxLength={12} aria-label="Код комнаты" />
+          <button type="submit" className="go" data-testid="lobby-join">Войти</button>
+        </form>
+      </section>
+      {!session && !demo ? (
+        <section className="pane">
+          <div className="pt">:login</div>
+          <form onSubmit={onSignIn}>
+            <label>Как вас представить<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder="Имя" /></label>
+            <button type="submit" className="go" data-testid="lobby-sign-in">Войти</button>
+          </form>
+        </section>
+      ) : (
+        <section className="pane">
+          <div className="pt">#сезон</div>
+          {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">Проведите первый сеанс — здесь появится карта сезона.</p>}
+        </section>
+      )}
+      <section className="pane">
+        <div className="pt">#афиша</div>
+        <p>{rows[0] ? `${rows[0].title} · ${rows[0].memberCount ?? 0}` : "Пока пусто"}</p>
+        <p className="dim">Открытые комнаты обновляются каждые 30 секунд.</p>
+      </section>
     </div>
   );
 }

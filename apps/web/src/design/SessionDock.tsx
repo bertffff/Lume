@@ -116,47 +116,57 @@ export function SessionDock({
 
   return (
     <div className="session-dock-bar" data-testid="session-dock" data-role={session?.role ?? "viewer"}>
-      <span className="session-dock-dot" />
-      <b>
-        Сессия <span data-testid="session-dock-time">{clock(elapsed)}</span>
-      </b>
-      <span data-testid="session-dock-members">{members} в комнате</span>
-      <span data-testid="session-dock-voice">{voiceCount} в голосе</span>
+      <div className="dock-group">
+        <span className="session-dock-dot" />
+        <b>
+          Сессия <span data-testid="session-dock-time">{clock(elapsed)}</span>
+        </b>
+      </div>
+      <div className="dock-group">
+        <span data-testid="session-dock-members">{members} в комнате</span>
+        <span data-testid="session-dock-voice">{voiceCount} в голосе</span>
+      </div>
       <span className="spacer" />
-      <button type="button" data-testid="session-dock-invite" onClick={() => void copyInvite()} disabled={!session}>
-        Позвать
-      </button>
-      <button type="button" data-testid="session-dock-remind" onClick={() => void setReminder()} disabled={busy}>
-        Напомнить
-      </button>
-      {voiceEnabled ? (
-        voiceJoined ? (
-          <>
-            <button type="button" data-testid="session-dock-mute" onClick={onVoiceMute}>
-              {voiceMuted ? "Вкл микрофон" : "Выкл микрофон"}
+      <div className="dock-group">
+        <button type="button" data-testid="session-dock-invite" onClick={() => void copyInvite()} disabled={!session}>
+          Позвать
+        </button>
+        <button type="button" data-testid="session-dock-remind" onClick={() => void setReminder()} disabled={busy}>
+          Напомнить
+        </button>
+      </div>
+      <div className="dock-group">
+        {voiceEnabled ? (
+          voiceJoined ? (
+            <>
+              <button type="button" data-testid="session-dock-mute" onClick={onVoiceMute}>
+                {voiceMuted ? "Вкл микрофон" : "Выкл микрофон"}
+              </button>
+              <button type="button" data-testid="session-dock-voice-leave" onClick={onVoiceLeave}>
+                Выйти из голоса
+              </button>
+            </>
+          ) : (
+            <button type="button" data-testid="session-dock-voice-join" onClick={onVoiceJoin}>
+              Войти в голос
             </button>
-            <button type="button" data-testid="session-dock-voice-leave" onClick={onVoiceLeave}>
-              Выйти из голоса
-            </button>
-          </>
+          )
         ) : (
-          <button type="button" data-testid="session-dock-voice-join" onClick={onVoiceJoin}>
-            Войти в голос
+          <button type="button" data-testid="session-dock-voice-join" disabled title="Голос не настроен">
+            Голос выкл
           </button>
-        )
-      ) : (
-        <button type="button" data-testid="session-dock-voice-join" disabled title="Голос не настроен">
-          Голос выкл
+        )}
+      </div>
+      <div className="dock-group">
+        {canSettings ? (
+          <button type="button" data-testid="session-dock-settings" onClick={onSettings}>
+            Настройки
+          </button>
+        ) : null}
+        <button type="button" data-testid="session-dock-leave" onClick={onLeave}>
+          Выйти
         </button>
-      )}
-      {canSettings ? (
-        <button type="button" data-testid="session-dock-settings" onClick={onSettings}>
-          Настройки
-        </button>
-      ) : null}
-      <button type="button" data-testid="session-dock-leave" onClick={onLeave}>
-        Выйти
-      </button>
+      </div>
       {note ? <small data-testid="session-dock-note">{note}</small> : null}
     </div>
   );
