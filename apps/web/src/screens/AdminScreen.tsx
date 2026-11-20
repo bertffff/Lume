@@ -4,6 +4,14 @@ import { useI18n } from "../i18n/context.js";
 
 type Tab = "users" | "rooms" | "reports" | "audit";
 
+const roleLabels: Record<string, string> = { USER: "Пользователь", ADMIN: "Администратор", SUPERADMIN: "Суперадмин" };
+const statusLabels: Record<string, string> = { open: "Открыта", live: "В эфире", ended: "Завершена", pending: "Ожидает", reviewed: "Рассмотрено" };
+
+function humanValue(value: string | null | undefined): string {
+  if (!value) return "";
+  return roleLabels[value] ?? statusLabels[value] ?? value;
+}
+
 export function AdminScreen({ token }: { token: string }) {
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("users");
@@ -55,7 +63,7 @@ export function AdminScreen({ token }: { token: string }) {
           {rows.map((row) => (
             <tr key={String(row.id)}>
               <td>{row.displayName ?? row.title ?? row.action ?? row.reason}</td>
-              <td>{row.status ?? row.role ?? ""}</td>
+              <td>{humanValue(row.status ?? row.role)}</td>
               <td>
                 {tab === "users" ? (
                   <button type="button" className="tr-text-button" onClick={() => void act(`/admin/users/${row.id}/ban`, { reason: "admin" })}>{t("admin.ban")}</button>

@@ -105,10 +105,21 @@ export function RoomStage({
     let stopped = false;
     void fetch(`${apiUrl}/rooms/${liveRoomId}/settings`, { headers: { authorization: `Bearer ${accessToken}` } })
       .then((response) => response.json())
-      .then((payload: RoomSettings) => {
+      .then((payload: RoomSettings & { defaults?: Record<string, boolean> | null }) => {
         if (stopped) return;
         setRoomTitle(payload.title);
         setRoomHideReactions(Boolean(payload.hideReactions));
+        const defaults = payload.defaults;
+        if (defaults) {
+          setPermissions({
+            canChat: defaults.canChat ?? true,
+            canQueue: defaults.canQueue ?? true,
+            canSpeak: defaults.canSpeak ?? true,
+            canReact: defaults.canReact ?? true,
+            canSeek: defaults.canSeek ?? false,
+            canInvite: defaults.canInvite ?? true,
+          });
+        }
       })
       .catch(() => undefined);
     void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${accessToken}` } })
@@ -441,7 +452,6 @@ export function RoomStage({
                   </span>
                 ))}
               </div>
-              <span className="pill mono">1×</span>
             </div>
           ) : (
             <div className="ctl ctl-empty">
@@ -456,7 +466,6 @@ export function RoomStage({
               </button>
               <span className="empty-title"><i />Плеер свободен</span>
               <span className="ctl-empty-hint">Вставьте ссылку в сцене или добавьте видео в очередь</span>
-              <span className="pill mono">1×</span>
             </div>
           )}
           <div className={narrow ? "sheet" : "low"}>

@@ -3,8 +3,6 @@
    Composition is a tiled vim/tmux product: panes, buffer tabline, airline statusline.
    Not a reskin of E. Person hues map 1:1 onto the 7 official hue pairs.
    Light yellow/green/aqua nicks use documented AA text steps (official faded fails 4.5:1). */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap&subset=cyrillic');
-
 html[data-style="gruvbox"][data-theme="dark"]{
   color-scheme:dark;
   --bg0-h:#1d2021; --bg0:#282828; --bg1:#3c3836; --bg2:#504945; --bg3:#665c54; --bg4:#a89984;

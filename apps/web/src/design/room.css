@@ -68,9 +68,9 @@
 }
 .cinema-room .stage-card:not(:has(.bare-stage)){background:radial-gradient(120% 130% at 50% 20%,#24211e 0%,#12100f 60%,#080706 100%)}
 .cinema-room .stage-card[data-preset="enlarged"]{height:clamp(280px,54vh,620px)}
-.cinema-room .stage-card[data-preset="immersive"]{height:calc(100vh - 200px);min-height:380px;border-radius:0}
+.cinema-room .stage-card[data-preset="immersive"]{height:calc(100dvh - 200px);min-height:380px;border-radius:0}
 .cinema-room .stage-card[data-aspect="vertical"]{
-  flex:0 0 auto;align-self:center;width:min(100%,calc((100vh - 270px) * var(--player-aspect,.5625)));
+  flex:0 0 auto;align-self:center;width:min(100%,calc((100dvh - 270px) * var(--player-aspect,.5625)));
   height:auto;aspect-ratio:var(--player-aspect,.5625);
 }
 .cinema-room:has(.stage-card[data-preset="immersive"]) .low{display:none}
@@ -288,7 +288,7 @@
 .cinema-room .mf,.design-app .mf{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line);justify-content:flex-end;flex:none;flex-wrap:wrap}
 
 /* Mobile room */
-.cinema-room.is-narrow{height:auto;min-height:100vh;display:flex;flex-direction:column;overflow:visible}
+.cinema-room.is-narrow{height:auto;min-height:100dvh;display:flex;flex-direction:column;overflow:visible}
 .cinema-room.is-narrow .body{display:flex;flex-direction:column;flex:1}
 .cinema-room.is-narrow .rail{display:none}
 .cinema-room.is-narrow .player-col{padding:0 0 120px;gap:10px;overflow:visible}
@@ -360,7 +360,7 @@
 .cinema-room .q .qi.add .im{display:grid;place-items:center;height:42px;width:42px;background:var(--s1);font-size:20px;color:var(--text-3);margin:0;flex:none}
 
 /* Gruvbox room keeps the terminal composition. */
-.g-room{min-height:calc(100vh - 28px);display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+.g-room{min-height:calc(100dvh - 28px);display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
 .g-room{height:100dvh;max-width:100vw;display:grid;grid-template-rows:28px 1fr 24px}
 .g-room .body{grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;display:grid;min-width:0;min-height:0;overflow:hidden}
 .g-room .body.g-tiled{display:grid;grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;min-width:0;min-height:0;overflow:hidden}

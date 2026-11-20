@@ -14,6 +14,8 @@ for (const style of ["cinema", "gruvbox"] as const) {
         for (const shot of shots) {
           await page.goto(`/?shot=${shot}&style=${style}&mode=${mode}`);
           await expect(page.locator(".design-app")).toBeVisible();
+          const noHorizontalScroll = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+          expect(noHorizontalScroll, `horizontal overflow on ${style}/${mode}/${viewport.name}/${shot}`).toBe(true);
           await page.screenshot({ path: `test-results/visual/${style}-${shot}-${viewport.name}-${mode}.png` });
         }
       });

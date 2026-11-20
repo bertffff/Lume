@@ -9,12 +9,14 @@ export function CodeInput({
   slots = 8,
   testId = "lobby-code",
   label = "Код комнаты",
+  autoFocus = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   slots?: number;
   testId?: string;
   label?: string;
+  autoFocus?: boolean;
 }) {
   const count = Math.max(slots, Math.min(12, value.length));
   return (
@@ -34,6 +36,7 @@ export function CodeInput({
         autoCapitalize="none"
         spellCheck={false}
         aria-label={label}
+        autoFocus={autoFocus}
       />
     </div>
   );
@@ -69,6 +72,7 @@ export function SettingsScreen({
   const [services, setServices] = useState<string[]>([]);
   const [friendsPublic, setFriendsPublic] = useState(true);
   const [historyPublic, setHistoryPublic] = useState(true);
+  const [hideOther, setHideOther] = useState(false);
   useEffect(() => {
     if (!apiUrl) return;
     void fetch(`${apiUrl}/video/services`).then((response) => response.json()).then((payload: { services?: string[] }) => setServices(payload.services ?? [])).catch(() => setServices([]));
@@ -81,9 +85,10 @@ export function SettingsScreen({
       .catch(() => setLinked("нет"));
     void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
-      .then((payload: { isFriendsPublic?: boolean; isWatchHistoryPublic?: boolean }) => {
+      .then((payload: { isFriendsPublic?: boolean; isWatchHistoryPublic?: boolean; hideOtherReactions?: boolean }) => {
         if (typeof payload.isFriendsPublic === "boolean") setFriendsPublic(payload.isFriendsPublic);
         if (typeof payload.isWatchHistoryPublic === "boolean") setHistoryPublic(payload.isWatchHistoryPublic);
+        if (typeof payload.hideOtherReactions === "boolean") setHideOther(payload.hideOtherReactions);
       })
       .catch(() => undefined);
   }, [token, apiUrl]);
@@ -91,15 +96,26 @@ export function SettingsScreen({
   return (
     <div className="settings-wrap">
       <aside>
-        <div className="slink on">Оформление</div>
-        <div className="slink">Аккаунт</div>
-        <div className="slink">Уведомления</div>
-        <div className="slink">Приватность</div>
-        <div className="slink">Язык</div>
-        <div className="slink">Плеер</div>
-        <div className="slink">Голос</div>
+        {([
+          ["Оформление", "settings-appearance"],
+          ["Аккаунт", "settings-account"],
+          ["Уведомления", "settings-notifications"],
+          ["Приватность", "settings-privacy"],
+          ["Язык", "settings-language"],
+          ["Плеер", "settings-player"],
+          ["Голос", "settings-voice"],
+        ] as const).map(([label, id], index) => (
+          <button
+            key={id}
+            type="button"
+            className={index === 0 ? "slink on" : "slink"}
+            onClick={() => document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" })}
+          >
+            {label}
+          </button>
+        ))}
       </aside>
-      <div className="panel">
+      <div className="panel" id="settings-appearance">
         <h2>Оформление</h2>
         <p className="lead">Стиль и тема. Основной стиль — Кинозал, Gruvbox подключается отдельно.</p>
         <div className="style-cards">
@@ -116,26 +132,26 @@ export function SettingsScreen({
         </div>
         <div className="set-row">
           <div><b>Стиль интерфейса</b><small>Кинозал — основной. Gruvbox — отдельный переключаемый стиль.</small></div>
-          <div className="seg" style={{ width: 260 }}>
+          <div className="seg">
             <button type="button" className={style === "cinema" ? "on" : ""} onClick={() => onStyle("cinema")}>Кинозал</button>
             <button type="button" className={style === "gruvbox" ? "on" : ""} onClick={() => onStyle("gruvbox")}>Gruvbox</button>
           </div>
         </div>
         <div className="set-row">
           <div><b>Тема</b><small>Тёмная для вечера, светлая для дня.</small></div>
-          <div className="seg" style={{ width: 220 }}>
+          <div className="seg">
             <button type="button" className={!system && mode === "dark" ? "on" : ""} onClick={() => onMode("dark")}>Тёмная</button>
             <button type="button" className={!system && mode === "light" ? "on" : ""} onClick={() => onMode("light")}>Светлая</button>
           </div>
         </div>
         <div className="set-row">
           <div><b>Как в системе</b><small>Следовать светлой или тёмной теме устройства</small></div>
-          <div className="seg" style={{ width: 140 }}>
+          <div className="seg">
             <button type="button" className={system ? "" : "on"} onClick={() => onMode("dark")}>Выкл</button>
             <button type="button" className={system ? "on" : ""} onClick={() => onMode("system")}>Вкл</button>
           </div>
         </div>
-        <div className="set-row">
+        <div className="set-row" id="settings-account">
           <div><b>Telegram</b><small>{linked}. Отвязка только если есть почта.</small></div>
           <div className="inline-actions">
             <input value={telegramId} onChange={(event) => setTelegramId(event.target.value)} placeholder="Telegram ID" aria-label="Telegram ID" />
@@ -143,8 +159,8 @@ export function SettingsScreen({
             <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/auth/unlink-telegram`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Отвязать</button>
           </div>
         </div>
-        <div className="set-row"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
-        <div className="set-row">
+        <div className="set-row" id="settings-notifications"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
+        <div className="set-row" id="settings-privacy">
           <div><b>Приватность</b><small>Друзья и история видны другим, пока вы не скроете их.</small></div>
           <label className="tr-check">
             <input
@@ -155,7 +171,7 @@ export function SettingsScreen({
                 const next = event.target.checked;
                 setFriendsPublic(next);
                 if (!token || !apiUrl) return;
-                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isFriendsPublic: next }) });
+                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isFriendsPublic: next }) }).catch(() => setFriendsPublic(!next));
               }}
             />
             Друзья видны
@@ -169,7 +185,7 @@ export function SettingsScreen({
                 const next = event.target.checked;
                 setHistoryPublic(next);
                 if (!token || !apiUrl) return;
-                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isWatchHistoryPublic: next }) });
+                void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ isWatchHistoryPublic: next }) }).catch(() => setHistoryPublic(!next));
               }}
             />
             История видна
@@ -191,15 +207,16 @@ export function SettingsScreen({
             ))}
           </div>
         </div>
-        <div className="set-row"><div><b>Язык</b><small>Русский</small></div></div>
+        <div className="set-row" id="settings-language"><div><b>Язык</b><small>Русский</small></div></div>
         <div className="set-row"><div><b>Сервисы извлечения</b><small>{services.length === 0 ? "Cobalt не задан" : services.join(", ")}</small></div></div>
+        <div className="set-row" id="settings-voice"><div><b>Голос</b><small>Голосовые комнаты работают через LiveKit, если сервер настроен.</small></div></div>
         <div className="set-row"><div><b>HLS</b><small>Манифест переписывается, когда извлечения включены.</small></div></div>
-        <div className="set-row"><div><b>Реакции</b><button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: true }) }); }}>Скрыть чужие</button></div></div>
+        <div className="set-row"><div><b>Реакции</b><button type="button" onClick={() => { if (!token || !apiUrl) return; const next = !hideOther; setHideOther(next); void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: next }) }).catch(() => setHideOther(!next)); }}>{hideOther ? "Показать чужие" : "Скрыть чужие"}</button></div></div>
         <div className="set-row"><div><b>Telegram</b><small>{linked.includes("Telegram") ? "Уведомления бота включены" : "Бот молчит, пока Telegram не привязан"}</small></div></div>
-        <div className="set-row"><div><b>Плеер</b><small>Качество и скорость подбираются по источнику.</small></div></div>
+        <div className="set-row" id="settings-player"><div><b>Плеер</b><small>Качество и скорость подбираются по источнику.</small></div></div>
         <div className="set-row">
           <div><b>Удаление аккаунта</b><small>30 дней на восстановление. Подтверждение — DELETE.</small></div>
-          <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me/delete`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ confirmation: "DELETE" }) }); }}>Удалить</button>
+          <button type="button" onClick={() => { if (!token || !apiUrl) return; if (!window.confirm("Удалить аккаунт? Его можно восстановить в течение 30 дней.")) return; void fetch(`${apiUrl}/me/delete`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ confirmation: "DELETE" }) }).catch(() => undefined); }}>Удалить</button>
           <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me/restore`, { method: "POST", headers: { authorization: `Bearer ${token}` } }); }}>Восстановить</button>
         </div>
       </div>
@@ -648,7 +665,7 @@ export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit, onCan
         <div className="mb">
           <div className="steps"><span className="on" /><span className="on" /><span /></div>
           <label className="field">Название
-            <input data-testid="lobby-title" value={title} onChange={(event) => onTitle(event.target.value)} placeholder="Ночной кинозал" />
+            <input data-testid="lobby-title" value={title} onChange={(event) => onTitle(event.target.value)} placeholder="Ночной кинозал" autoFocus />
           </label>
           <div>
             <div className="choice-label">Пресет модерации</div>
@@ -716,7 +733,7 @@ export function JoinScreen({ code, onCode, onSubmit, onCancel }: { code: string;
         </div>
         <div className="mb">
           <label className="field">Код комнаты
-            <CodeInput value={code} onChange={onCode} slots={8} />
+            <CodeInput value={code} onChange={onCode} slots={8} autoFocus />
           </label>
           <p className="lead">Код не чувствителен к регистру. Если код не подходит — попросите новое приглашение у ведущего.</p>
         </div>

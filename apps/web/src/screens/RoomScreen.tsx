@@ -21,6 +21,7 @@ export function RoomScreen({
   const { t } = useI18n();
   const [tick, setTick] = useState(() => Date.now());
   const [offset, setOffset] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const clock = live.clockOffset || offset;
   const playback = live.state?.playback;
 
@@ -28,6 +29,10 @@ export function RoomScreen({
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (event.key === "Escape") {
+        setHelpOpen(false);
+        return;
+      }
       const action = playerShortcut(event.key, canControlPlayback(live.state?.self.role ?? "viewer"));
       const anchor = live.state?.playback;
       const position = anchor
@@ -36,7 +41,7 @@ export function RoomScreen({
       if (action === "play") live.setPlayback(anchor?.status === "playing" ? "pause" : "play", position);
       if (action === "back") live.setPlayback("seek", Math.max(0, position - 10_000));
       if (action === "forward") live.setPlayback("seek", position + 10_000);
-      if (action === "help") window.alert("J / L · 10с, K · пауза, ? · справка");
+      if (action === "help") setHelpOpen(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -61,7 +66,7 @@ export function RoomScreen({
   if (!live.state) {
     return (
       <section className="tr-room">
-        <p className="tr-empty">{live.error ?? t("realtime.connecting")}</p>
+        <p className="tr-empty">{live.error === "kicked" ? "Вас удалили из комнаты" : live.error ? "Не удалось подключиться к комнате" : t("realtime.connecting")}</p>
       </section>
     );
   }
@@ -115,8 +120,20 @@ export function RoomScreen({
     >
       <>
         {warn ? <p className="tr-banner">{t("room.warnSession")}</p> : null}
-        {live.error ? <p className="tr-note">{live.error}</p> : null}
+        {live.error ? <p className="tr-note">{live.error === "kicked" ? "Вас удалили из комнаты" : "Соединение с комнатой прервано"}</p> : null}
         <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} />
+        {helpOpen ? (
+          <div className="overlay docked" role="dialog" aria-modal="true" aria-label="Горячие клавиши">
+            <div className="modal">
+              <div className="mh"><h2>Горячие клавиши</h2><button type="button" aria-label="Закрыть" onClick={() => setHelpOpen(false)}>×</button></div>
+              <div className="mb">
+                <p><b>J / L</b> — назад / вперёд на 10 секунд</p>
+                <p><b>K</b> — пауза или продолжение</p>
+                <p><b>?</b> — эта справка</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </>
     </RoomProvider>
   );

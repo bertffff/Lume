@@ -37,6 +37,14 @@ function viewFromPath(path: string): View {
   return views.has(name as View) ? (name as View) : "home";
 }
 
+function signInErrorText(code: string): string {
+  if (code === "unauthorized") return "Не удалось войти: проверьте данные.";
+  if (code === "jwt_unconfigured") return "Вход временно недоступен на сервере.";
+  if (code === "rate_limited") return "Слишком много попыток. Подождите немного.";
+  if (code === "invalid_body") return "Проверьте имя или адрес почты.";
+  return "Не удалось войти. Попробуйте ещё раз.";
+}
+
 function roomErrorText(code: string): string {
   if (code === "room_full") return "В комнате нет свободных мест.";
   if (code === "not_found") return "Комната с таким кодом не найдена.";
@@ -73,8 +81,12 @@ export function DesignApp({
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [preset, setPreset] = useState<RoomPresetId | null>(null);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(() => {
+    const match = window.location.pathname.match(/^\/join\/([^/]+)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : "";
+  });
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Array<{ id: string; title: string; code: string; memberCount?: number }>>([]);
   const [globalStats, setGlobalStats] = useState({ usersOnline: 0, activeRooms: 0, totalVideos: 0, totalWatchHours: 0 });
   const [statsReady, setStatsReady] = useState(false);
@@ -101,6 +113,14 @@ export function DesignApp({
 
   useEffect(() => {
     applyAppearance(style, mode);
+  }, [style, mode]);
+
+  useEffect(() => {
+    if (mode !== "system") return;
+    const media = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = () => applyAppearance(style, "system", media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
   }, [style, mode]);
 
   useEffect(() => {
@@ -214,7 +234,7 @@ export function DesignApp({
       const result = await api.devLogin(name.trim() || "Гость");
       onSession({ accessToken: result.accessToken, ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}), user: result.user });
     } catch (caught) {
-      setError(caught instanceof ClientError ? caught.code : "request_failed");
+      setError(caught instanceof ClientError ? signInErrorText(caught.code) : "Не удалось войти. Попробуйте ещё раз.");
     }
   }
 
@@ -272,12 +292,20 @@ export function DesignApp({
       method: "PATCH",
       headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" },
       body: JSON.stringify({ uiStyle: nextStyle, uiMode: nextMode }),
-    });
+    }).catch(() => undefined);
   }
 
   const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
   const chosenPreset = preset ? roomPresetById(preset) : null;
   const reminders = notes.filter((note) => note.kind === "SYSTEM");
+  useEffect(() => {
+    if (view !== "create" && view !== "join" && view !== "onboarding") return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") go("/");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
   const shownRooms = rooms.filter((roomItem) => {
     const q = query.trim().toLowerCase();
     if (q && !roomItem.title.toLowerCase().includes(q) && !roomItem.code.includes(q)) return false;
@@ -480,7 +508,7 @@ export function DesignApp({
           <aside className="side">
             <section className="card">
               <h3>Друзья онлайн <span>{friends.filter((row) => row.roomId).length}</span></h3>
-              {session ? <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()).then((payload: { users?: Array<{ id: string; displayName: string }> }) => setPeople(payload.users ?? [])); }}>
+              {session ? <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()).then((payload: { users?: Array<{ id: string; displayName: string }> }) => setPeople(payload.users ?? [])).catch(() => setPeople([])); }}>
                 <input data-testid="friend-search" name="q" placeholder="Найти человека" aria-label="Поиск друзей" />
                 <button type="submit" data-testid="friend-search-go">Найти</button>
               </form> : null}
@@ -489,7 +517,7 @@ export function DesignApp({
                 <div className="fr" key={row.id}>
                   <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
                   <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? "не в комнате"}</small></div>
-                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } })}>Убрать</button>
+                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } }).catch(() => undefined)}>Убрать</button>
                 </div>
               )) : <p className="empty-note">{session ? "Пока никого нет в сети. Найдите друга по имени выше." : "Войдите, чтобы видеть друзей и их комнаты."}</p>}
             </section>
@@ -517,26 +545,27 @@ export function DesignApp({
       {view !== "home" && view !== "room" ? (
         <Page title={view} onClose={() => go("/")}>
           {view === "search" ? (
-            <form onSubmit={(event) => { event.preventDefault(); void fetch(`${apiUrl}/video/search?q=${encodeURIComponent(query)}`).then((r) => r.json()).then((p: { results?: Array<{ title: string; url: string }> }) => setFound(p.results ?? [])); }}>
+            <form onSubmit={(event) => { event.preventDefault(); void fetch(`${apiUrl}/video/search?q=${encodeURIComponent(query)}`).then((r) => r.json()).then((p: { results?: Array<{ title: string; url: string }> }) => setFound(p.results ?? [])).catch(() => setFound([])); }}>
               <input className="inbox" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text.search} />
-              <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => go("/")}><b>{item.title || item.url}</b></button>)}</div>
+              <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => window.open(item.url, "_blank", "noopener")}><b>{item.title || item.url}</b><small>{item.url}</small></button>)}</div>
             </form>
           ) : null}
           {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
-          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
+          {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }).catch(() => undefined); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
           {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} /> : <EmptyScreen title="Профиль" body="Войдите, чтобы увидеть свои достижения, историю, друзей и статистику." action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>Войти</button>} />) : null}
           {view === "premium" ? <PremiumScreen /> : null}
           {view === "notifications" ? <NotificationsScreen items={notes} /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}
           {view === "auth" ? (
-            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }); }} onRegister={(event) => {
+            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }).then(() => setNotice("Ссылка для входа отправлена на почту.")).catch(() => setError("Не удалось отправить ссылку.")); }} onRegister={(event) => {
               event.preventDefault();
               const data = new FormData(event.currentTarget);
               void fetch(`${apiUrl}/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name, password: String(data.get("password") ?? ""), displayName: String(data.get("displayName") ?? name) }) })
                 .then((response) => response.json())
-                .then((payload: { accessToken?: string; refreshToken?: string; user?: { id: string; displayName: string } }) => {
-                  if (payload.accessToken && payload.user) {
+                .catch(() => setError("Не удалось создать аккаунт."))
+                .then((payload: { accessToken?: string; refreshToken?: string; user?: { id: string; displayName: string } } | undefined) => {
+                  if (payload?.accessToken && payload.user) {
                     onSession({
                       accessToken: payload.accessToken,
                       ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}),
@@ -572,6 +601,7 @@ export function DesignApp({
         </footer>
       ) : null}
       {error ? <p className="tr-note">{error}</p> : null}
+      {notice ? <p className="tr-note">{notice}</p> : null}
     </div>
   );
 }
@@ -592,8 +622,15 @@ function RoomPreview({ unavailable = false, onGo }: { unavailable?: boolean; onG
   );
 }
 
-function Page({ title, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return <div className="screen-fill" data-page={title}>{children}</div>;
+function Page({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  return (
+    <div className="screen-fill" data-page={title}>
+      <div className="page-head">
+        <button type="button" className="page-back" onClick={onClose} aria-label="Назад на главную">← Назад</button>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "key" | "user" }) {
