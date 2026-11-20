@@ -63,7 +63,6 @@ html[data-style="gruvbox"]{
   --fill-yellow:#fabd2f; --fill-yellow-ink:#1d2021;
   --fill-orange:#fe8019; --fill-orange-ink:#1d2021;
 }
-html[data-style="gruvbox"] *{box-sizing:border-box;margin:0;padding:0}
 html[data-style="gruvbox"], html[data-style="gruvbox"] body{
   background:var(--bg);color:var(--text);
   font-family:var(--font);font-size:13px;line-height:18px;
@@ -73,7 +72,6 @@ html[data-style="gruvbox"], html[data-style="gruvbox"] body{
   accent-color:var(--orange);
   scrollbar-color:var(--bg3) transparent;scrollbar-width:thin;
 }
-html[data-style="gruvbox"] button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 html[data-style="gruvbox"] .mono {font-variant-numeric:tabular-nums}
 html[data-style="gruvbox"] .ph, html[data-style="gruvbox"] .ph-fill, html[data-style="gruvbox"] .ph-bold {font-size:15px;line-height:1}
 
@@ -189,7 +187,7 @@ html[data-style="gruvbox"] .heat-leg i.a4 {background:var(--heat-4)}
 html[data-style="gruvbox"] .stage-root {color-scheme:dark}
 
 /* G final-screen helpers — stay strictly tiled / mono */
-html[data-style="gruvbox"] .search-lg {display:flex;align-items:center;gap:8px;color:var(--text-3);padding:0 8px;height:28px;border-left:1px solid var(--bg2);flex:1;min-width:0}
+html[data-style="gruvbox"] .search-lg {display:flex;align-items:center;gap:8px;color:var(--text-3);padding:0 8px;min-height:28px;border-left:1px solid var(--bg2);flex:1;min-width:0}
 html[data-style="gruvbox"] .search-lg .ph {font-size:14px}
 html[data-style="gruvbox"] .tile-row {display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px}
 html[data-style="gruvbox"] .codein {display:flex;gap:5px;align-items:center}
@@ -197,9 +195,9 @@ html[data-style="gruvbox"] .codein i {flex:none;align-self:center;min-height:0;w
 html[data-style="gruvbox"] .codein i.blank {color:var(--text-3)}
 html[data-style="gruvbox"] .go {height:24px;padding:0 10px;background:var(--fill-yellow,#fabd2f);color:var(--fill-yellow-ink,#1d2021);font-weight:700;display:inline-flex;align-items:center;gap:6px;width:max-content}
 html[data-style="gruvbox"] .overlay {position:absolute;inset:0;background:color-mix(in srgb,var(--bg0-h) 55%,#000 45%);display:grid;place-items:center;z-index:20}
-html[data-style="gruvbox"] .modal {width:560px;max-height:820px;background:var(--bg0);border:1px solid var(--bg2);display:flex;flex-direction:column}
-html[data-style="gruvbox"] .modal.wide {width:880px}
-html[data-style="gruvbox"] .modal.lg {width:720px}
+html[data-style="gruvbox"] .modal {width:min(560px,calc(100vw - 32px));max-height:min(820px,calc(100dvh - 32px));background:var(--bg0);border:1px solid var(--bg2);display:flex;flex-direction:column}
+html[data-style="gruvbox"] .modal.wide {width:min(880px,calc(100vw - 32px))}
+html[data-style="gruvbox"] .modal.lg {width:min(720px,calc(100vw - 32px))}
 html[data-style="gruvbox"] .mh {display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--bg2);color:var(--aqua);font-size:12px}
 html[data-style="gruvbox"] .mh h2 {font-size:13px;font-weight:600;color:var(--fg0);letter-spacing:0}
 html[data-style="gruvbox"] .mh .sp {flex:1}
@@ -234,16 +232,16 @@ html[data-style="gruvbox"] .sku .price {color:var(--yellow)}
 html[data-style="gruvbox"] .empty {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:32px;min-height:240px}
 html[data-style="gruvbox"] .empty h2 {font-size:16px;color:var(--fg0);font-weight:600}
 html[data-style="gruvbox"] .empty p {color:var(--text-2);max-width:40ch}
-html[data-style="gruvbox"] .auth-card {width:440px;background:var(--bg0);border:1px solid var(--bg2);padding:20px}
+html[data-style="gruvbox"] .auth-card {width:min(440px,100%);background:var(--bg0);border:1px solid var(--bg2);padding:20px}
 html[data-style="gruvbox"] .tg-btn {height:32px;background:#458588;color:#fbf1c7;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600}
 html[data-style="gruvbox"] .or {display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:11px}
 html[data-style="gruvbox"] .or::before, html[data-style="gruvbox"] .or::after {content:"";flex:1;height:1px;background:var(--bg2)}
-html[data-style="gruvbox"] .npanel {width:360px;background:var(--bg0);border:1px solid var(--bg2);position:absolute;right:8px;top:36px;z-index:20}
+html[data-style="gruvbox"] .npanel {width:min(360px,calc(100vw - 32px));background:var(--bg0);border:1px solid var(--bg2);position:absolute;right:8px;top:36px;z-index:20}
 html[data-style="gruvbox"] .nitem {display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bg1)}
 html[data-style="gruvbox"] .nitem .t {font-weight:600;color:var(--fg0)}
 html[data-style="gruvbox"] .nitem .s, html[data-style="gruvbox"] .nitem .ago {color:var(--text-3);font-size:11px}
 html[data-style="gruvbox"] .ctl {height:40px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--bg0);border:1px solid var(--bg2);flex:none}
-html[data-style="gruvbox"] .page {width:1440px;height:900px;overflow:hidden;display:flex;flex-direction:column}
+html[data-style="gruvbox"] .page {width:100%;min-height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 
 html[data-style="gruvbox"] .btn {height:28px;padding:0 12px;border:1px solid var(--bg2);color:var(--fg);display:inline-flex;align-items:center;gap:6px;background:var(--bg1)}
 html[data-style="gruvbox"] .btn-primary, html[data-style="gruvbox"] .btn.primary {background:var(--fill-yellow,#fabd2f);color:var(--fill-yellow-ink,#1d2021);border-color:transparent;font-weight:700}

@@ -1,7 +1,7 @@
 /* Live room + static room preview.
    Composition: header / session dock / player + rail. Dark stage is intentional. */
 
-.cinema-room{height:100vh;display:grid;grid-template-rows:auto auto minmax(0,1fr);background:var(--bg);color:var(--text);overflow:hidden}
+.cinema-room{height:100dvh;max-width:100vw;display:grid;grid-template-rows:auto auto minmax(0,1fr);background:var(--bg);color:var(--text);overflow:hidden}
 .cinema-room .top{
   min-height:60px;display:flex;align-items:center;gap:12px;padding:10px 20px;
   border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 92%,transparent);
@@ -36,7 +36,7 @@
 .cinema-room .layout-switch .btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 
 /* Session dock */
-.cinema-room .session-dock-bar{
+.cinema-room .session-dock-bar{min-width:0;
   display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 20px;flex-wrap:wrap;
   border-bottom:1px solid var(--line);background:var(--s1);font:500 12px/1.3 var(--font-ui);color:var(--text-2);
 }
@@ -54,7 +54,7 @@
 .cinema-room.is-narrow .session-dock-bar .dock-group{border-right:0;padding-right:6px;flex:none}
 .cinema-room.is-narrow .session-dock-bar .spacer{display:none;flex:1 1 100%}
 
-.cinema-room .body{display:grid;grid-template-columns:minmax(0,1fr) 384px;min-height:0;flex:1;grid-row:3}
+.cinema-room .body{display:grid;grid-template-columns:minmax(0,1fr) 384px;min-width:0;min-height:0;flex:1;grid-row:3;overflow:hidden}
 .cinema-room:not(:has(.session-dock-bar)) .body{grid-row:2 / -1}
 .cinema-room .player-col{display:flex;flex-direction:column;gap:12px;padding:14px 18px;min-width:0;min-height:0;overflow:hidden}
 .cinema-room .player-col::-webkit-scrollbar{width:8px}
@@ -132,7 +132,7 @@
 .cinema-room .voice-card .ct [data-testid="voice-ice"]{flex-basis:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 10.5px/1.4 var(--font-mono);color:var(--text-2)}
 
 /* Lower cards */
-.cinema-room .low{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:12px;flex:1;min-height:0;align-items:stretch;overflow:hidden}
+.cinema-room .low{min-width:0;display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:12px;flex:1;min-height:0;align-items:stretch;overflow:hidden}
 .cinema-room .card,.g-room .pane{background:var(--s1);border:1px solid var(--line);border-radius:var(--r-md);min-width:0;padding:12px 14px;min-height:0}
 .cinema-room .voice-card{overflow:auto;scrollbar-width:thin}
 .cinema-room .queue-card{overflow:auto;scrollbar-width:thin;max-height:100%}
@@ -223,10 +223,10 @@
 .cinema-room .report-form button{height:34px;min-height:34px;padding:0 11px;font-size:12px}
 
 /* Right rail */
-.cinema-room .rail{display:flex;flex-direction:column;background:var(--s1);border-left:1px solid var(--line);min-height:0;overflow:hidden}
+.cinema-room .rail{min-width:0;display:flex;flex-direction:column;background:var(--s1);border-left:1px solid var(--line);min-height:0;overflow:hidden}
 .cinema-room .rail .tabs{margin:10px 12px 0;flex:none}
 .cinema-room .rail .tabs .tab .n{height:18px;min-width:18px;font-size:10px}
-.cinema-room .rail .log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:7px;scrollbar-width:thin;scrollbar-color:var(--s3) transparent}
+.cinema-room .rail .log{min-width:0;min-height:0;flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:7px;scrollbar-width:thin;scrollbar-color:var(--s3) transparent}
 .cinema-room .rail .log::-webkit-scrollbar{width:8px}
 .cinema-room .rail .log::-webkit-scrollbar-thumb{background:var(--s3);border-radius:8px}
 .cinema-room .sys{align-self:center;background:color-mix(in srgb,var(--text) 7%,transparent);color:var(--text-2);font-size:11.5px;padding:3px 10px;border-radius:999px;max-width:100%;text-align:center}
@@ -276,9 +276,9 @@
 
 /* Modals inside the room */
 .cinema-room .overlay,.design-app .overlay{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 55%,rgba(0,0,0,.45));display:grid;place-items:center;z-index:60;backdrop-filter:blur(8px);padding:20px}
-.cinema-room .modal,.design-app .modal{width:520px;max-width:calc(100vw - 32px);max-height:calc(100vh - 96px);background:var(--s1);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-float);display:flex;flex-direction:column;overflow:hidden}
-.cinema-room .modal.lg,.design-app .modal.lg{width:720px}
-.cinema-room .modal.wide,.design-app .modal.wide{width:860px}
+.cinema-room .modal,.design-app .modal{width:min(520px,calc(100vw - 32px));max-height:min(820px,calc(100dvh - 32px));background:var(--s1);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-float);display:flex;flex-direction:column;overflow:hidden}
+.cinema-room .modal.lg,.design-app .modal.lg{width:min(720px,calc(100vw - 32px))}
+.cinema-room .modal.wide,.design-app .modal.wide{width:min(860px,calc(100vw - 32px))}
 .cinema-room .mh,.design-app .mh{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);flex:none}
 .cinema-room .mh h2,.design-app .mh h2{font:600 18px/1.25 var(--font-display);letter-spacing:-.015em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cinema-room .mh .sp,.design-app .mh .sp{flex:1}
@@ -361,9 +361,9 @@
 
 /* Gruvbox room keeps the terminal composition. */
 .g-room{min-height:calc(100vh - 28px);display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
-.g-room{height:100vh;display:grid;grid-template-rows:28px 1fr 24px}
-.g-room .body{grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;display:grid;min-height:0}
-.g-room .body.g-tiled{display:grid;grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;min-height:0}
+.g-room{height:100dvh;max-width:100vw;display:grid;grid-template-rows:28px 1fr 24px}
+.g-room .body{grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;display:grid;min-width:0;min-height:0;overflow:hidden}
+.g-room .body.g-tiled{display:grid;grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;min-width:0;min-height:0;overflow:hidden}
 .g-room .col-l{display:grid;grid-template-rows:minmax(0,1fr) 210px;gap:10px;min-height:0}
 .g-room .col-r{display:grid;grid-template-rows:minmax(0,1fr) 86px 52px;gap:10px;min-height:0}
 .g-room .stage{flex:1;min-height:180px;background:radial-gradient(120% 130% at 50% 20%,var(--s2) 0%,var(--s1) 60%,var(--bg) 100%)}
