@@ -35,8 +35,11 @@
 
 Внутри ячейки плеера сцена вписывается функцией `containSize`: при том же `videoAspect` картинка не обрезается и не вылезает из рамки. Смена 16:9 → 9:16 одновременно меняет сцену и, на широком окне, перекладывает панели сверху вниз.
 
-Темы не зашиты в раскладку. `@lume/ui` пишет CSS-переменные `--lume-*`, Tailwind-пресет в `@lume/config` ссылается на них через `@theme inline`, поэтому смена темы не пересобирает классы. В Telegram поверх темы ложатся `themeParams`. Кнопка «Превью Telegram» в обычном браузере подставляет палитру клиента Telegram и показывает BackButton, пока вы в зале.
+Темы не зашиты в раскладку. `apps/web/src/design/theme.ts` пишет `data-style` (`cinema` / `gruvbox`), `data-theme` (`dark` / `light`) и `data-mode` (`dark` / `light` / `system`), а `cinema.css` / `gruvbox.css` объявляют только CSS-переменные и базовые стили темы. Геометрия и адаптивные контейнеры живут в `layout.css` / `room.css`: фиксированных `1440×900`, `520px` и `420px` больше нет, используются `100%`, `min(…, 100vw)` и `100dvh`. Шрифты подключаются через `@fontsource/*`, внешних Google Fonts `@import` нет.
+
+> **Статус:** описанные ниже `resolveFlow`, `playerRatio` и ручки пока не подключены к живому `RoomStage`. Это целевой контракт следующего UI-среза; фактический экран сейчас использует адаптивные CSS-брейкпоинты и пресеты высоты.
+
 
 ## English
 
-The room is a versioned layout document: player ratio, three side weights, collapsed flags, and the video aspect. Wide landscape video keeps panels on the side. Portrait video moves them underneath. Narrow viewports stack and scroll. Resize handles edit the document. Themes are CSS variables, with Telegram `themeParams` applied on top.
+The room is a versioned layout document: player ratio, three side weights, collapsed flags, and the video aspect. Wide landscape video keeps panels on the side. Portrait video moves them underneath. Narrow viewports stack and scroll. Resize handles edit the document. Themes are CSS variables driven by `data-style` / `data-theme`; fonts are bundled through `@fontsource`.
