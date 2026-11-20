@@ -175,7 +175,7 @@ html[data-style="cinema"] .design-app .theme-btn .icon{width:15px;height:15px}
 .search-lg .kbd{margin-left:auto}
 .acts{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:14px}
 .tile{border-radius:var(--r-lg);padding:18px;background:var(--s1);border:1px solid var(--line);position:relative;overflow:hidden;min-height:188px;display:flex;flex-direction:column;box-shadow:var(--shadow-card)}
-.tile.resume{padding:0;color:#F3EDE6;color-scheme:dark;background:#000 url(/dev-seed/desert.jpg) 70% 55%/cover}
+.tile.resume{padding:0;color:#F3EDE6;color-scheme:dark;background:radial-gradient(120% 140% at 78% 18%,#2b2723 0%,#171413 54%,#0b0908 100%)}
 .tile.resume::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,7,.15) 20%,rgba(10,8,7,.82) 100%)}
 .tile.resume .c{position:relative;z-index:1;padding:16px 18px;display:flex;flex-direction:column;height:100%}
 .tile.resume .eyebrow{color:var(--accent)}
@@ -253,7 +253,7 @@ html[data-style="cinema"] .design-app .theme-btn .icon{width:15px;height:15px}
 .prov .pill{height:28px;padding:0 10px;border-radius:var(--r-pill);display:inline-flex;align-items:center;font:500 12.5px/1 var(--font-ui);background:var(--s2);color:var(--text-2);border:1px solid var(--line)}
 .prov .pill.on{background:var(--text);color:var(--bg);border-color:transparent}
 .results{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.res .th{position:relative;height:110px;border-radius:var(--r-sm);background:center/cover}
+.res .th{position:relative;height:110px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--s2),var(--s1))}
 .res .th .dur{position:absolute;right:6px;bottom:6px;background:rgba(10,8,7,.75);color:#fff;font:500 10px/1 var(--font-mono);padding:3px 5px;border-radius:4px}
 .res b{display:block;font:600 13px/17px var(--font-ui);margin-top:7px}
 .res small{display:block;color:var(--text-3);font-size:12px;margin-top:2px}

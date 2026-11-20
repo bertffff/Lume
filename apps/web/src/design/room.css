@@ -66,7 +66,7 @@
   border-radius:var(--r-md);overflow:hidden;background:#000;
   box-shadow:0 16px 40px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);
 }
-.cinema-room .stage-card:not(:has(.bare-stage)){background:#000 url(/dev-seed/desert.jpg) center/cover}
+.cinema-room .stage-card:not(:has(.bare-stage)){background:radial-gradient(120% 130% at 50% 20%,#24211e 0%,#12100f 60%,#080706 100%)}
 .cinema-room .stage-card[data-preset="enlarged"]{height:clamp(280px,54vh,620px)}
 .cinema-room .stage-card[data-preset="immersive"]{height:calc(100vh - 200px);min-height:380px;border-radius:0}
 .cinema-room .stage-card[data-aspect="vertical"]{
@@ -366,7 +366,7 @@
 .g-room .body.g-tiled{display:grid;grid-template-columns:minmax(0,1fr) 428px;gap:10px;padding:12px 10px;min-height:0}
 .g-room .col-l{display:grid;grid-template-rows:minmax(0,1fr) 210px;gap:10px;min-height:0}
 .g-room .col-r{display:grid;grid-template-rows:minmax(0,1fr) 86px 52px;gap:10px;min-height:0}
-.g-room .stage{flex:1;min-height:180px;background:#000 url(/dev-seed/desert.jpg) center/cover}
+.g-room .stage{flex:1;min-height:180px;background:radial-gradient(120% 130% at 50% 20%,var(--s2) 0%,var(--s1) 60%,var(--bg) 100%)}
 .g-room .stage-pane .stage{height:100%;min-height:180px}
 .g-room .pane .log{flex:1;overflow:auto;padding:4px 8px}
 .g-room .pane .msg{min-height:20px}
@@ -393,5 +393,5 @@
 .g-room .emoji-grid button{border:0;background:none;font-size:18px;padding:3px;cursor:pointer}
 .g-room .comp .emoji-toggle{border:0;background:none;font-size:18px;cursor:pointer}
 .g-room .qrow{display:grid;grid-template-columns:28px 72px 1fr;gap:10px;align-items:center;padding:8px 4px}
-.g-room .qrow .th{width:72px;height:42px;background:center/cover;display:block}
+.g-room .qrow .th{width:72px;height:42px;background:linear-gradient(135deg,var(--s2),var(--s1));display:block}
 .g-room .msg{display:grid;grid-template-columns:48px 80px 1fr;gap:8px;padding:2px 8px;font-family:var(--font)}

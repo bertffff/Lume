@@ -1,9 +1,13 @@
-const seedPosters = ["/dev-seed/desert.jpg", "/dev-seed/forest.jpg", "/dev-seed/rain.jpg", "/dev-seed/concert.jpg"] as const;
+/**
+ * Only a real thumbnail is returned. Cards without a thumbnail fall back to the
+ * neutral gradient defined in CSS, never to a stock photo.
+ */
+export function posterFor(_seed: string, thumbnail?: string | null): string | null {
+  return thumbnail && thumbnail.length > 0 ? thumbnail : null;
+}
 
-/** Real thumbnail when the item has one. Otherwise a committed Unsplash still for empty seed cards. */
-export function posterFor(seed: string, thumbnail?: string | null): string {
-  if (thumbnail && thumbnail.length > 0) return thumbnail;
-  let index = 0;
-  for (let cursor = 0; cursor < seed.length; cursor += 1) index = (index + seed.charCodeAt(cursor)) % seedPosters.length;
-  return seedPosters[index] ?? seedPosters[0];
+/** Inline background for a card that has a real thumbnail. */
+export function posterStyle(seed: string, thumbnail?: string | null): { backgroundImage: string } | undefined {
+  const src = posterFor(seed, thumbnail);
+  return src ? { backgroundImage: `url(${src})` } : undefined;
 }

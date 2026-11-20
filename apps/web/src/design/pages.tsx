@@ -196,7 +196,7 @@ export function SettingsScreen({
         <div className="set-row"><div><b>HLS</b><small>Манифест переписывается, когда извлечения включены.</small></div></div>
         <div className="set-row"><div><b>Реакции</b><button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: true }) }); }}>Скрыть чужие</button></div></div>
         <div className="set-row"><div><b>Telegram</b><small>{linked.includes("Telegram") ? "Уведомления бота включены" : "Бот молчит, пока Telegram не привязан"}</small></div></div>
-        <div className="set-row"><div><b>Плеер</b><small>Качество 1080p, скорость 1×</small></div></div>
+        <div className="set-row"><div><b>Плеер</b><small>Качество и скорость подбираются по источнику.</small></div></div>
         <div className="set-row">
           <div><b>Удаление аккаунта</b><small>30 дней на восстановление. Подтверждение — DELETE.</small></div>
           <button type="button" onClick={() => { if (!token || !apiUrl) return; void fetch(`${apiUrl}/me/delete`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ confirmation: "DELETE" }) }); }}>Удалить</button>
@@ -388,7 +388,7 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
         {history.length > 0 ? (
           <div className="rooms">
             {history.slice(0, 3).map((item) => (
-              <div key={item.url} className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }} /><div className="bd"><b>{item.title || item.url}</b><div className="meta"><span className="viewers">просмотрено {item.watchCount} раз</span></div></div></div>
+              <div key={item.url} className="rc"><div className="th" /><div className="bd"><b>{item.title || item.url}</b><div className="meta"><span className="viewers">просмотрено {item.watchCount} раз</span></div></div></div>
             ))}
           </div>
         ) : <p className="empty-note">Пока нет недавних комнат.</p>}
@@ -442,48 +442,26 @@ export function AuthScreen({ onTelegram, name, onName, onEmail, onRegister }: {
   );
 }
 
-const skus = [
-  ["Кольцо «Янтарь»", "Рамка аватара в цвете кинозала", "Бесплатно в сезоне", "Надеть", "btn-primary"],
-  ["Цвет имени", "Бирюза вашего профиля в чате", "уже ваше", "Снять", "btn-outline"],
-  ["Набор реакций «Зал»", "Три дополнительных быстрых эмодзи", "150 ☆", "Открыть", "btn-outline"],
-  ["Заставка комнаты", "Свой постер на паузе", "300 ☆", "Открыть", "btn-outline"],
-  ["Значок сезона", "Рядом с именем в комнате", "200 ☆", "Открыть", "btn-outline"],
-  ["Голосовой эффект", "Мягкая подсветка, когда говорите", "—", "Скоро", "btn-ghost"],
-] as const;
-
 export function PremiumScreen() {
   return (
     <div className="wrap shop-wrap">
       <h1>Витрина Blink</h1>
       <p className="lead">Косметика для профиля и комнаты. Приложение полностью удобно и без неё — это только украшения.</p>
-      <div className="shop">
-        {skus.map(([title, body, price, action, kind]) => (
-          <article key={title} className="sku">
-            <div className="prev" />
-            <b>{title}</b>
-            <span>{body}</span>
-            <span className="price">{price}</span>
-            <button type="button" className={`btn ${kind}`}>{action}</button>
-          </article>
-        ))}
+      <div className="empty">
+        <h2>Витрина пока пуста</h2>
+        <p>Товары появятся здесь, когда запустится магазин. Сейчас доступны только бесплатные возможности.</p>
       </div>
     </div>
   );
 }
 
-export function NotificationsScreen() {
-  const items = [
-    ["p-lisa", "ЛМ", "Лиза начала сеанс", "«Ночной кинозал» · Пустая дорога", "2 мин назад"],
-    ["p-dasha", "ДС", "Напоминание в 22:00", "«Лес, который помнит» в комнате Даши", "сегодня"],
-    ["p-sonya", "СН", "Соня приглашает", "Сериальный вторник · вт, 20:30", "вчера"],
-    ["p-me", "АВ", "Достижение «Ночной экран»", "Вы посмотрели 10 сеансов после полуночи", "3 дня назад"],
-  ];
+export function NotificationsScreen({ items }: { items: Array<{ id: string; kind: string; title: string; body: string }> }) {
   return (
     <div className="notifications-page">
       <aside className="npanel">
-        <div className="mh"><h2>Уведомления</h2><span className="sp" /><span>все</span></div>
-        {items.map(([hue, initials, title, body, ago]) => (
-          <div className="nitem" key={title}><span className={`av ${hue}`}>{initials}</span><div><div className="t">{title}</div><div className="s">{body}</div><div className="ago">{ago}</div></div></div>
+        <div className="mh"><h2>Уведомления</h2><span className="sp" /><span>{items.length}</span></div>
+        {items.length === 0 ? <p className="empty-note">Нет уведомлений.</p> : items.map((item) => (
+          <div className="nitem" key={item.id} data-kind={item.kind}><div><div className="t">{item.title}</div><div className="s">{item.body}</div></div></div>
         ))}
       </aside>
     </div>
@@ -608,57 +586,65 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function MembersScreen() {
-  return (
-    <div className="settings-wrap">
-      <aside><div className="slink on">В зале</div><div className="slink">Голос</div></aside>
-      <div className="panel">
-        <h2>Люди</h2>
-        <div className="fr"><span className="av lg p-lisa speak">ЛМ</span><div><div className="n p-lisa">Лиза</div><div className="s">говорит</div></div></div>
-        <div className="fr"><span className="av lg p-artem">АТ</span><div><div className="n p-artem">Артём</div><div className="s">в голосе</div></div></div>
-        <div className="fr"><span className="av lg p-mark">МК</span><div><div className="n p-mark">Марк</div><div className="s">микрофон выключен</div></div></div>
-      </div>
-    </div>
-  );
-}
-
-export function RoomSettingsScreen({ onSave, token, apiUrl, roomId }: { onSave: (event: FormEvent) => void; token?: string; apiUrl?: string; roomId?: string | null }) {
+export function RoomSettingsScreen({ token, apiUrl, roomId }: { token?: string; apiUrl?: string; roomId?: string | null }) {
+  const [settings, setSettings] = useState<{
+    title: string;
+    description: string;
+    isPublic: boolean;
+    maxMembers: number;
+    hideReactions: boolean;
+    defaults: Record<string, boolean> | null;
+  } | null>(null);
   const [incidents, setIncidents] = useState<Array<{ id: string; detail: string }>>([]);
   useEffect(() => {
     if (!token || !apiUrl || !roomId) return;
+    let stopped = false;
     void fetch(`${apiUrl}/rooms/${roomId}/sync-incidents`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
-      .then((payload: { incidents?: Array<{ id: string; detail: string }> }) => setIncidents(payload.incidents ?? []))
-      .catch(() => setIncidents([]));
+      .then((payload: { incidents?: Array<{ id: string; detail: string }> }) => {
+        if (!stopped) setIncidents(payload.incidents ?? []);
+      })
+      .catch(() => {
+        if (!stopped) setIncidents([]);
+      });
+    void fetch(`${apiUrl}/rooms/${roomId}/settings`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: typeof settings) => {
+        if (!stopped) setSettings(payload);
+      })
+      .catch(() => undefined);
+    return () => {
+      stopped = true;
+    };
   }, [token, apiUrl, roomId]);
+  if (!token || !roomId) {
+    return (
+      <div className="settings-wrap">
+        <div className="panel">
+          <h2>Настройки комнаты</h2>
+          <p className="empty-note">Откройте комнату, чтобы увидеть её настройки.</p>
+        </div>
+      </div>
+    );
+  }
   return (
-    <form className="settings-wrap" onSubmit={onSave}>
+    <div className="settings-wrap">
       <aside><div className="slink on">Модерация</div><div className="slink">Права</div></aside>
       <div className="panel">
         <h2>Настройки комнаты</h2>
-        <p className="lead">Права зрителей, медленный режим и чёрный список.</p>
-        <div className="set-row"><div><b>Чат</b><small>Зрители могут писать</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
-        <div className="set-row"><div><b>Голос</b><small>Зрители могут говорить</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
-        <div className="set-row"><div><b>Медленный режим</b><small>Одно сообщение в 10 секунд</small></div></div>
-        {viewerPermissionKeys.map((key) => (
-          <div className="set-row" key={key}><div><b>{permissionLabel(key)}</b><small>Разрешено зрителям по умолчанию</small></div><div className="seg"><button type="button" className="on">Вкл</button><button type="button">Выкл</button></div></div>
-        ))}
-        <button className="btn btn-primary" type="submit">Сохранить</button>
+        <p className="lead">Текущие значения из базы. Изменять их можно в самой комнате.</p>
+        {settings ? (
+          <>
+            <div className="set-row"><div><b>{settings.title}</b><small>{settings.isPublic ? "Публичная комната" : "Вход по коду"}</small></div></div>
+            <div className="set-row"><div><b>Лимит участников</b><small>{settings.maxMembers}</small></div></div>
+            <div className="set-row"><div><b>Чужие реакции</b><small>{settings.hideReactions ? "Скрыты" : "Показаны"}</small></div></div>
+            {viewerPermissionKeys.map((key) => (
+              <div className="set-row" key={key}><div><b>{permissionLabel(key)}</b><small>{settings.defaults?.[key] ? "Разрешено зрителям" : "Запрещено зрителям"}</small></div></div>
+            ))}
+          </>
+        ) : <p className="empty-note">Загрузка настроек…</p>}
         <h3>Сбои синхронизации</h3>
         {incidents.length === 0 ? <p>Пока пусто. Храним последние 10.</p> : incidents.map((item) => <p key={item.id}>{item.detail || item.id}</p>)}
-      </div>
-    </form>
-  );
-}
-
-export function QueueScreen() {
-  return (
-    <div className="settings-wrap">
-      <div className="panel">
-        <h2>Очередь</h2>
-        <div className="qrow"><span className="nr">01</span><span className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><div><b>Город после дождя</b><small>1:48:02</small></div></div>
-        <div className="qrow"><span className="nr">02</span><span className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }} /><div><b>Лес, который помнит</b><small>52:10</small></div></div>
-        <div className="qrow add"><span className="nr">--</span><span className="th">+</span><div><b>Добавить ссылку</b><small>YouTube, VK, Rutube</small></div></div>
       </div>
     </div>
   );
@@ -672,7 +658,6 @@ export function EmptyScreen({ title, body, action }: { title: string; body?: str
 
 export function MobileHome({
   session,
-  demo = false,
   rooms = [],
   name,
   onName,
@@ -685,7 +670,6 @@ export function MobileHome({
   onJoin,
 }: {
   session: { user: { displayName: string } } | null;
-  demo?: boolean;
   rooms?: Array<{ id: string; title: string; code: string; memberCount?: number }>;
   name: string;
   onName: (value: string) => void;
@@ -699,20 +683,11 @@ export function MobileHome({
 }) {
   return (
     <div className="pad mobile-home">
-      <div className="greet"><h1>Добрый вечер{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1><div className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : session ? "Открытые комнаты и быстрый вход" : "Представьтесь, чтобы создать комнату"}</div></div>
-      {demo ? (
-        <div className="stories">
-          <div className="st new"><div className="ring">+</div>Своя</div>
-          <div className="st p-lisa"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }}><span className="pres" /></div></div>Лиза</div>
-          <div className="st p-sonya"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="pres" /></div></div>Соня</div>
-          <div className="st p-dasha"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="pres" /></div></div>Даша</div>
-          <div className="st p-nick"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="pres idle" /></div></div>Ник</div>
-        </div>
-      ) : null}
-      {!session && !demo ? (
+      <div className="greet"><h1>Добрый вечер{session ? `, ${session.user.displayName}` : ""}</h1><div className="sub">{session ? "Открытые комнаты и быстрый вход" : "Представьтесь, чтобы создать комнату"}</div></div>
+      {!session ? (
         <form className="tile auth" onSubmit={onSignIn}>
           <div className="tile-head"><span className="tile-ic">☺</span><div><h3>Вход в lume</h3><p>Имя увидит только ваша компания.</p></div></div>
-          <label>Ваше имя<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder="Например, Альберт" autoComplete="nickname" /></label>
+          <label>Ваше имя<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder="Например, Аня" autoComplete="nickname" /></label>
           <div className="actions">
             <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">Войти</button>
             <button type="button" className="btn btn-telegram" onClick={onTelegram}>Войти через Telegram</button>
@@ -720,16 +695,6 @@ export function MobileHome({
         </form>
       ) : null}
       <div className="acts">
-        {demo ? (
-          <div className="tile resume">
-            <div className="c">
-              <div className="eyebrow">продолжить</div>
-              <h2>Пустая дорога — режиссёрская версия</h2>
-              <div className="sub">Ночной кинозал · 6 зрителей · 01:12:44 / 02:03:10</div>
-              <div className="pb"><i /></div>
-            </div>
-          </div>
-        ) : null}
         <button type="button" className="tile create promo" onClick={onCreate}>
           <span className="promo-plus" aria-hidden="true">+</span>
           <h3>Создать комнату</h3>
@@ -737,24 +702,15 @@ export function MobileHome({
         </button>
         <form className="tile join" onSubmit={onJoin}>
           <div className="tile-head"><span className="tile-ic">#</span><div><h3>Войти по коду</h3><p>Код комнаты из приглашения</p></div></div>
-          {demo ? (
-            <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i className="blank">2</i><i className="blank">M</i></div>
-          ) : (
-            <label>Код комнаты<CodeInput value={code} onChange={onCode} slots={8} /></label>
-          )}
+          <label>Код комнаты<CodeInput value={code} onChange={onCode} slots={8} /></label>
           <div className="actions"><button type="submit" className="btn btn-social" data-testid="lobby-join">Войти</button></div>
         </form>
       </div>
       <div className="sec"><h3>Открытые комнаты</h3></div>
       <div className="rooms">
-        {demo ? (
-          <>
-            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span></div></div><div className="bd"><b>Пятничный звук</b><small>Концерт на крыше</small></div></div>
-            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span><div className="stack"><span className="av sm p-nick">Н</span></div></div><div className="bd"><b>Нуар по средам</b><small>Город после дождя</small></div></div>
-          </>
-        ) : rooms.length > 0 ? rooms.map((room) => (
+        {rooms.length > 0 ? rooms.map((room) => (
           <button key={room.id} type="button" className="rc" onClick={() => onOpenRoom(room)}>
-            <div className="th" style={{ backgroundImage: `url(/dev-seed/desert.jpg)` }} />
+            <div className="th" />
             <div className="bd"><b>{room.title}</b><div className="meta"><span className="viewers">{room.memberCount ?? 0} в комнате</span><span className="code">{room.code}</span></div></div>
           </button>
         )) : <p className="empty-note">Открытых комнат пока нет. Создайте свою.</p>}

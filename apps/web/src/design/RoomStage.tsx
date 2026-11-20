@@ -8,7 +8,7 @@ import { runVoicePreflight, saveVoicePreflight, type VoicePreflightResult } from
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { EmojiPicker } from "./EmojiPicker.js";
 import { permissionLabel, viewersWord } from "./copy.js";
-import { posterFor } from "./posters.js";
+import { posterStyle } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
 import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
 import { SessionDock } from "./SessionDock.js";
@@ -524,7 +524,7 @@ export function RoomStage({
                 <div className="q">
                   {room.nowPlaying ? (
                     <div className="queue-now">
-                      <div className="im" style={{ backgroundImage: `url(${posterFor(room.nowPlaying.id, room.nowPlaying.thumbnailUrl)})` }} />
+                      <div className="im" style={posterStyle(room.nowPlaying.id, room.nowPlaying.thumbnailUrl)} />
                       <div><small>в эфире</small><b>{room.nowPlaying.title}</b></div>
                       <span className="pill mono">{clock(live.positionMs)}</span>
                     </div>
@@ -532,7 +532,7 @@ export function RoomStage({
                   <ol className="tr-queue q">
                     {queue.slice(0, 3).map((item) => (
                       <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider} data-title={item.title}>
-                        <div className="im" style={{ backgroundImage: `url(${posterFor(item.id, item.thumbnailUrl)})` }} />
+                        <div className="im" style={posterStyle(item.id, item.thumbnailUrl)} />
                         <b>{item.title}</b>
                         <small data-testid="queue-item-duration" data-duration-ms={item.durationMs ?? ""}>{durationLabel(item.durationMs)}</small>
                       </li>

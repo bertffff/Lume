@@ -109,7 +109,7 @@ export const api = {
     return request<{ ok: boolean }>(`/friends/${id}/decline`, { method: "POST", token, body: {} });
   },
   notifications(token: string) {
-    return request<{ unread: number; notifications: Array<{ id: string; title: string; body: string; read: boolean }> }>(
+    return request<{ unread: number; notifications: Array<{ id: string; kind: string; title: string; body: string; read: boolean }> }>(
       "/notifications",
       { token },
     );

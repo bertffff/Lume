@@ -83,7 +83,7 @@ html[data-style="gruvbox"] .design-app .st .ring{border-radius:0}
 .design-app .tile.join .join-field input{flex:1;font-family:var(--font-mono);letter-spacing:.12em;min-width:0}
 .design-app .tile.join .join-field button{flex:none}
 .design-app .tile .hint{display:flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px}
-.design-app .tile.resume{padding:0;color:#F3EDE6;color-scheme:dark;background:#000 url(/dev-seed/desert.jpg) 70% 55%/cover;border-color:rgba(255,255,255,.12)}
+.design-app .tile.resume{padding:0;color:#F3EDE6;color-scheme:dark;background:radial-gradient(120% 140% at 78% 18%,#2b2723 0%,#171413 54%,#0b0908 100%);border-color:rgba(255,255,255,.12)}
 .design-app .tile.resume::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,7,.08) 18%,rgba(10,8,7,.86) 100%)}
 .design-app .tile.resume .c{position:relative;z-index:1;padding:18px;display:flex;flex-direction:column;height:100%;gap:4px;min-height:238px}
 .design-app .tile.resume .eyebrow{color:var(--accent)}
@@ -105,7 +105,7 @@ html[data-style="cinema"] .design-app .rc:hover{transform:translateY(-2px);borde
 html[data-style="cinema"] .design-app .slink{justify-content:flex-start;text-align:left;white-space:normal}
 html[data-style="cinema"] .design-app .me{justify-content:flex-start}
 html[data-style="cinema"] .design-app .st{justify-content:flex-start;align-items:center}
-.design-app .rc .th{position:relative;flex:none;height:120px;border-radius:0;overflow:hidden;background:center/cover;padding:0;display:block}
+.design-app .rc .th{position:relative;flex:none;height:120px;border-radius:0;overflow:hidden;background:linear-gradient(135deg,var(--s2),var(--s1));padding:0;display:block}
 .design-app .rc .th .tag{position:absolute;left:8px;bottom:8px;height:22px;padding:0 8px;border-radius:999px;background:rgba(10,8,7,.68);backdrop-filter:blur(6px);display:flex;align-items:center;gap:6px;font:500 11px/1 var(--font-ui);color:#fff}
 .design-app .rc .th .tag i.d{width:6px;height:6px;border-radius:50%;background:#FF5544;display:block;box-shadow:0 0 0 3px rgba(255,85,68,.2)}
 .design-app .rc .bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -347,7 +347,7 @@ html[data-style="cinema"] .design-app .st .ring .face .pres.idle{background:var(
 
 html[data-style="cinema"] .design-app .tile{min-height:212px;padding:17px}
 html[data-style="cinema"] .design-app .tile.resume{justify-content:flex-start;align-items:stretch;text-align:left;white-space:normal}
-html[data-style="cinema"] .design-app button.tile.resume{background:#000 url(/dev-seed/desert.jpg) 70% 55%/cover;border-color:rgba(255,255,255,.12);color:#F3EDE6}
+html[data-style="cinema"] .design-app button.tile.resume{background:radial-gradient(120% 140% at 78% 18%,#2b2723 0%,#171413 54%,#0b0908 100%);border-color:rgba(255,255,255,.12);color:#F3EDE6}
 html[data-style="cinema"] .design-app .tile.resume .c{width:100%;min-height:212px;padding:16px 17px;text-align:left;align-items:flex-start}
 html[data-style="cinema"] .design-app .tile.resume .eyebrow{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:rgba(10,8,7,.42);backdrop-filter:blur(6px);color:#FFB23E;font:600 10px/1.3 var(--font-ui);letter-spacing:0;text-transform:lowercase;width:max-content}
 html[data-style="cinema"] .design-app .tile.resume h2{font-size:16px;line-height:1.28;max-width:none}
