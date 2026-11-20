@@ -87,7 +87,16 @@ export async function awardNew(
     if (!achievement) {
       continue;
     }
-    await prisma.userAchievement.create({ data: { userId, achievementId: achievement.id } });
+    // Concurrent room/message actions can award the same achievement at once.
+    // `skipDuplicates` makes the insert atomic; only the winner grants XP and
+    // sends the notification, so parallel requests never fail with P2002.
+    const inserted = await prisma.userAchievement.createMany({
+      data: [{ userId, achievementId: achievement.id }],
+      skipDuplicates: true,
+    });
+    if (inserted.count === 0) {
+      continue;
+    }
     await prisma.user.update({ where: { id: userId }, data: { xp: { increment: def.xpReward } } });
     await notifyUser(prisma, {
       userId,

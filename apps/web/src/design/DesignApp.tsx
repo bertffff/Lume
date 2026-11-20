@@ -87,6 +87,8 @@ export function DesignApp({
   });
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const creatingRef = useRef(false);
   const [rooms, setRooms] = useState<Array<{ id: string; title: string; code: string; memberCount?: number }>>([]);
   const [globalStats, setGlobalStats] = useState({ usersOnline: 0, activeRooms: 0, totalVideos: 0, totalWatchHours: 0 });
   const [statsReady, setStatsReady] = useState(false);
@@ -240,11 +242,14 @@ export function DesignApp({
 
   async function createRoom(event: FormEvent) {
     event.preventDefault();
+    if (creatingRef.current) return;
     if (!session) {
       setError("Сначала войдите в аккаунт — тогда комнату можно создать.");
       go("/auth");
       return;
     }
+    creatingRef.current = true;
+    setCreating(true);
     setError(null);
     try {
       const chosen = preset ? roomPresetById(preset) : null;
@@ -258,6 +263,9 @@ export function DesignApp({
       go("/");
     } catch (caught) {
       setError(caught instanceof ClientError ? roomErrorText(caught.code) : "Не удалось создать комнату. Попробуйте ещё раз.");
+    } finally {
+      creatingRef.current = false;
+      setCreating(false);
     }
   }
 
@@ -467,7 +475,7 @@ export function DesignApp({
                     </small>
                   ) : null}
                   <div className="actions">
-                    <button type="submit" className="btn btn-primary" data-testid="lobby-create">{text.create}</button>
+                    <button type="submit" className="btn btn-primary" data-testid="lobby-create" disabled={creating}>{creating ? "Создаём…" : text.create}</button>
                   </div>
                 </form>
                 <form className="tile join" onSubmit={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}>
@@ -550,7 +558,7 @@ export function DesignApp({
               <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => window.open(item.url, "_blank", "noopener")}><b>{item.title || item.url}</b><small>{item.url}</small></button>)}</div>
             </form>
           ) : null}
-          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} /> : null}
+          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} busy={creating} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }).catch(() => undefined); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
           {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} /> : <EmptyScreen title="Профиль" body="Войдите, чтобы увидеть свои достижения, историю, друзей и статистику." action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>Войти</button>} />) : null}

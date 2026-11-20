@@ -83,4 +83,42 @@ describe("achievements and levels", () => {
     await prisma.user.deleteMany({ where: { id: userId } });
     await prisma.$disconnect();
   });
+
+  it("awards a shared achievement exactly once under concurrent room creation", async () => {
+    process.env.DATABASE_URL = databaseUrl;
+    const prisma = createPrismaClient();
+    await seedPartyAchievements(prisma);
+    const env = loadApiEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: databaseUrl,
+      JWT_SECRET: "achievements-race-test-secret",
+      ALLOW_STUB_AUTH: "true",
+      WEB_ORIGIN: "http://127.0.0.1:5173",
+    });
+    app = await buildApp(env, { prisma });
+    const server = app;
+    const stamp = Date.now().toString(36);
+    const login = await server.inject({ method: "POST", url: "/auth/dev", payload: { displayName: `Race ${stamp}` } });
+    const token = login.json().accessToken as string;
+    const userId = login.json().user.id as string;
+
+    const responses = await Promise.all(
+      [1, 2, 3, 4].map((index) => server.inject({
+        method: "POST",
+        url: "/rooms",
+        headers: { authorization: `Bearer ${token}` },
+        payload: { title: `Race ${stamp} ${index}` },
+      })),
+    );
+    expect(responses.map((response) => response.statusCode)).toEqual([200, 200, 200, 200]);
+
+    const firstParty = await prisma.userAchievement.findMany({
+      where: { userId, achievement: { key: "first_party" } },
+    });
+    expect(firstParty).toHaveLength(1);
+
+    await prisma.room.deleteMany({ where: { hostId: userId } });
+    await prisma.user.deleteMany({ where: { id: userId } });
+    await prisma.$disconnect();
+  });
 });

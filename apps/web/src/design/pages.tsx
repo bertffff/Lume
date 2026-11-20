@@ -642,13 +642,14 @@ export function NotificationsScreen({ items }: { items: Array<{ id: string; kind
   );
 }
 
-export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit, onCancel }: {
+export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit, onCancel, busy = false }: {
   title: string;
   onTitle: (value: string) => void;
   preset: RoomPresetId | null;
   onPreset: (value: RoomPresetId) => void;
   onSubmit: (event: FormEvent) => void;
   onCancel?: () => void;
+  busy?: boolean;
 }) {
   const chosen = preset ? roomPresetById(preset) : null;
   return (
@@ -712,7 +713,7 @@ export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit, onCan
         </div>
         <div className="mf">
           <button type="button" className="btn btn-ghost" onClick={onCancel}>Назад</button>
-          <button className="btn btn-primary" type="submit" data-testid="lobby-create">Создать комнату</button>
+          <button className="btn btn-primary" type="submit" data-testid="lobby-create" disabled={busy}>{busy ? "Создаём…" : "Создать комнату"}</button>
         </div>
       </form>
     </div>
