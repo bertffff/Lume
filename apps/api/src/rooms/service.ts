@@ -158,6 +158,8 @@ export class RoomService {
     const summaries: RoomSummary[] = [];
     for (const room of rooms) {
       const members = active(await this.repo.listMembers(room.id));
+      // An abandoned room with nobody inside must not stay in "Open rooms" forever.
+      if (members.length === 0) continue;
       summaries.push(this.summarize(room, members.length));
     }
     return summaries;

@@ -60,7 +60,12 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
   app.get("/stats", async () => {
     if (!prisma) return { watchers: [], parties: [] };
     const users = await prisma.user.findMany({ orderBy: { xp: "desc" }, take: 10, select: { id: true, displayName: true, xp: true } });
-    const rooms = await prisma.room.findMany({ where: { status: { not: "ended" } }, orderBy: { createdAt: "desc" }, take: 10, select: { id: true, title: true } });
+    const rooms = await prisma.room.findMany({
+      where: { status: { not: "ended" }, members: { some: { leftAt: null } } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { id: true, title: true },
+    });
     return { watchers: users, parties: rooms };
   });
 

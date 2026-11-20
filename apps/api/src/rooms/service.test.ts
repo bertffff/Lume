@@ -34,6 +34,19 @@ describe("room service", () => {
     expect((await service.listPublic()).map((room) => room.code)).toEqual([created.room.code]);
   });
 
+  it("hides a public room from the open list once everyone has left", async () => {
+    const service = harness();
+    const created = await service.createRoom(
+      { userId: "anya", displayName: "Аня" },
+      { title: "Заброшенный зал", isPublic: true },
+    );
+    expect((await service.listPublic()).map((room) => room.code)).toEqual([created.room.code]);
+
+    await service.leave({ userId: "anya", displayName: "Аня" }, created.room.id);
+
+    expect(await service.listPublic()).toEqual([]);
+  });
+
   it("stops a free room at 25 members", async () => {
     const service = harness();
     const created = await service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Полный" });
