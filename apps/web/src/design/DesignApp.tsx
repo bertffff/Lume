@@ -6,7 +6,7 @@ import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy, viewersWord } from "./copy.js";
 import { heatCells } from "./fixtures.js";
-import { AuthScreen, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
+import { AuthScreen, CodeInput, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
 import { posterFor } from "./posters.js";
 import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
 
@@ -253,19 +253,16 @@ export function DesignApp({
       {view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
-          {demo ? (
-            <div className="search-lg"><i className="ph ph-magnifying-glass" />Найти видео или комнату<span className="kbd">/</span></div>
-          ) : (
-            <label className="search-lg">
-              <input aria-label={text.search} placeholder={text.search} value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => go("/search")} />
-              <span className="kbd">/</span>
-            </label>
-          )}
+          <label className="search-lg">
+            <Icon name="search" />
+            <input aria-label={text.search} placeholder={text.search} value={query} onChange={(event) => setQuery(event.target.value)} onFocus={() => { if (!demo) go("/search"); }} />
+            <span className="kbd">/</span>
+          </label>
           <div className="nav-actions">
-            <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><i className="ph ph-bell" /><span className="badge-dot" /></button>
-            <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><i className="ph ph-sun" /><i className="ph ph-moon" /></button>
+            <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><Icon name="bell" /><span className="badge-dot" /></button>
+            <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><Icon name="sun" /><Icon name="moon" /></button>
             <button type="button" className="me" onClick={() => go("/profile")}>
-              <span className="av p-me">{demo ? "АВ" : initials(session?.user.displayName ?? "?")}</span>
+              <span className="av p-me">{demo ? "АБ" : initials(session?.user.displayName ?? "?")}</span>
               <span className="nm p-me">{demo ? "Альберт" : session?.user.displayName ?? text.signIn}</span>
             </button>
           </div>
@@ -316,10 +313,6 @@ export function DesignApp({
                 <h1>{text.evening}{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1>
                 <p className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : session ? "Комнаты друзей, ваши сеансы и открытые залы — всё на одном экране" : "Представьтесь, чтобы создать комнату или войти по коду"}</p>
               </div>
-              <div className="hero-actions">
-                <button type="button" className="btn btn-outline" onClick={() => go("/search")}>Найти видео</button>
-                <button type="button" className="btn btn-primary" onClick={() => go(session ? "/create" : "/auth")}>Создать комнату</button>
-              </div>
             </div>
             {!demo ? (
               <section className="global-stats" data-testid="global-stats" data-ready={statsReady ? "true" : "false"}>
@@ -332,10 +325,10 @@ export function DesignApp({
             {demo ? (
               <div className="stories">
                 <div className="st new"><div className="ring">+</div>Своя</div>
-                <div className="st p-lisa"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }}><span className="av p-lisa">Л</span></div></div>Лиза</div>
-                <div className="st p-sonya"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="av p-sonya">С</span></div></div>Соня</div>
-                <div className="st p-dasha"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="av p-dasha">Д</span></div></div>Даша</div>
-                <div className="st p-nick"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="av p-nick">Н</span></div></div>Ник</div>
+                <div className="st p-lisa"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }}><span className="pres" /></div></div>Лиза</div>
+                <div className="st p-sonya"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="pres" /></div></div>Соня</div>
+                <div className="st p-dasha"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="pres" /></div></div>Даша</div>
+                <div className="st p-nick"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="pres idle" /></div></div>Ник</div>
               </div>
             ) : null}
             {!session && !demo ? (
@@ -372,11 +365,10 @@ export function DesignApp({
                   </div>
                   <label>
                     Код комнаты
-                    <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" placeholder="a7psyqm9" maxLength={12} autoComplete="off" />
+                    <CodeInput value={code} onChange={setCode} slots={8} />
                   </label>
                   <div className="actions">
                     <button type="submit" className="btn btn-social" data-testid="lobby-join">{text.enter}</button>
-                    <span className="hint">Код есть в приглашении</span>
                   </div>
                 </form>
               </div>
@@ -396,14 +388,11 @@ export function DesignApp({
                   </div>
                 </button>
                 {demo ? (
-                  <div className="tile create">
-                    <div className="tile-head">
-                      <span className="tile-ic"><Icon name="plus" /></span>
-                      <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
-                    </div>
-                    <p>Соберите компанию и включите фильм синхронно.</p>
-                    <div className="actions"><button type="button" className="btn btn-primary">Открыть мастер</button></div>
-                  </div>
+                  <button type="button" className="tile create promo" onClick={() => go("/create")} aria-label="Открыть мастер создания комнаты">
+                    <span className="promo-plus" aria-hidden="true">+</span>
+                    <h3>{text.create}</h3>
+                    <p>{text.createHint}</p>
+                  </button>
                 ) : (
                   <form className="tile create" onSubmit={(event) => void createRoom(event)}>
                     <div className="tile-head">
@@ -447,12 +436,11 @@ export function DesignApp({
                   ) : (
                     <label>
                       Код комнаты
-                      <input data-testid="lobby-code" value={code} onChange={(event) => setCode(event.target.value)} className="mono" placeholder="a7psyqm9" maxLength={12} autoComplete="off" aria-label="Код комнаты" />
+                      <CodeInput value={code} onChange={setCode} slots={8} />
                     </label>
                   )}
                   <div className="actions">
                     <button type="submit" className="btn btn-social" data-testid="lobby-join">{text.enter}</button>
-                    <span className="hint">Например, 7KQ-2M</span>
                   </div>
                 </form>
               </div>
@@ -467,9 +455,9 @@ export function DesignApp({
             </div>
             {demo ? (
               <div className="rooms">
-                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span></div><div className="bd"><b>Пятничный звук</b><div className="meta"><span className="viewers"><i />Концерт на крыше</span><span className="code">9AX-4K</span></div></div></div>
-                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span></div><div className="bd"><b>Нуар по средам</b><div className="meta"><span className="viewers"><i />Город после дождя</span><span className="code">2MN-7Q</span></div></div></div>
-                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag">в 22:00</span></div><div className="bd"><b>Документалки</b><div className="meta"><span className="viewers">Лес, который помнит</span><span className="code">5TR-1B</span></div></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span><span className="av sm p-me">А</span></div></div><div className="bd"><b>Пятничный звук</b><small>Концерт на крыше</small></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span><div className="stack"><span className="av sm p-nick">Н</span><span className="av sm p-artem">А</span></div></div><div className="bd"><b>Нуар по средам</b><small>Город после дождя</small></div></div>
+                <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="tag soon"><i className="moon" />в 22:00</span><div className="stack"><span className="av sm p-dasha">Д</span></div></div><div className="bd"><b>Документалки</b><small>Лес, который помнит</small></div></div>
               </div>
             ) : (
               <LiveRoomsCarousel
@@ -533,9 +521,9 @@ export function DesignApp({
                   <div />
                   <div className="heat-months"><span>июл</span><span /><span>авг</span><span /><span /><span /><span /><span>сен</span><span /><span /><span /><span>окт</span><span /><span /><span /><span>ноя</span><span /></div>
                   <div className="heat-days"><span>пн</span><span>вт</span><span>ср</span><span>чт</span><span>пт</span><span>сб</span><span>вс</span></div>
-                  <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} />)}</div>
+                  <div className="heat-grid">{heatCells.map((name, index) => <i key={index} className={name} data-tip={name.includes("tip") ? "пт 13 ноя · 3 сеанса" : undefined} />)}</div>
                 </div>
-              ) : heat.length > 0 ? (
+              ) : heat.some((cell) => cell.score > 0) ? (
                 <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
               ) : (
                 <p className="empty-note">Проведите первый сеанс — здесь появится карта сезона.</p>
@@ -765,7 +753,7 @@ function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "k
     user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0",
   }[name];
   return (
-    <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
+    <svg className={`icon icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">
       <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );

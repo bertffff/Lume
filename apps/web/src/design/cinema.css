@@ -27,7 +27,7 @@ html[data-style="cinema"][data-theme="dark"]{
   --scrim-stage:linear-gradient(180deg,rgba(14,12,11,.12) 0%,rgba(14,12,11,.22) 45%,rgba(14,12,11,.82) 72%,var(--bg) 86%);
   --heat-0:#29231F; --heat-1:#5C3E18; --heat-2:#8A5A12; --heat-3:#C48A20; --heat-4:#FFB23E;
   --p-lisa:#F0B27A; --p-lisa-fill:#E8B98A; --p-lisa-ink:#1A1205; --p-lisa-soft:rgba(240,178,122,.22);
-  --p-me:#6EC9B4; --p-me-fill:#7ED4C0; --p-me-ink:#0A1F1C; --p-me-soft:rgba(110,201,180,.22);
+  --p-me:#5FC98E; --p-me-fill:#83D6A5; --p-me-ink:#0B2418; --p-me-soft:rgba(95,201,142,.2);
   --p-artem:#7EB0E8; --p-artem-fill:#8BB8E8; --p-artem-ink:#0E1A2A; --p-artem-soft:rgba(126,176,232,.22);
   --p-mark:#C9A6E0; --p-mark-fill:#C9A6D8; --p-mark-ink:#1A1020; --p-mark-soft:rgba(201,166,224,.22);
   --p-dasha:#E89A96; --p-dasha-fill:#E6A39A; --p-dasha-ink:#1A1010; --p-dasha-soft:rgba(232,154,150,.22);
@@ -54,7 +54,7 @@ html[data-style="cinema"][data-theme="light"]{
   --scrim-stage:linear-gradient(180deg,rgba(230,223,214,.08) 0%,rgba(230,223,214,.2) 50%,rgba(230,223,214,.88) 78%,var(--bg) 90%);
   --heat-0:#D9D0C6; --heat-1:#F0D4A0; --heat-2:#E0B056; --heat-3:#C88820; --heat-4:#8A4E00;
   --p-lisa:#8A4A16; --p-lisa-fill:#E8B98A; --p-lisa-ink:#1A1205; --p-lisa-soft:rgba(138,74,22,.12);
-  --p-me:#0E6B5C; --p-me-fill:#7ED4C0; --p-me-ink:#0A1F1C; --p-me-soft:rgba(14,107,92,.12);
+  --p-me:#2A9A62; --p-me-fill:#8ED9AE; --p-me-ink:#0B2418; --p-me-soft:rgba(42,154,98,.12);
   --p-artem:#1A4F8A; --p-artem-fill:#8BB8E8; --p-artem-ink:#0E1A2A; --p-artem-soft:rgba(26,79,138,.12);
   --p-mark:#6B3A8A; --p-mark-fill:#C9A6D8; --p-mark-ink:#1A1020; --p-mark-soft:rgba(107,58,138,.12);
   --p-dasha:#A13232; --p-dasha-fill:#E6A39A; --p-dasha-ink:#1A1010; --p-dasha-soft:rgba(161,50,50,.12);
@@ -117,8 +117,9 @@ html[data-style="cinema"] button{font:inherit;color:inherit;background:none;bord
 .icon-btn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--text-2)}
 .eyebrow{font:500 11px/16px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
 .theme-btn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--text-2);background:var(--toggle-bg);border:1px solid var(--line-2)}
-html[data-style="cinema"][data-theme="dark"] .theme-btn .ph-moon{display:none}
-html[data-style="cinema"][data-theme="light"] .theme-btn .ph-sun{display:none}
+html[data-style="cinema"][data-theme="dark"] .theme-btn .icon-moon{display:none}
+html[data-style="cinema"][data-theme="light"] .theme-btn .icon-sun{display:none}
+html[data-style="cinema"] .design-app .theme-btn .icon{width:15px;height:15px}
 .muted-badge{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:var(--s3);display:grid;place-items:center;color:var(--danger)}
 .muted-badge .ph-fill{font-size:8px}
 .stage-root{color-scheme:dark;color:#F3EDE6}
@@ -391,7 +392,7 @@ html[data-style="cinema"] :is(.design-app,.cinema-room) .pill{
   border:1px solid var(--line);color:var(--text-2);font:500 12.5px/1 var(--font-ui);gap:6px;min-height:var(--ctl-h-sm);box-shadow:none;
 }
 html[data-style="cinema"] :is(.design-app,.cinema-room) .pill:hover{border-color:var(--line-2);color:var(--text)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .pill.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
+html[data-style="cinema"] :is(.design-app,.cinema-room) .pill.on{background:var(--text);border-color:transparent;color:var(--bg)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .seg{display:inline-flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--s2);box-shadow:var(--control-shadow)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .seg button{height:30px;min-height:30px;padding:0 12px;border:0;border-radius:5px;background:transparent;color:var(--text-2);font:500 12.5px/1 var(--font-ui);box-shadow:none}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .seg button:hover{background:color-mix(in srgb,var(--text) 7%,transparent);color:var(--text)}
@@ -465,6 +466,26 @@ html[data-style="cinema"] .cinema-room .field{display:flex;flex-direction:column
 html[data-style="cinema"] .design-app .field input,
 html[data-style="cinema"] .design-app .field select,
 html[data-style="cinema"] .design-app .field textarea{width:100%}
+
+/* Six-to-eight character room code, rendered as separate cells. */
+html[data-style="cinema"] .code-input{position:relative;width:100%;min-width:0}
+html[data-style="cinema"] .code-cells{display:flex;gap:6px;width:100%;min-width:0}
+html[data-style="cinema"] .code-cells > span{
+  flex:1 1 0;min-width:0;height:40px;border:1px solid var(--line-2);border-radius:8px;
+  background:var(--s2);display:grid;place-items:center;
+  font:600 16px/1 var(--font-mono);color:var(--text);box-shadow:var(--control-shadow);
+  transition:border-color .16s var(--ease-out),background .16s var(--ease-out),box-shadow .16s var(--ease-out);
+}
+html[data-style="cinema"] .code-cells > span.filled{background:var(--s3);border-color:var(--line-2)}
+html[data-style="cinema"] .code-cells > span:empty::after{content:"";display:block;width:6px;height:2px;border-radius:1px;background:var(--line-2)}
+html[data-style="cinema"] .code-input .code-native{
+  position:absolute;inset:0;width:100%;height:100%;min-height:0;padding:0!important;
+  border:0!important;background:transparent!important;color:transparent!important;
+  caret-color:transparent;box-shadow:none!important;font:600 16px/1 var(--font-mono);
+  cursor:text;outline:none!important;
+}
+html[data-style="cinema"] .code-input:focus-within .code-cells > span{border-color:var(--accent);box-shadow:var(--focus-ring)}
+html[data-style="cinema"] .code-input:focus-within .code-cells > span.filled{background:var(--s3)}
 
 /* Cards and section headings */
 html[data-style="cinema"] .design-app .card,

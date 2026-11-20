@@ -2,6 +2,43 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { favouriteLine, linkedLabel, roomPresetById, roomPresets, viewerPermissionKeys, type RoomPresetId } from "@lume/contracts";
 import { permissionLabel } from "./copy.js";
 import { initials, personHue } from "./theme.js";
+
+export function CodeInput({
+  value,
+  onChange,
+  slots = 8,
+  testId = "lobby-code",
+  label = "Код комнаты",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  slots?: number;
+  testId?: string;
+  label?: string;
+}) {
+  const count = Math.max(slots, Math.min(12, value.length));
+  return (
+    <div className="code-input">
+      <div className="code-cells" aria-hidden="true">
+        {Array.from({ length: count }, (_, index) => (
+          <span key={index} className={value[index] ? "filled" : ""}>{value[index] ?? ""}</span>
+        ))}
+      </div>
+      <input
+        data-testid={testId}
+        className="code-native"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        maxLength={12}
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        aria-label={label}
+      />
+    </div>
+  );
+}
+
 import type { ModeId, StyleId } from "./theme.js";
 
 export function SettingsScreen({
@@ -309,7 +346,7 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
         </div>
         <div className="card heat-wrap">
           <div className="heat-top"><h3>Ваш сезон</h3></div>
-          {heat.length > 0 ? (
+          {heat.some((cell) => cell.score > 0) ? (
             <>
               <div className="stats">{heat.filter((cell) => cell.score > 0).length} дней с сеансами · {heat.reduce((total, cell) => total + cell.score, 0)} сеансов</div>
               <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
@@ -544,7 +581,7 @@ export function JoinScreen({ code, onCode, onSubmit, onCancel }: { code: string;
         </div>
         <div className="mb">
           <label className="field">Код комнаты
-            <input className="mono" data-testid="lobby-code" value={code} onChange={(event) => onCode(event.target.value)} placeholder="a7psyqm9" maxLength={12} autoComplete="off" style={{ height: 52, fontSize: 20, letterSpacing: ".2em", textAlign: "center" }} />
+            <CodeInput value={code} onChange={onCode} slots={8} />
           </label>
           <p className="lead">Код не чувствителен к регистру. Если код не подходит — попросите новое приглашение у ведущего.</p>
         </div>
@@ -662,7 +699,16 @@ export function MobileHome({
 }) {
   return (
     <div className="pad mobile-home">
-      <div className="greet"><h1>Добрый вечер{session ? `, ${session.user.displayName}` : ""}</h1><div className="sub">{session ? "Открытые комнаты и быстрый вход" : "Представьтесь, чтобы создать комнату"}</div></div>
+      <div className="greet"><h1>Добрый вечер{demo ? ", Альберт" : session ? `, ${session.user.displayName}` : ""}</h1><div className="sub">{demo ? "Трое друзей сейчас смотрят — можно зайти к ним" : session ? "Открытые комнаты и быстрый вход" : "Представьтесь, чтобы создать комнату"}</div></div>
+      {demo ? (
+        <div className="stories">
+          <div className="st new"><div className="ring">+</div>Своя</div>
+          <div className="st p-lisa"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/desert.jpg)" }}><span className="pres" /></div></div>Лиза</div>
+          <div className="st p-sonya"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="pres" /></div></div>Соня</div>
+          <div className="st p-dasha"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/forest.jpg)" }}><span className="pres" /></div></div>Даша</div>
+          <div className="st p-nick"><div className="ring"><div className="face" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="pres idle" /></div></div>Ник</div>
+        </div>
+      ) : null}
       {!session && !demo ? (
         <form className="tile auth" onSubmit={onSignIn}>
           <div className="tile-head"><span className="tile-ic">☺</span><div><h3>Вход в lume</h3><p>Имя увидит только ваша компания.</p></div></div>
@@ -674,13 +720,28 @@ export function MobileHome({
         </form>
       ) : null}
       <div className="acts">
-        <div className="tile create">
-          <div className="tile-head"><span className="tile-ic">+</span><div><h3>Создать комнату</h3><p>Ссылка, друзья — и смотрим</p></div></div>
-          <div className="actions"><button type="button" className="btn btn-primary" onClick={onCreate}>Открыть мастер</button></div>
-        </div>
+        {demo ? (
+          <div className="tile resume">
+            <div className="c">
+              <div className="eyebrow">продолжить</div>
+              <h2>Пустая дорога — режиссёрская версия</h2>
+              <div className="sub">Ночной кинозал · 6 зрителей · 01:12:44 / 02:03:10</div>
+              <div className="pb"><i /></div>
+            </div>
+          </div>
+        ) : null}
+        <button type="button" className="tile create promo" onClick={onCreate}>
+          <span className="promo-plus" aria-hidden="true">+</span>
+          <h3>Создать комнату</h3>
+          <p>Ссылка, друзья — и смотрим</p>
+        </button>
         <form className="tile join" onSubmit={onJoin}>
-          <div className="tile-head"><span className="tile-ic">#</span><div><h3>Войти по коду</h3><p>Код из приглашения</p></div></div>
-          <label>Код комнаты<input data-testid="lobby-code" className="mono" value={code} onChange={(event) => onCode(event.target.value)} placeholder="a7psyqm9" maxLength={12} autoComplete="off" /></label>
+          <div className="tile-head"><span className="tile-ic">#</span><div><h3>Войти по коду</h3><p>Код комнаты из приглашения</p></div></div>
+          {demo ? (
+            <div className="codein"><i>7</i><i>K</i><i>Q</i><span className="dash">–</span><i className="blank">2</i><i className="blank">M</i></div>
+          ) : (
+            <label>Код комнаты<CodeInput value={code} onChange={onCode} slots={8} /></label>
+          )}
           <div className="actions"><button type="submit" className="btn btn-social" data-testid="lobby-join">Войти</button></div>
         </form>
       </div>
@@ -688,8 +749,8 @@ export function MobileHome({
       <div className="rooms">
         {demo ? (
           <>
-            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }} /><div className="bd"><b>Пятничный звук</b><div className="meta"><span className="viewers">38 смотрят · Соня</span><span className="code">9AX-4K</span></div></div></div>
-            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }} /><div className="bd"><b>Нуар по средам</b><div className="meta"><span className="viewers">12 смотрят · Ник</span><span className="code">2MN-7Q</span></div></div></div>
+            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/concert.jpg)" }}><span className="tag"><i className="d" />38 смотрят</span><div className="stack"><span className="av sm p-sonya">С</span><span className="av sm p-katya">К</span></div></div><div className="bd"><b>Пятничный звук</b><small>Концерт на крыше</small></div></div>
+            <div className="rc"><div className="th" style={{ backgroundImage: "url(/dev-seed/rain.jpg)" }}><span className="tag"><i className="d" />12 смотрят</span><div className="stack"><span className="av sm p-nick">Н</span></div></div><div className="bd"><b>Нуар по средам</b><small>Город после дождя</small></div></div>
           </>
         ) : rooms.length > 0 ? rooms.map((room) => (
           <button key={room.id} type="button" className="rc" onClick={() => onOpenRoom(room)}>

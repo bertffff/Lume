@@ -54,6 +54,19 @@ button {
   cursor: pointer;
 }
 
+::selection {
+  background: rgba(255, 178, 62, 0.32);
+  color: #fff7ec;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  max-width: 100%;
+}
+
 .tr-app {
   min-height: 100%;
   display: flex;
