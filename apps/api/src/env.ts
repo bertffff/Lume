@@ -5,6 +5,11 @@ const optionalString = z.preprocess(
   z.string().min(1).optional(),
 );
 
+const optionalPort = z.preprocess(
+  (value) => (value === "" || value === undefined ? undefined : value),
+  z.coerce.number().int().positive().max(65535).optional(),
+);
+
 const boolFromEnv = z.preprocess((value) => {
   if (value === undefined || value === "") {
     return undefined;
@@ -25,6 +30,8 @@ export const apiEnvSchema = z.object({
   WEB_ORIGIN: z.string().min(1).default("http://localhost:5173"),
   DATABASE_URL: optionalString,
   REDIS_URL: optionalString,
+  /** Namespace for auth state and rate limits; e2e uses a separate prefix. */
+  REDIS_KEY_PREFIX: z.string().min(1).default("lume"),
   JWT_SECRET: optionalString,
   JWT_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 12),
   TELEGRAM_BOT_TOKEN: optionalString,
@@ -48,6 +55,7 @@ export const apiEnvSchema = z.object({
   COBALT_API_URL: optionalString,
   YTDLP_PATH: optionalString,
   FF_EXTRACTORS: optionalString,
+  MEDIA_EXTRACTOR_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   OEMBED_BASE_URL: optionalString,
   METADATA_ALLOW_PRIVATE_HOSTS: boolFromEnv.default(false),
   STREAM_ALLOWLIST: optionalString,
@@ -55,9 +63,35 @@ export const apiEnvSchema = z.object({
   STREAM_ALLOW_PRIVATE_HOSTS: boolFromEnv.default(false),
   STREAM_HEADER_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   SMTP_HOST: optionalString,
+  SMTP_PORT: optionalPort,
+  SMTP_USER: optionalString,
+  SMTP_PASSWORD: optionalString,
+  SMTP_FROM: optionalString,
+  VK_COOKIES: optionalString,
+  TWITCH_CLIENT_ID: optionalString,
+  TWITCH_CLIENT_SECRET: optionalString,
   VAPID_PUBLIC_KEY: optionalString,
+  VAPID_PRIVATE_KEY: optionalString,
+  VAPID_SUBJECT: optionalString,
+  CDN_BUCKET: optionalString,
+  CDN_ACCESS_KEY: optionalString,
+  CDN_SECRET_KEY: optionalString,
+  CDN_REGION: optionalString,
+  CDN_PUBLIC_URL: optionalString,
+  WEBAPP_URL: optionalString,
+  MINI_APP_URL: optionalString,
   SENTRY_DSN: optionalString,
   METRICS_TOKEN: optionalString,
+}).superRefine((value, ctx) => {
+  // Production cannot degrade to in-memory auth: refresh tokens and magic
+  // links would vanish between restarts and across replicas.
+  if (value.NODE_ENV === "production" && !value.REDIS_URL) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["REDIS_URL"],
+      message: "REDIS_URL is required in production",
+    });
+  }
 });
 
 export type ApiEnv = z.infer<typeof apiEnvSchema>;

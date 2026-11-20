@@ -61,7 +61,7 @@ Lume priority: **P0** is MVP/launch-blocking, **P1** is needed at launch for par
 | F038 | Sync indicator with trust tiers + manual resync | Player/SyncIndicator.tsx | Tiers waiting, lagging (drift >3 s or hard-seeking), syncing (>150 ms or soft-correcting), synced. Shows latency and host health. "Resync" button appears when lagging. | W | P0 |
 | F039 | Buffering / ready states per member | socket player:buffering/buffered/set-ready | room:member-updated toggles isBuffering and isReady. UI strings: "sync.waitingReady", "sync.ready". | P (no server gate such as "start when everyone is ready") | P1 |
 | F040 | Vote-skip | socket player:vote-skip | needed = max(1, ceil(members/2)). The host skips instantly. Plays queue[0]. Broadcasts player:skip-votes. | W | P1 |
-| F041 | Video URL refresh (expired links) | socket player:refresh-url, utils/urlManager.ts | Manual refresh re-extracts and keeps time and playing state. The proactive refresher (UrlLifecycleManager, 1-min check, refreshes 5 min before expiry) is **never initialised** (`init(io)` is not called). | P/B | P0 |
+| F041 | Video URL refresh (expired links) | socket player:refresh-url, utils/urlManager.ts | Manual refresh re-extracts and keeps time and playing state. **Lume**: `POST /video/refresh` re-extracts, persists the URL and `expiresAt`, and a BullMQ `media.refresh` job refreshes the playing item of active rooms 5 minutes before expiry. | Done | P0 |
 | F042 | Player error UX with recovery actions | VideoPlayer.tsx error.* keys | Host gets "Обновить ссылку" and "Заменить видео" (inline URL input). Viewers get a hint. "Открыть на платформе". Recovery and incident telemetry sent via player:recovery-action and player:sync-incident. | W | P0 |
 | F043 | Tap-gesture zones | VideoPlayer.handleGestureZone | Left, centre and right thirds. Centre tap toggles play/pause. Double tap (<260 ms) on left or right seeks ±10 s with a "seek flash" animation. Host only. Tapping shows the controls. | W | P0 |
 | F044 | Custom progress bar (pointer drag), fullscreen, speed menu | VideoPlayer.tsx | Progress uses pointer down and move. requestFullscreen. | W | P0 |
@@ -73,9 +73,9 @@ Lume priority: **P0** is MVP/launch-blocking, **P1** is needed at launch for par
 | **Video sources** |||||
 | F050 | Source detection (25 platforms + direct) | server/src/utils/sourceRegistry.ts | Regex table (§5.11). Direct file extensions: .mp4 .webm .ogg .m3u8 .mpd .mkv .avi .mov | W | P0 |
 | F051 | Extractor orchestrator with cache | extractors/orchestrator.ts | Redis `extract:<url>`. TTL = per-source TTL, capped at URL expiry minus 5 min. Negative results cached 300 s. | W | P0 |
-| F052 | YouTube InnerTube extractor | extractors/youtube.ts | See §5.13. | W | P0 |
+| F052 | YouTube InnerTube extractor | extractors/youtube.ts | See §5.13. **Lume**: live InnerTube `player` request behind FF_EXTRACTORS; CI uses a local fixture. | Done | P0 |
 | F053 | VK extractor + cookie rotation | extractors/vk.ts, utils/vkCookieRotator.ts | oEmbed for metadata, then video_ext and m.vk.com HTML scraping for HLS or DASH. Cookie rotation with a 300 s cooldown on failure. | W | P0 |
-| F054 | Rutube API + puppeteer fallback | extractors/rutube.ts, rutubePuppeteer.ts | `/api/play/options/<id>` with a yandex referer. A puppeteer fallback can be switched on by flag. | W | P0 |
+| F054 | Rutube API + puppeteer fallback | extractors/rutube.ts, rutubePuppeteer.ts | `/api/play/options/<id>` with a yandex referer. **Lume**: live play-options behind FF_EXTRACTORS; no puppeteer fallback. | Done | P0 |
 | F055 | Twitch GQL | extractors/twitch.ts | PlaybackAccessToken persisted query → usher HLS, for both channels and VODs. | W | P1 |
 | F056 | Cobalt extractor | extractors/cobalt.ts | Self-hosted Cobalt API, 15 s timeout. Used for 22 sources. | W | P0 |
 | F057 | yt-dlp extractor | extractors/ytdlp.ts | `--dump-json --no-download --no-playlist`, prefers avc1. YouTube uses `player_client=android,ios`. Optional quality cap. | W | P0 |

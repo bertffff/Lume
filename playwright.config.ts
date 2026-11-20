@@ -9,6 +9,7 @@ const sharedEnv = {
   ...process.env,
   DATABASE_URL: databaseUrl,
   REDIS_URL: redisUrl,
+  REDIS_KEY_PREFIX: "lume:e2e",
   JWT_SECRET: jwtSecret,
   ALLOW_STUB_AUTH: "true",
   ALLOW_STUB_VOICE: "true",

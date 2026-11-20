@@ -13,19 +13,19 @@ the feature off; CI uses fixtures and local test servers.
 
 | ID | Feature | Environment keys that turn the live path on | Current behaviour |
 | --- | --- | --- | --- |
-| F051 | Extractor orchestrator | `FF_EXTRACTORS`, `COBALT_API_URL`, `YTDLP_PATH` | Fixture extractors run; live steps return `unconfigured` until configured |
-| F052 | YouTube InnerTube | No dedicated key; live YouTube egress + a recorded fixture | InnerTube is accepted from a fixture. Live YouTube is not called in CI |
-| F053 | VK extractor | `VK_COOKIES` | VK HLS is parsed from a fixture. Cookie rotation stays off until cookies are set |
-| F054 | Rutube extractor | No dedicated key; live Rutube egress | Rutube m3u8 is parsed from a fixture. Live play-options stay off without network access |
-| F055 | Twitch GQL | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Playback URLs are parsed from a fixture. Live GQL stays off without credentials |
+| F051 | Extractor orchestrator | `FF_EXTRACTORS`, adapters' keys | Provider adapters run in order with per-attempt timeouts; `no_extractor`/`failed` are explicit |
+| F052 | YouTube InnerTube | `FF_EXTRACTORS` + YouTube egress | Live player request; CI uses a local `node:http` fixture |
+| F053 | VK extractor | `FF_EXTRACTORS`, `VK_COOKIES` | Live embed scraping with cookie rotation |
+| F054 | Rutube extractor | `FF_EXTRACTORS` + Rutube egress | Live play-options; CI uses a local fixture |
+| F055 | Twitch GQL | `FF_EXTRACTORS`, `TWITCH_CLIENT_ID`, optional `TWITCH_CLIENT_SECRET` | Live GQL token to usher HLS; the secret only adds the Helix title |
 | F056 | Cobalt extractor | `COBALT_API_URL` | Chain step stays idle until a Cobalt URL is set |
 | F057 | yt-dlp extractor | `YTDLP_PATH` | Chain step stays idle until a yt-dlp binary path is set |
-| F064 | SearXNG search | `SEARXNG_URL` | Queue search returns an empty list until SearXNG is configured |
+| F064 | SearXNG search | `SEARXNG_URL` | Real video search; the API reports `unavailable` with a reason when not configured |
 | F116 | Telegram bot notify | `TELEGRAM_BOT_TOKEN` (plus the account's `telegramId`) | In-app notices still save; `sendMessage` runs only with a token and linked Telegram id |
-| F117 | Email notifications | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email delivery returns `skipped`; magic links are returned in the API response |
-| F118 | Web push + service worker | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | The service worker is registered; push send returns `skipped` |
+| F117 | Email notifications | `SMTP_HOST`, `SMTP_FROM`, optional `SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD` | Real nodemailer delivery; `skipped` only when SMTP is missing |
+| F118 | Web push + service worker | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Real web-push delivery to stored subscriptions; `skipped` without keys |
 | F129 | Prometheus metrics / Sentry | `SENTRY_DSN`, optional `METRICS_TOKEN` | `GET /metrics` works and reports `lume_sentry_configured 0`; nothing is uploaded |
-| F136 | Telegram / S3 storage uploads | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_STORAGE_CHAT`, `CDN_ENDPOINT` | Local disk is the default. The other backends are selected by env; real S3 signing/upload is still a stub |
+| F136 | Telegram / S3 storage uploads | `CDN_*` or `TELEGRAM_BOT_TOKEN` + `TELEGRAM_STORAGE_CHAT` | Real `PutObject`/`sendDocument` with Postgres metadata; production answers `503 storage_unconfigured` when neither is set |
 
 Rows F052 and F054 have no environment variable today because they need live
 egress, not a secret. If those providers become first-class integrations, add
@@ -95,18 +95,16 @@ premium flag and cosmetic boundaries, but no checkout is wired.
 
 ## 6. Known technical debt and risks
 
-- Uploads are kept in an in-memory `Map` (plus a local-disk marker) and disappear
-  on API restart. Real object storage and signed URLs are still needed.
-- `CDN_ENDPOINT` and `TELEGRAM_STORAGE_CHAT` select a backend marker; they do not
-  perform a real S3 or Telegram upload yet.
-- The proactive video URL refresher from F041 is not scheduled. Refresh is manual
-  and preserves the current time and play state.
-- Live metadata depends on provider oEmbed/OpenGraph. There is no production
-  cache, circuit breaker or per-provider budget yet.
-- Redis is optional in the schema but required for production auth and reliable
-  rate limiting. Treating it as optional in deployment is a production risk.
-- SMTP and web push are guarded stubs. They report `skipped`; they do not send
-  mail or push notifications yet.
+- Uploads persist metadata in Postgres and bytes in S3/R2 or Telegram storage.
+  Local disk remains a development-only backend; production without storage
+  answers `503 storage_unconfigured`.
+- The F041 proactive refresher runs as a BullMQ `media.refresh` job every minute
+  for the playing item of active rooms. Manual refresh re-extracts and persists.
+- Live metadata is cached in Redis with a 5-minute TTL and a circuit breaker;
+  provider outages return `null` instead of hanging the request.
+- Redis is required in production: the API refuses to boot without it.
+- SMTP and web push send for real. Missing credentials produce `skipped` rows
+  with a logged reason, never a fake `sent`.
 - The API integration suite shares one Postgres database and serializes test
   files. It is stable, but parallelizing it requires per-worker schemas or
   transactional isolation.

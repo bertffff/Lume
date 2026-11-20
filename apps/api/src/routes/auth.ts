@@ -10,7 +10,7 @@ import { unlinkAllowed } from "@lume/contracts";
 import { z } from "zod";
 import type { ApiEnv } from "../env.js";
 import { mintAccessToken } from "../auth/jwt.js";
-import { issueRefresh } from "../auth/refresh-store.js";
+import type { AuthStores } from "../auth/stores.js";
 import { requireUser } from "../auth/guard.js";
 import { localeFromTelegram, verifyLoginWidget, verifyTelegramInitData } from "../auth/telegram.js";
 import { toPublicUser, upsertDevUser, upsertTelegramUser } from "../auth/users.js";
@@ -32,7 +32,12 @@ function publicUser(input: {
   };
 }
 
-export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: PrismaClient): void {
+export function registerAuthRoutes(
+  app: FastifyInstance,
+  env: ApiEnv,
+  prisma: PrismaClient | undefined,
+  stores: AuthStores,
+): void {
   app.post("/auth/telegram", async (request, reply) => {
     const body = telegramAuthRequestSchema.safeParse(request.body);
     if (!body.success) {
@@ -131,7 +136,7 @@ export function registerAuthRoutes(app: FastifyInstance, env: ApiEnv, prisma?: P
       authMode: "stub",
       user,
       accessToken: await maybeMint(env, user),
-      refreshToken: issueRefresh(user.id),
+      refreshToken: await stores.refresh.issue(user.id),
     });
   });
 

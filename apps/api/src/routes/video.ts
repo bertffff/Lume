@@ -1,5 +1,6 @@
-import { detectSource, dnsPinned, hostAllowed, needsRange, parseAllowlist, planPlayback, refreshKeepsPlayback, rewriteDashManifest, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
+import { detectSource, dnsPinned, extractorsEnabled, hostAllowed, needsRange, parseAllowlist, planPlayback, refreshKeepsPlayback, rewriteDashManifest, rewriteHlsManifest, urlBlocked } from "@lume/contracts";
 import { verifyAccessToken } from "@lume/contracts/node";
+import { createMediaRegistry, expiresAtFromUrl, resolveMediaChain, searchVideos } from "@lume/media";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { lookup } from "node:dns/promises";
@@ -7,6 +8,7 @@ import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { z } from "zod";
 import type { ApiEnv } from "../env.js";
+import type { RedisLike } from "../redis.js";
 
 type StreamTarget = { response: Response } | { error: "blocked" | "host_not_allowed" | "upstream" };
 
@@ -97,8 +99,27 @@ async function boundedText(response: Response, limit = manifestReadCap): Promise
   return { text: Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8"), truncated };
 }
 
-export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null = null): void {
+export interface VideoRouteOptions {
+  redis?: RedisLike | null;
+}
+
+export function registerVideoRoutes(
+  app: FastifyInstance,
+  env: ApiEnv,
+  prisma: PrismaClient | null = null,
+  _options: VideoRouteOptions = {},
+): void {
   const allowlist = parseAllowlist(env.STREAM_ALLOWLIST);
+  const mediaEnabled = extractorsEnabled(env.FF_EXTRACTORS);
+  const mediaConfig = {
+    ...(env.COBALT_API_URL ? { cobaltApiUrl: env.COBALT_API_URL } : {}),
+    ...(env.YTDLP_PATH ? { ytdlpPath: env.YTDLP_PATH } : {}),
+    ...(env.VK_COOKIES ? { vkCookies: env.VK_COOKIES } : {}),
+    ...(env.TWITCH_CLIENT_ID ? { twitchClientId: env.TWITCH_CLIENT_ID } : {}),
+    ...(env.TWITCH_CLIENT_SECRET ? { twitchClientSecret: env.TWITCH_CLIENT_SECRET } : {}),
+    ...(env.SEARXNG_URL ? { searxngUrl: env.SEARXNG_URL } : {}),
+    timeoutMs: env.MEDIA_EXTRACTOR_TIMEOUT_MS,
+  };
 
   app.get("/video/range", async (request, reply) => {
     const query = z.object({ url: z.string().url() }).safeParse(request.query);
@@ -129,9 +150,46 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
   });
 
   app.post("/video/refresh", async (request, reply) => {
-    const body = z.object({ url: z.string().min(1), positionMs: z.number().optional(), playing: z.boolean().optional() }).safeParse(request.body);
+    const body = z
+      .object({
+        url: z.string().min(1),
+        roomId: z.string().min(1).optional(),
+        positionMs: z.number().optional(),
+        playing: z.boolean().optional(),
+      })
+      .safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    return reply.send({ url: body.data.url, ...refreshKeepsPlayback(body.data.positionMs ?? 0, body.data.playing === true) });
+    if (!mediaEnabled) {
+      return reply.code(503).send({ error: "extractors_disabled" });
+    }
+    const report = createMediaRegistry(mediaConfig);
+    const outcome = await resolveMediaChain(report, body.data.url, env.MEDIA_EXTRACTOR_TIMEOUT_MS);
+    if (outcome.status === "no_extractor") {
+      return reply.code(422).send({ error: "no_extractor" });
+    }
+    if (outcome.status === "failed") {
+      request.log.warn({ attempts: outcome.attempts }, "stream refresh failed");
+      return reply.code(502).send({ error: "refresh_failed", attempts: outcome.attempts });
+    }
+    const nextUrl = outcome.media.playback?.url;
+    if (!nextUrl) {
+      return reply.code(502).send({ error: "refresh_failed" });
+    }
+    const expiresAt = expiresAtFromUrl(nextUrl);
+    if (prisma) {
+      await prisma.queueItem.updateMany({
+        where: {
+          url: body.data.url,
+          ...(body.data.roomId ? { roomId: body.data.roomId } : {}),
+        },
+        data: { url: nextUrl, expiresAt: expiresAt === null ? null : new Date(expiresAt) },
+      });
+    }
+    return reply.send({
+      url: nextUrl,
+      ...(expiresAt === null ? {} : { expiresAt: new Date(expiresAt).toISOString() }),
+      ...refreshKeepsPlayback(body.data.positionMs ?? 0, body.data.playing === true),
+    });
   });
 
   app.post("/video/detect", async (request, reply) => {
@@ -156,27 +214,11 @@ export function registerVideoRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     const query = z.object({ q: z.string().min(1) }).safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: "invalid_body" });
     if (!env.SEARXNG_URL) {
-      return reply.send({ results: [], unavailable: true });
+      return reply.send({ results: [], unavailable: true, reason: "searxng_unconfigured" });
     }
-    try {
-      const url = new URL("/search", env.SEARXNG_URL);
-      url.searchParams.set("q", query.data.q);
-      url.searchParams.set("format", "json");
-      url.searchParams.set("categories", "videos");
-      const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-      if (!response.ok) return reply.send({ results: [], unavailable: true });
-      const payload = (await response.json()) as { results?: Array<{ title?: string; url?: string }> };
-      return reply.send({
-        results: (payload.results ?? []).slice(0, 12).map((item) => ({
-          title: item.title ?? "",
-          url: item.url ?? "",
-          source: item.url ? detectSource(item.url)?.id ?? null : null,
-        })),
-        unavailable: false,
-      });
-    } catch {
-      return reply.send({ results: [], unavailable: true });
-    }
+    const response = await searchVideos(mediaConfig, query.data.q).catch(() => null);
+    if (!response) return reply.send({ results: [], unavailable: true, reason: "searxng_unavailable" });
+    return reply.send(response);
   });
 
   app.get("/video/hls-proxy", async (request, reply) => {

@@ -1,36 +1,55 @@
 import {
   cobaltServices,
-  consumeMagic,
   dayScore,
+  extractorsEnabled,
   imageKind,
-  innertubeFromFixture,
   levelFromXp,
   memberFlagsFromDefaults,
   planPlayback,
   roomLayoutSchema,
   yearHeatmap,
-  rutubeFromFixture,
-  runExtractorChain,
-  twitchFromFixture,
-  vkFromFixture,
-  type MagicRow,
 } from "@lume/contracts";
+import { createMediaRegistry, resolveMediaChain } from "@lume/media";
 import { verifyAccessToken } from "@lume/contracts/node";
+import { createEmailSender, type EmailSender } from "@lume/delivery";
 import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireUser } from "../auth/guard.js";
-import { issueRefresh, revokeRefresh, rotateStoredRefresh } from "../auth/refresh-store.js";
-import { storeObject } from "../media/storage.js";
+import type { AuthStores } from "../auth/stores.js";
+import { StorageUnconfiguredError, type MediaStorage } from "../media/storage.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import type { ApiEnv } from "../env.js";
+import type { RedisLike } from "../redis.js";
 import { notifyUser } from "../account/notify.js";
 
-const uploads = new Map<string, { bytes: Buffer; type: string }>();
-const magicLinks = new Map<string, MagicRow>();
+export interface ExtraRouteOptions {
+  stores: AuthStores;
+  storage: MediaStorage;
+  redis?: RedisLike | null;
+  email?: EmailSender;
+}
 
-export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: PrismaClient | null): void {
+function createEnvEmailSender(env: ApiEnv): EmailSender {
+  return createEmailSender({
+    ...(env.SMTP_HOST ? { host: env.SMTP_HOST } : {}),
+    ...(env.SMTP_PORT ? { port: env.SMTP_PORT } : {}),
+    ...(env.SMTP_USER ? { user: env.SMTP_USER } : {}),
+    ...(env.SMTP_PASSWORD ? { password: env.SMTP_PASSWORD } : {}),
+    ...(env.SMTP_FROM ? { from: env.SMTP_FROM } : {}),
+  });
+}
+
+export function registerExtraRoutes(
+  app: FastifyInstance,
+  env: ApiEnv,
+  prisma: PrismaClient | null,
+  options: ExtraRouteOptions,
+): void {
+  const { stores, storage, email } = options;
+  const mailer = email ?? createEnvEmailSender(env);
+
   app.get("/stats/global", async () => {
     if (!prisma) {
       return { usersOnline: 0, activeRooms: 0, totalVideos: 0, totalWatchHours: 0 };
@@ -118,43 +137,91 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
     }
     const plan = planPlayback({ url: body.data.url, premium });
     if (plan.type === "error") return reply.send(plan);
-    if (env.FF_EXTRACTORS !== "true") return reply.send({ ...plan, extraction: "disabled" });
-    const extracted = runExtractorChain([
-      () => innertubeFromFixture(null),
-      () => vkFromFixture(null),
-      () => rutubeFromFixture(null),
-      () => twitchFromFixture(null),
-      () => (env.COBALT_API_URL ? null : null),
-      () => (env.YTDLP_PATH ? null : null),
-    ]);
-    return reply.send({ plan, extracted });
+    if (!extractorsEnabled(env.FF_EXTRACTORS)) {
+      return reply.send({ ...plan, extraction: "disabled" });
+    }
+    const mediaConfig = {
+      ...(env.COBALT_API_URL ? { cobaltApiUrl: env.COBALT_API_URL } : {}),
+      ...(env.YTDLP_PATH ? { ytdlpPath: env.YTDLP_PATH } : {}),
+      ...(env.VK_COOKIES ? { vkCookies: env.VK_COOKIES } : {}),
+      ...(env.TWITCH_CLIENT_ID ? { twitchClientId: env.TWITCH_CLIENT_ID } : {}),
+      ...(env.TWITCH_CLIENT_SECRET ? { twitchClientSecret: env.TWITCH_CLIENT_SECRET } : {}),
+      ...(env.SEARXNG_URL ? { searxngUrl: env.SEARXNG_URL } : {}),
+      timeoutMs: env.MEDIA_EXTRACTOR_TIMEOUT_MS,
+    };
+    const report = createMediaRegistry(mediaConfig);
+    const outcome = await resolveMediaChain(report, body.data.url, env.MEDIA_EXTRACTOR_TIMEOUT_MS);
+    if (outcome.status === "no_extractor") {
+      return reply.send({
+        plan,
+        extraction: "unconfigured",
+        adapters: { enabled: report.enabled, disabled: report.disabled },
+      });
+    }
+    if (outcome.status === "failed") {
+      request.log.warn({ attempts: outcome.attempts }, "media resolve failed");
+      return reply.send({ plan, extraction: "failed", attempts: outcome.attempts });
+    }
+    return reply.send({ plan, media: outcome.media, extractor: outcome.extractorId });
   });
 
   app.post("/uploads", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor) return;
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
     const body = z.object({ dataBase64: z.string().min(8).max(14_000_000) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
     const bytes = Buffer.from(body.data.dataBase64, "base64");
     if (bytes.length > 10 * 1024 * 1024) return reply.code(413).send({ error: "too_large" });
     const kind = imageKind(bytes);
     if (!kind) return reply.code(400).send({ error: "not_image" });
-    const id = randomBytes(8).toString("hex");
-    uploads.set(id, { bytes, type: kind === "jpeg" ? "image/jpeg" : `image/${kind}` });
-    const stored = await storeObject({
-      id,
-      bytes,
-      telegram: { token: env.TELEGRAM_BOT_TOKEN, chatId: env.TELEGRAM_STORAGE_CHAT },
-      s3: { endpoint: env.CDN_ENDPOINT },
+    const mimeType = kind === "jpeg" ? "image/jpeg" : `image/${kind}`;
+    const key = randomBytes(8).toString("hex");
+    let stored;
+    try {
+      stored = await storage.put({ key, bytes, mimeType });
+    } catch (error) {
+      if (error instanceof StorageUnconfiguredError) {
+        return reply.code(503).send({ error: "storage_unconfigured" });
+      }
+      request.log.error(error);
+      return reply.code(502).send({ error: "storage_failed" });
+    }
+    await prisma.mediaObject.create({
+      data: {
+        key,
+        userId: actor.userId,
+        kind,
+        mimeType,
+        byteSize: bytes.length,
+        backend: stored.backend,
+        storageKey: stored.storageKey,
+        publicUrl: stored.publicUrl,
+        telegramFileId: stored.telegramFileId,
+      },
     });
-    return reply.send({ url: stored.backend === "local" ? stored.url : stored.url, backend: stored.backend });
+    return reply.send({
+      url: stored.publicUrl ?? `/uploads/${key}`,
+      backend: stored.backend,
+    });
   });
 
   app.get("/uploads/:id", async (request, reply) => {
-    const params = z.object({ id: z.string() }).parse(request.params);
-    const file = uploads.get(params.id);
-    if (!file) return reply.code(404).send({ error: "not_found" });
-    return reply.type(file.type).send(file.bytes);
+    const params = z.object({ id: z.string().min(1).max(64) }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_body" });
+    if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
+    const row = await prisma.mediaObject.findUnique({ where: { key: params.data.id } });
+    if (!row) return reply.code(404).send({ error: "not_found" });
+    const resolved = await storage.read({
+      backend: row.backend,
+      storageKey: row.storageKey,
+      publicUrl: row.publicUrl,
+      telegramFileId: row.telegramFileId,
+      mimeType: row.mimeType,
+    });
+    if (!resolved) return reply.code(404).send({ error: "not_found" });
+    if (resolved.kind === "redirect") return reply.redirect(resolved.url);
+    return reply.type(resolved.mimeType).send(resolved.bytes);
   });
 
   app.post("/rooms/:id/images", async (request, reply) => {
@@ -472,17 +539,30 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
   app.post("/auth/magic-link", async (request, reply) => {
     const body = z.object({ email: z.string().email() }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const token = randomBytes(16).toString("hex");
-    magicLinks.set(token, { email: body.data.email.toLowerCase(), expiresAt: Date.now() + 15 * 60_000, used: false });
+    const emailAddress = body.data.email.toLowerCase();
+    const { token } = await stores.magic.issue(emailAddress);
     const link = `${env.WEB_ORIGIN}/?magic=${token}`;
-    return reply.send({ ok: true, ...(env.SMTP_HOST ? {} : { magicLink: link }) });
+    if (!mailer.configured) {
+      return reply.send({ ok: true, magicLink: link });
+    }
+    const delivered = await mailer.send({
+      to: emailAddress,
+      subject: "Вход в Lume",
+      text: `Ссылка для входа: ${link}\nСсылка действует 15 минут.`,
+      html: `<p>Ссылка для входа: <a href="${link}">${link}</a></p><p>Ссылка действует 15 минут.</p>`,
+    });
+    if (delivered.status === "failed") {
+      request.log.error({ error: delivered.error }, "magic link email failed");
+      return reply.code(502).send({ error: "email_failed" });
+    }
+    return reply.send({ ok: true });
   });
 
   app.post("/auth/magic-link/verify", async (request, reply) => {
     if (!prisma || !env.JWT_SECRET) return reply.code(503).send({ error: "database_unconfigured" });
     const body = z.object({ token: z.string().min(8) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const email = consumeMagic(magicLinks, body.data.token, Date.now());
+    const email = await stores.magic.consume(body.data.token);
     if (!email) return reply.code(401).send({ error: "Invalid or expired magic link" });
     const user = await prisma.user.upsert({
       where: { email },
@@ -490,14 +570,14 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
       create: { email, displayName: email.split("@")[0] ?? "Гость", username: `mail:${email}` },
     });
     const accessToken = await mintAccessToken({ secret: env.JWT_SECRET, userId: user.id, telegramId: null, displayName: user.displayName, ttlSeconds: env.JWT_TTL_SECONDS });
-    return reply.send({ accessToken, refreshToken: issueRefresh(user.id), user: { id: user.id, displayName: user.displayName } });
+    return reply.send({ accessToken, refreshToken: await stores.refresh.issue(user.id), user: { id: user.id, displayName: user.displayName } });
   });
 
   app.post("/auth/refresh", async (request, reply) => {
     if (!env.JWT_SECRET || !prisma) return reply.code(503).send({ error: "database_unconfigured" });
     const body = z.object({ refreshToken: z.string().min(8) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const rotated = rotateStoredRefresh(body.data.refreshToken);
+    const rotated = await stores.refresh.rotate(body.data.refreshToken);
     if (!rotated) return reply.code(401).send({ error: "unauthorized" });
     const user = await prisma.user.findUnique({ where: { id: rotated.userId } });
     if (!user || user.deletedAt) return reply.code(401).send({ error: "unauthorized" });
@@ -507,7 +587,7 @@ export function registerExtraRoutes(app: FastifyInstance, env: ApiEnv, prisma: P
 
   app.post("/auth/logout", async (request, reply) => {
     const body = z.object({ refreshToken: z.string().min(1) }).safeParse(request.body);
-    if (body.success) revokeRefresh(body.data.refreshToken);
+    if (body.success) await stores.refresh.revoke(body.data.refreshToken);
     return reply.send({ ok: true });
   });
 }

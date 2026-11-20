@@ -20,11 +20,11 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { exportZip } from "../account/archive.js";
 import { awardNew, seedPartyAchievements } from "../account/awards.js";
-import { emailStub, notifyUser, pushStub } from "../account/notify.js";
+import { deliveryReadiness, notifyUser } from "../account/notify.js";
 import { hashPassword, verifyPassword } from "../account/passwords.js";
 import { mintAccessToken } from "../auth/jwt.js";
 import { requireUser } from "../auth/guard.js";
-import { issueRefresh } from "../auth/refresh-store.js";
+import type { AuthStores } from "../auth/stores.js";
 import type { ApiEnv } from "../env.js";
 import type { RoomService } from "../rooms/service.js";
 
@@ -203,6 +203,7 @@ export function registerSocialRoutes(
   env: ApiEnv,
   prisma: PrismaClient | null,
   service: RoomService | null,
+  stores: AuthStores,
 ): void {
   app.post("/auth/register", async (request, reply) => {
     if (registerAvailability(env.NODE_ENV, Boolean(env.REDIS_URL)) === "redis_unconfigured") {
@@ -238,7 +239,7 @@ export function registerSocialRoutes(
       displayName: user.displayName,
       ttlSeconds: env.JWT_TTL_SECONDS,
     });
-    return reply.send({ accessToken, refreshToken: issueRefresh(user.id), user: { id: user.id, displayName: user.displayName, email } });
+    return reply.send({ accessToken, refreshToken: await stores.refresh.issue(user.id), user: { id: user.id, displayName: user.displayName, email } });
   });
 
   app.post("/auth/login", async (request, reply) => {
@@ -269,7 +270,7 @@ export function registerSocialRoutes(
     });
     return reply.send({
       accessToken,
-      refreshToken: issueRefresh(user.id),
+      refreshToken: await stores.refresh.issue(user.id),
       user: { id: user.id, displayName: user.displayName, email: user.email },
       deletionScheduled: Boolean(user.deletedAt),
     });
@@ -779,7 +780,7 @@ export function registerSocialRoutes(
         },
       });
     }
-    return reply.send({ ok: true, email: emailStub(), push: pushStub() });
+    return reply.send({ ok: true, ...deliveryReadiness(env) });
   });
 
   app.get("/notifications/digest-preview", async (request, reply) => {

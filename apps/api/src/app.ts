@@ -1,10 +1,16 @@
 import cors from "@fastify/cors";
-import { Redis } from "ioredis";
 import type { PrismaClient } from "@lume/db";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiEnv } from "./env.js";
+import { createAuthStores, type AuthStores } from "./auth/stores.js";
 import { limitFor, takeMemoryLimit, takeRedisLimit } from "./http/limit.js";
-import { resolveMetadata } from "./media/metadata.js";
+import {
+  createCachedMetadataResolver,
+  createCircuitBreaker,
+  createMetadataCache,
+} from "./media/metadata-cache.js";
+import { createMediaStorage, type MediaStorage } from "./media/storage.js";
+import { createRedis, redisAdapter, type RedisLike } from "./redis.js";
 import { createPrismaRepository } from "./rooms/prisma-repo.js";
 import { RoomService } from "./rooms/service.js";
 import { registerAuthRoutes } from "./routes/auth.js";
@@ -14,6 +20,17 @@ import { registerExtraRoutes } from "./routes/extras.js";
 import { registerSocialRoutes } from "./routes/social.js";
 import { registerVideoRoutes } from "./routes/video.js";
 import { registerVoiceRoutes } from "./routes/voice.js";
+
+/** 10 MiB uploads need headroom for base64 and JSON framing. */
+export const API_BODY_LIMIT_BYTES = 15 * 1024 * 1024;
+
+export interface BuildAppOptions {
+  prisma?: PrismaClient;
+  redis?: RedisLike;
+  stores?: AuthStores;
+  storage?: MediaStorage;
+}
+
 
 /** Local dev is opened as both `localhost` and `127.0.0.1`; the browser player needs both allowed. */
 function corsOrigins(env: ApiEnv): string[] {
@@ -71,17 +88,29 @@ export function prismaFailure(error: unknown): { status: number; body: { error: 
 
 export async function buildApp(
   env: ApiEnv,
-  options?: { prisma?: PrismaClient },
+  options?: BuildAppOptions,
 ): Promise<FastifyInstance> {
   const app = Fastify({
     logger: env.NODE_ENV !== "test",
+    bodyLimit: API_BODY_LIMIT_BYTES,
   });
+  const ownedClient = options?.redis ? null : env.REDIS_URL ? createRedis(env.REDIS_URL) : null;
+  const redis: RedisLike | null = options?.redis ?? (ownedClient ? redisAdapter(ownedClient) : null);
+  const keyPrefix = env.NODE_ENV === "test" ? `${env.REDIS_KEY_PREFIX}:test:api` : env.REDIS_KEY_PREFIX;
+  const stores = options?.stores ?? createAuthStores({ redis, keyPrefix });
+  const storage = options?.storage ?? createMediaStorage({ env });
   const service = options?.prisma
-    ? new RoomService(createPrismaRepository(options.prisma), undefined, undefined, (item) =>
-        resolveMetadata(item, {
-          ...(env.OEMBED_BASE_URL ? { oEmbedBaseUrl: env.OEMBED_BASE_URL } : {}),
-          allowPrivateHosts: env.METADATA_ALLOW_PRIVATE_HOSTS,
-        }),
+    ? new RoomService(
+        createPrismaRepository(options.prisma),
+        undefined,
+        undefined,
+        createCachedMetadataResolver(
+          {
+            ...(env.OEMBED_BASE_URL ? { oEmbedBaseUrl: env.OEMBED_BASE_URL } : {}),
+            allowPrivateHosts: env.METADATA_ALLOW_PRIVATE_HOSTS,
+          },
+          { cache: createMetadataCache(redis), breaker: createCircuitBreaker() },
+        ),
       )
     : null;
 
@@ -91,14 +120,13 @@ export async function buildApp(
     allowedHeaders: ["content-type", "authorization", "range"],
     exposedHeaders: ["content-range", "accept-ranges", "content-length", "x-lume-retry"],
   });
-  const limiter = env.REDIS_URL ? new Redis(env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false }) : null;
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0] ?? request.url;
     const rule = limitFor(request.method, path);
     if (!rule) return;
     const key = `${request.method}:${path}:${request.ip}`;
-    const ok = limiter
-      ? await takeRedisLimit(limiter, `lume:rl:${key}`, rule.limit, rule.windowMs).catch(() =>
+    const ok = redis
+      ? await takeRedisLimit(redis, `${keyPrefix}:rl:${key}`, rule.limit, rule.windowMs).catch(() =>
           takeMemoryLimit(key, rule.limit, rule.windowMs, Date.now()),
         )
       : takeMemoryLimit(key, rule.limit, rule.windowMs, Date.now());
@@ -106,14 +134,18 @@ export async function buildApp(
       return reply.code(429).send({ error: "rate_limited" });
     }
   });
-  registerHealthRoutes(app, env);
-  registerAuthRoutes(app, env, options?.prisma);
+  app.addHook("onClose", async () => {
+    if (ownedClient) {
+      await ownedClient.quit().catch(() => undefined);
+    }
+  });
+  registerHealthRoutes(app, env, { prisma: options?.prisma ?? null, redis });
+  registerAuthRoutes(app, env, options?.prisma, stores);
   registerRoomRoutes(app, env, service, options?.prisma ?? null);
   registerVoiceRoutes(app, env, service, options?.prisma ?? null);
-  registerSocialRoutes(app, env, options?.prisma ?? null, service);
-  registerVideoRoutes(app, env, options?.prisma ?? null);
-  registerExtraRoutes(app, env, options?.prisma ?? null);
-
+  registerSocialRoutes(app, env, options?.prisma ?? null, service, stores);
+  registerVideoRoutes(app, env, options?.prisma ?? null, { redis });
+  registerExtraRoutes(app, env, options?.prisma ?? null, { stores, storage, redis });
   app.setErrorHandler((error, _request, reply) => {
     if (reply.sent) {
       return reply;

@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
-import type { BotEnv } from "./env.js";
+import { miniAppBase, type BotEnv } from "./env.js";
+import { miniAppUrl, roomCodeFromStartPayload } from "./links.js";
 
 export function createBot(env: BotEnv): Bot {
   const token = env.TELEGRAM_BOT_TOKEN;
@@ -8,12 +9,29 @@ export function createBot(env: BotEnv): Bot {
   }
   const bot = new Bot(token);
   const web = env.WEB_ORIGIN;
+  const appBase = miniAppBase(env);
 
   bot.command("start", async (ctx) => {
-    const payload = ctx.match;
-    const roomLine = payload ? `\nКомната: ${payload}` : "";
+    const code = roomCodeFromStartPayload(ctx.match);
+    if (!appBase) {
+      const roomLine = code ? `\nКомната: ${code}` : "";
+      await ctx.reply(
+        `TeleRave — совместный просмотр.\nВеб: ${web}${roomLine}\nMini App не настроен: задайте WEBAPP_URL.`,
+      );
+      return;
+    }
+    const url = miniAppUrl(appBase, code);
     await ctx.reply(
-      `TeleRave — совместный просмотр.\nВеб: ${web}${roomLine}\nMini App откроется отсюда, когда будет привязан URL.`,
+      code
+        ? `Комната ${code} готова. Откройте её в приложении.`
+        : "TeleRave — совместный просмотр. Откройте приложение.",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: code ? `Открыть зал ${code}` : "Открыть Lume", web_app: { url } }],
+          ],
+        },
+      },
     );
   });
 

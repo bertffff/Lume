@@ -49,7 +49,8 @@ enable them in production.
 | `API_HOST`, `API_PORT` | No | API bind address | `0.0.0.0:3001` |
 | `WEB_ORIGIN` | Production: yes | CORS origin and links in notifications | `http://localhost:5173` |
 | `DATABASE_URL` | Production: yes | Postgres for accounts, rooms, queue, history, moderation | API still starts, but persisted routes return `503 database_unconfigured` |
-| `REDIS_URL` | Production: yes | Presence, refresh tokens, rate limits, worker queues | In-memory fallbacks; production auth is refused without Redis |
+| `REDIS_URL` | Production: **required** | Presence, refresh tokens, magic links, rate limits, worker queues | The API refuses to start in production without it. Development and tests fall back to in-memory stores |
+| `REDIS_KEY_PREFIX` | No | Namespace for auth state and rate limits | `lume`; Playwright E2E uses `lume:e2e` so runs never share tokens |
 | `JWT_SECRET` | Production: yes | Access-token signing | Token issuing returns `jwt_unconfigured` |
 | `JWT_TTL_SECONDS` | No | Access-token lifetime | `43200` (12 hours) |
 | `REALTIME_HOST`, `REALTIME_PORT` | No | Socket.IO bind address | `0.0.0.0:3002` |
@@ -67,7 +68,8 @@ enable them in production.
 | --- | --- | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | For Telegram auth/notifications | Mini App `initData` HMAC, Login Widget, bot polling, Telegram notifications | Dev auth can be stubbed; Telegram delivery is skipped |
 | `TELEGRAM_BOT_USERNAME` | For bot deep links | Public bot name used in generated links | No bot link is emitted |
-| `TELEGRAM_STORAGE_CHAT` | Optional | Telegram storage backend marker for uploads | Uploads use the local backend |
+| `TELEGRAM_STORAGE_CHAT` | Optional | Telegram upload storage; requires `TELEGRAM_BOT_TOKEN` | Without both, uploads fall through to S3 or local disk |
+| `WEBAPP_URL`, `MINI_APP_URL` | For bot deep links | Public HTTPS Mini App URL used by the `/start` `web_app` button | The bot replies with a text link and says the Mini App is not configured |
 | `TELEGRAM_AUTH_MAX_AGE_SECONDS` | No | Maximum accepted `initData` age | `300` seconds; data more than 30 seconds in the future is rejected |
 | `ALLOW_STUB_AUTH` | Local/test only | Guest JWT and `initData` without a bot token | `false` |
 | `ALLOW_STUB_VOICE` | Local/test only | Voice token stub advertised by `GET /voice/livekit` | `false` |
@@ -90,20 +92,23 @@ TeleRave-v2 is not ported and is not planned.
 
 | Variable | Required | Feature | Empty or default behaviour |
 | --- | --- | --- | --- |
-| `FF_EXTRACTORS` | Optional | Enables the live extractor chain | Fixture extractors only; live steps return `unconfigured` |
+| `FF_EXTRACTORS` | Optional | Enables the live extractor chain (YouTube InnerTube, Rutube, VK, Twitch, Cobalt, yt-dlp) | `/video/resolve` and `/video/refresh` answer `extractors_disabled`; nothing is guessed |
+| `MEDIA_EXTRACTOR_TIMEOUT_MS` | No | Per-adapter and whole-chain deadline | `15000` ms |
 | `COBALT_API_URL` | For Cobalt | Cobalt extractor and `GET /video/services` entry | Cobalt stays idle |
 | `YTDLP_PATH` | For yt-dlp | yt-dlp chain step | yt-dlp stays idle |
-| `VK_COOKIES` | For live VK | VK cookie rotation | VK uses fixtures and public metadata only |
-| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | For live Twitch GQL | Twitch playback tokens | Twitch uses a fixture |
-| `SEARXNG_URL` | For video search | Queue search through SearXNG | Search returns an empty list |
+| `VK_COOKIES` | For live VK | Cookie header(s); separate attempts with `||` rotate on login walls | VK fetch runs without cookies |
+| `TWITCH_CLIENT_ID` | For live Twitch GQL | Twitch playback tokens; also enables the adapter | Twitch is skipped as `twitch_unconfigured` |
+| `TWITCH_CLIENT_SECRET` | Optional | Optional Helix title lookup | Titles fall back to the channel name |
+| `SEARXNG_URL` | For video search | Queue search through SearXNG (`categories=videos`) | Search returns `{ unavailable: true, reason: "searxng_unconfigured" }` |
 | `OEMBED_BASE_URL` | Optional | Local/test oEmbed proxy; receives `?url=<encoded source>` | Provider oEmbed endpoints are tried directly |
 | `METADATA_ALLOW_PRIVATE_HOSTS` | Test only | Allow private hosts when reading OpenGraph pages | `false`; private hosts are refused |
 | `STREAM_ALLOWLIST` | Optional | Comma-separated host allowlist for `/video/range` and `/video/hls-proxy` | Only public hosts allowed by SSRF checks |
 | `STREAM_MAX_BYTES` | No | Upstream stream cap | `524288000` (500 MB) |
 | `STREAM_ALLOW_PRIVATE_HOSTS` | Test only | Allow private upstream hosts | `false` |
 | `STREAM_HEADER_TIMEOUT_MS` | No | Upstream header timeout | `10000` ms |
-| `CDN_ENDPOINT` | Optional | Marks the S3-compatible storage backend for uploads | Uploads stay on local disk |
-| `CDN_BUCKET`, `CDN_ACCESS_KEY`, `CDN_SECRET_KEY`, `CDN_REGION`, `CDN_PUBLIC_URL` | Reserved | Future CDN segment offload (`F062`) | Not read; the feature is not built |
+| `CDN_ENDPOINT`, `CDN_BUCKET`, `CDN_ACCESS_KEY`, `CDN_SECRET_KEY` | For S3/R2 uploads | Real `PutObject` upload; the object key and metadata are stored in Postgres | The backend is skipped; production uploads answer `503 storage_unconfigured` |
+| `CDN_PUBLIC_URL` | Optional | Public base for uploaded objects | `${CDN_ENDPOINT}/${CDN_BUCKET}/${key}` |
+| `CDN_REGION` | Optional | S3 client region | `auto` (R2-compatible) |
 
 Live extractors are opt-in. CI and normal test runs use recorded fixtures and
 must stay offline.
@@ -112,9 +117,9 @@ must stay offline.
 
 | Variable | Required | Feature | Empty or default behaviour |
 | --- | --- | --- | --- |
-| `SMTP_HOST` | For email | Email delivery and magic links by mail | Email delivery returns `skipped`; magic links are returned in the API response |
-| `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | With SMTP | SMTP connection details and sender | Reserved until an SMTP transport is configured |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | For web push | Push subscription and delivery | Service worker is registered; push send returns `skipped` |
+| `SMTP_HOST`, `SMTP_FROM` | For email | Real nodemailer delivery for digests and magic links | Delivery is marked `skipped` with a logged reason, never `sent` |
+| `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | With SMTP | SMTP connection details (465 uses TLS) | Port defaults to 587; auth is omitted without user and password |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | For web push | Real web-push delivery to stored subscriptions | Push is marked `skipped` with a logged reason |
 | `SENTRY_DSN` | Optional | Error upload | `GET /metrics` reports `lume_sentry_configured 0`; nothing is sent |
 | `METRICS_TOKEN` | Production: recommended | Bearer token for `GET /metrics` | Metrics endpoint is open |
 | `DEV_ADMIN_NAMES` | Optional | Development admin promotion | No automatic admins |
@@ -130,13 +135,17 @@ must stay offline.
 - Expose only the web origin publicly. Keep Postgres and Redis on a private
   network. Terminate TLS at the reverse proxy and forward WebSocket upgrades to
   realtime.
-- `/health` is liveness; `/ready` returns `503` when production is missing
-  Postgres or Redis. Point orchestrator probes at both.
+- `/health` is liveness; `/ready` runs `SELECT 1` against Postgres and `PING`
+  against Redis. Production returns `503` when either is missing or down.
+  Point orchestrator probes at both.
 - Configure LiveKit Cloud, SMTP, VAPID and `TELEGRAM_BOT_TOKEN` only after the
   core services are healthy. Missing optional credentials degrade features; they
   do not crash the process.
-- Rate limits use Redis when `REDIS_URL` is set. Production without Redis is
-  refused for auth, so do not treat Redis as optional there.
+- Rate limits and auth state use Redis when `REDIS_URL` is set. Production
+  without Redis refuses to boot (config error), so do not treat it as optional.
+- Uploads need `CDN_*` or `TELEGRAM_*` in production; otherwise the API answers
+  `503 storage_unconfigured` instead of returning a link that will break.
+- Live extraction stays off unless `FF_EXTRACTORS` is `1` or `true`.
 - Metrics are available at `GET /metrics`. Set `METRICS_TOKEN` before exposing
   the endpoint outside a private network.
 

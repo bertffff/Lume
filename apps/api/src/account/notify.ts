@@ -61,14 +61,22 @@ export async function sendTelegram(token: string, chatId: string, text: string):
   }
 }
 
-export function emailStub(smtpHost: string | undefined = process.env.SMTP_HOST): { channel: "email"; status: "sent" | "skipped" } {
-  return { channel: "email", status: smtpHost ? "sent" : "skipped" };
-}
-
-export function pushStub(vapidKey: string | undefined = process.env.VAPID_PUBLIC_KEY): { channel: "push"; status: "sent" | "skipped" } {
-  return { channel: "push", status: vapidKey ? "sent" : "skipped" };
-}
-
-export function captureSentry(dsn: string | undefined, message: string): { captured: boolean; message: string } {
-  return { captured: Boolean(dsn), message };
+/** Reports whether a channel can actually deliver; never claims a send. */
+export function deliveryReadiness(env: {
+  SMTP_HOST?: string | undefined;
+  SMTP_USER?: string | undefined;
+  SMTP_FROM?: string | undefined;
+  VAPID_PUBLIC_KEY?: string | undefined;
+  VAPID_PRIVATE_KEY?: string | undefined;
+  VAPID_SUBJECT?: string | undefined;
+}): {
+  email: { channel: "email"; status: "configured" | "skipped"; reason?: string };
+  push: { channel: "push"; status: "configured" | "skipped"; reason?: string };
+} {
+  const smtp = Boolean(env.SMTP_HOST && (env.SMTP_FROM ?? env.SMTP_USER));
+  const vapid = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT);
+  return {
+    email: smtp ? { channel: "email", status: "configured" } : { channel: "email", status: "skipped", reason: "smtp_unconfigured" },
+    push: vapid ? { channel: "push", status: "configured" } : { channel: "push", status: "skipped", reason: "vapid_unconfigured" },
+  };
 }

@@ -64,15 +64,8 @@ describe("telegram auth", () => {
     expect(future).toEqual({ ok: false, reason: "expired" });
   });
 
-  it("rejects registration in production when Redis is down", async () => {
-    app = await buildApp(loadApiEnv({ NODE_ENV: "production" }));
-    const response = await app.inject({
-      method: "POST",
-      url: "/auth/register",
-      payload: { email: "a@b.co", password: "password1", displayName: "Аня" },
-    });
-    expect(response.statusCode).toBe(503);
-    expect(response.json()).toEqual({ error: "redis_unconfigured" });
+  it("fails fast in production without Redis instead of degrading silently", () => {
+    expect(() => loadApiEnv({ NODE_ENV: "production" })).toThrow("REDIS_URL is required in production");
   });
 
   it("checks a Telegram Login Widget hash", () => {

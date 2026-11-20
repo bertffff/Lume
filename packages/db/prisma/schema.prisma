@@ -129,6 +129,7 @@ model User {
   partnerSessions           WatchSession[]           @relation("WatchPartner")
   floatReactions            FloatReaction[]
   moderationActions         ModerationAction[]       @relation("ModActor")
+  mediaObjects              MediaObject[]
 }
 
 model Session {
@@ -249,12 +250,32 @@ model QueueItem {
   position       Int
   addedById      String
   played         Boolean  @default(false)
+  /** When the provider stream URL stops working; null means stable or unknown. */
+  expiresAt      DateTime?
   createdAt      DateTime @default(now())
   room           Room     @relation("RoomQueue", fields: [roomId], references: [id], onDelete: Cascade)
   addedBy        User     @relation(fields: [addedById], references: [id], onDelete: Cascade)
   nowPlayingFor  Room?    @relation("NowPlaying")
 
   @@index([roomId, position])
+}
+
+model MediaObject {
+  id             String   @id @default(cuid())
+  /// Stable public id used in `/uploads/:id`.
+  key            String   @unique
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind           String
+  mimeType       String
+  byteSize       Int
+  backend        String
+  storageKey     String
+  publicUrl      String?
+  telegramFileId String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Reaction {

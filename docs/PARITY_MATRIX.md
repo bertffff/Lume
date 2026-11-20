@@ -57,7 +57,7 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F038 | Sync indicator | Done | The player shows synced, syncing, lagging, or waiting, and a resync button seeks to the server clock. |
 | F039 | Buffering / ready | Done | The sync engine turns play into pause while any viewer is buffering. The live room shows that hold. The held play is remembered and resumes automatically when the last buffering viewer becomes ready, is kicked, leaves, or disconnects; departure also clears the phase so a room cannot stay stuck on pause. |
 | F040 | Vote-skip | Done | playback:vote-skip is on the socket, the player shows the count, and the host or a majority plays the next item. |
-| F041 | Video URL refresh | Done | POST /video/refresh keeps the current time and play state. The unavailable card calls it. A scheduled refresher is still not running. |
+| F041 | Video URL refresh | Done | POST /video/refresh re-extracts the stream, persists the new URL and `expiresAt`, and keeps the current time and play state. A BullMQ `media.refresh` job refreshes the playing item of active rooms 5 minutes before expiry. |
 | F042 | Player error recovery | Done | A failed live video shows retry, open, and replace. Retry is stored on the room. |
 | F043 | Tap gesture zones | Done | A double tap on the left or right of the player seeks 10 seconds. The zone math is tested. |
 | F044 | Progress, fullscreen, speed | Done | The player has a speed menu from 0.5 to 2. |
@@ -67,13 +67,13 @@ Voice uses LiveKit Cloud, not the old mediasoup process. That is a locked produc
 | F048 | Chat timecode jump | Done | A chat line with a timecode has a jump button that seeks. |
 | F049 | Sync telemetry | Done | A sync incident is stored only from the sync-failure control. Adding a video does not write one. |
 | F050 | Source detection | Done | The detector covers the source list, including YouTube, VK, and Rutube, and the queue shows the result. Extractors that need credentials stay idle until configured. |
-| F051 | Extractor orchestrator | Done (needs creds) | The chain runs fixture extractors and returns unconfigured without COBALT_API_URL or YTDLP_PATH. See docs/CONFIG.md. |
-| F052 | YouTube InnerTube | Done (needs creds) | InnerTube is accepted from a recorded fixture. Live YouTube is not called in CI. |
-| F053 | VK extractor | Done (needs creds) | VK HLS is parsed from a fixture. Live cookies stay off until VK_COOKIES is set. |
-| F054 | Rutube extractor | Done (needs creds) | Rutube m3u8 is parsed from a fixture. Live play-options stay off without network credentials. |
-| F055 | Twitch GQL | Done (needs creds) | Twitch playback URLs are parsed from a fixture. Live GQL stays off without credentials. |
-| F056 | Cobalt extractor | Done (needs creds) | Cobalt is a chain step that stays idle until COBALT_API_URL is set. |
-| F057 | yt-dlp extractor | Done (needs creds) | yt-dlp is a chain step that stays idle until YTDLP_PATH is set. |
+| F051 | Extractor orchestrator | Done (needs creds) | `@lume/media` tries every configured adapter in order with a per-adapter timeout and returns `no_extractor`/per-attempt errors instead of guessing. See docs/CONFIG.md. |
+| F052 | YouTube InnerTube | Done (needs creds) | Live InnerTube `player` request behind FF_EXTRACTORS, parsed into HLS/progressive/adaptive. CI uses a local node:http fixture. |
+| F053 | VK extractor | Done (needs creds) | Live `video_ext.php` scraping with HLS/DASH/mp4 detection and `VK_COOKIES` rotation (`||` separated). |
+| F054 | Rutube extractor | Done (needs creds) | Live `/api/play/options/<id>` request behind FF_EXTRACTORS, parsed into the balancer m3u8. |
+| F055 | Twitch GQL | Done (needs creds) | Live PlaybackAccessToken GQL to usher HLS with `TWITCH_CLIENT_ID`; optional Helix title via the client secret. |
+| F056 | Cobalt extractor | Done (needs creds) | Real POST to the self-hosted Cobalt API; registered only when `COBALT_API_URL` is set. |
+| F057 | yt-dlp extractor | Done (needs creds) | Real `--dump-json` invocation through `YTDLP_PATH`; registered only when the path is set. |
 | F058 | Metadata resolver | Done | POST /rooms/:id/queue resolves provider oEmbed JSON for title, poster and duration, then falls back to OpenGraph and schema.org duration. QueueItem.durationMs and RoomHistoryItem.durationMs are persisted, and the live queue renders the resolved name and duration instead of a raw oEmbed URL. The page fallback is DNS-checked, re-checks every redirect hop, caps the page read (512 KB) and the oEmbed JSON (1 MB), and refuses private hosts including bracketed IPv6; tests use a local `node:http` metadata server. |
 | F059 | Premium extraction gate | Done | The live queue reads isPremium from /me and blocks the 13 extraction-only platforms with a Premium notice. POST /rooms/:id/queue and /video/resolve read the saved isPremium flag, so the socket path is gated too and a client cannot claim premium in the body. |
 | F060 | Stream proxy | Done | GET /video/range checks a provider host allowlist, refuses private hosts (including bracketed IPv6), re-resolves the host and refuses private addresses on every redirect hop (so a public name that resolves private is refused too), caps the body at STREAM_MAX_BYTES, and streams the ranged upstream body instead of buffering it. CORS exposes range headers to the browser player. The live player sends direct files through this proxy. |
