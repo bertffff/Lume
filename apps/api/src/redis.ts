@@ -44,7 +44,30 @@ export function redisAdapter(client: Redis): RedisLike {
 }
 
 export function createRedis(url: string): Redis {
-  return new Redis(url, { maxRetriesPerRequest: 1, enableOfflineQueue: false });
+  const client = new Redis(url, { maxRetriesPerRequest: 1, enableOfflineQueue: false });
+  // Without a listener ioredis re-prints every reconnect attempt. Readiness and
+  // the startup probe still report the outage explicitly.
+  client.on("error", () => undefined);
+  return client;
+}
+
+/**
+ * Startup probe. `enableOfflineQueue: false` makes requests fail immediately
+ * when disconnected, so the first PING needs an established socket; wait for
+ * the `ready` event instead of racing the handshake.
+ */
+export async function waitForRedisReady(client: Redis, timeoutMs = 5000): Promise<boolean> {
+  if (client.status === "ready") return true;
+  return new Promise<boolean>((resolve) => {
+    const finish = (ok: boolean) => {
+      clearTimeout(timer);
+      client.off("ready", onReady);
+      resolve(ok);
+    };
+    const onReady = () => finish(true);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    client.once("ready", onReady);
+  });
 }
 
 /** Bounded readiness probe: a hanging socket must not hang `/ready`. */

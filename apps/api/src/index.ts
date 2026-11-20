@@ -3,7 +3,7 @@ import { prepareSocial } from "./routes/social.js";
 import { buildApp } from "./app.js";
 import { loadApiEnv } from "./env.js";
 import { loadRepoEnv } from "./load-env.js";
-import { createRedis, pingRedis, redisAdapter } from "./redis.js";
+import { createRedis, redisAdapter, waitForRedisReady } from "./redis.js";
 
 loadRepoEnv();
 const env = loadApiEnv(process.env);
@@ -14,8 +14,8 @@ if (prisma) {
 
 const client = env.REDIS_URL ? createRedis(env.REDIS_URL) : null;
 const redis = client ? redisAdapter(client) : null;
-if (redis) {
-  const ready = await pingRedis(redis, 5000);
+if (client) {
+  const ready = await waitForRedisReady(client, 5000);
   if (!ready) {
     // Production auth state (refresh tokens, magic links) lives in Redis.
     // Starting without it would silently lose sessions between restarts.
