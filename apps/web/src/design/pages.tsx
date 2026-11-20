@@ -225,9 +225,16 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
   } | null>(null);
   const [platforms, setPlatforms] = useState<Array<{ source: string; count: number }>>([]);
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
-  const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string }>>([]);
+  const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
+  const [incoming, setIncoming] = useState<Array<{ id: string; userId: string; displayName: string }>>([]);
+  const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
+  const [bio, setBio] = useState("");
   const [heat, setHeat] = useState<Array<{ day: string; score: number }>>([]);
   const [boards, setBoards] = useState<{ messages: LeaderboardRow[]; reactions: LeaderboardRow[]; voice: LeaderboardRow[] }>({ messages: [], reactions: [], voice: [] });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [found, setFound] = useState<Array<{ id: string; displayName: string }>>([]);
+  const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
+  const [friendsVersion, setFriendsVersion] = useState(0);
   useEffect(() => {
     if (!token || !apiUrl) return;
     void fetch(`${apiUrl}/stats/leaderboard`, { headers: { authorization: `Bearer ${token}` } })
@@ -248,8 +255,22 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
       .catch(() => undefined);
     void fetch(`${apiUrl}/friends`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
-      .then((payload: { friends?: Array<{ id: string; userId: string; displayName: string }> }) => setFriends(payload.friends ?? []))
-      .catch(() => setFriends([]));
+      .then((payload: { friends?: typeof friends; incoming?: typeof incoming }) => {
+        setFriends(payload.friends ?? []);
+        setIncoming(payload.incoming ?? []);
+      })
+      .catch(() => {
+        setFriends([]);
+        setIncoming([]);
+      });
+    void fetch(`${apiUrl}/notifications`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { notifications?: Array<{ id: string; title: string; body: string }> }) => setNotes(payload.notifications ?? []))
+      .catch(() => setNotes([]));
+    void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
+      .then((response) => response.json())
+      .then((payload: { bio?: string | null }) => setBio(payload.bio ?? ""))
+      .catch(() => setBio(""));
     void fetch(`${apiUrl}/me/favourites`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { items?: Array<{ url: string; title: string | null; watchCount: number }> }) => setFavourites(payload.items ?? []))
@@ -279,8 +300,60 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
       .then((response) => (response.ok ? response.json() : null))
       .then((payload: typeof engagement) => setEngagement(payload))
       .catch(() => setEngagement(null));
-  }, [token, apiUrl, userId]);
+  }, [token, apiUrl, userId, friendsVersion]);
   const earnedCount = achievements.filter((item) => item.earned).length;
+
+  async function searchPeople(event: FormEvent) {
+    event.preventDefault();
+    if (!token || !apiUrl) return;
+    const query = searchQuery.trim();
+    if (!query) {
+      setFound([]);
+      return;
+    }
+    const response = await fetch(`${apiUrl}/users/search?q=${encodeURIComponent(query)}`, { headers: { authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      setFound([]);
+      return;
+    }
+    const payload = (await response.json()) as { users?: Array<{ id: string; displayName: string }> };
+    setFound(payload.users ?? []);
+  }
+
+  async function openPublicProfile(personId: string) {
+    if (!token || !apiUrl) return;
+    const response = await fetch(`${apiUrl}/users/profile/${personId}`, { headers: { authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      setPublicProfile(null);
+      return;
+    }
+    setPublicProfile((await response.json()) as PublicProfile);
+  }
+
+  function addFriend(personId: string) {
+    if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/friends/request`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ userId: personId }),
+    });
+  }
+
+  function answerFriend(id: string, action: "accept" | "decline") {
+    if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/friends/${id}/${action}`, { method: "POST", headers: { authorization: `Bearer ${token}` } })
+      .then(() => setFriendsVersion((value) => value + 1));
+  }
+
+  function inviteFriend(roomId: string, friendId: string) {
+    if (!token || !apiUrl) return;
+    void fetch(`${apiUrl}/rooms/${roomId}/invite`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ userId: friendId }),
+    });
+  }
+
   return (
     <div className="profile-wrap">
       <aside className="side-p">
@@ -291,6 +364,7 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             <span data-testid="profile-level">Уровень {level}</span> · <span data-testid="profile-xp">{totalXp} XP</span>
           </div>
           <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 6 }} data-testid="profile-next-level">до следующего уровня {Math.max(0, nextLevelXp - totalXp)} XP</p>
+          {bio ? <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 6 }}>{bio}</p> : null}
         </div>
         <div className="card">
           <h3>Достижения</h3>
@@ -308,13 +382,27 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
           {friends.length > 0 ? friends.slice(0, 5).map((friend) => (
             <div className="fr" key={friend.id}>
               <span className={`av lg p-${personHue(friend.userId)}`}>{initials(friend.displayName)}</span>
-              <div><div className={`n p-${personHue(friend.userId)}`}>{friend.displayName}</div><div className="s">в lume</div></div>
+              <div><div className={`n p-${personHue(friend.userId)}`}>{friend.displayName}</div><div className="s">{friend.roomTitle ? `в «${friend.roomTitle}»` : "в lume"}</div></div>
             </div>
-          )) : <p className="empty-note">Пока никого нет — найдите друзей в комнате или по имени.</p>}
+          )) : <p className="empty-note">Пока никого нет — найдите друзей по имени.</p>}
         </div>
+        {incoming.length > 0 ? (
+          <div className="card">
+            <h3>Заявки в друзья</h3>
+            {incoming.map((row) => (
+              <div className="fr" key={row.id}>
+                <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
+                <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><div className="s">хочет дружить</div></div>
+                <span className="fr-actions">
+                  <button type="button" className="mini" onClick={() => answerFriend(row.id, "accept")}>Принять</button>
+                  <button type="button" className="mini" onClick={() => answerFriend(row.id, "decline")}>Отклонить</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </aside>
       <main>
-        <div className="tabs2"><button type="button" className="tab on">Обзор</button><button type="button" className="tab">История</button><button type="button" className="tab">Друзья</button><button type="button" className="tab">Достижения</button></div>
         <div className="grid3">
           <div className="stat"><small>Уровень</small><b>{level}</b></div>
           <div className="stat"><small>Опыт</small><b>{totalXp} XP</b></div>
@@ -353,13 +441,68 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             </>
           ) : <p className="empty-note">Проведите первый сеанс — здесь появится карта сезона.</p>}
         </div>
-        <h3>Таблица</h3>
-        <div data-testid="profile-leaderboards">
+        <div className="card">
+          <div className="heat-top"><h3>Люди</h3></div>
+          <form className="friend-search-row" onSubmit={(event) => void searchPeople(event)}>
+            <input data-testid="friend-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Найти человека по имени" aria-label="Поиск людей" />
+            <button type="submit" className="btn btn-outline">Искать</button>
+          </form>
+          {found.length > 0 ? (
+            <div className="people-results">
+              {found.map((person) => (
+                <div className="fr" key={person.id} data-testid="friend-result">
+                  <span className={`av lg p-${personHue(person.id)}`}>{initials(person.displayName)}</span>
+                  <div><div className={`n p-${personHue(person.id)}`}>{person.displayName}</div><div className="s">найден в lume</div></div>
+                  <span className="fr-actions">
+                    <button type="button" className="mini" data-testid="people-open-profile" onClick={() => void openPublicProfile(person.id)}>Профиль</button>
+                    <button type="button" className="mini go" onClick={() => addFriend(person.id)}>В друзья</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {publicProfile ? (
+            <section className="card public-profile" data-testid="public-profile">
+              <h3 data-testid="public-profile-name">{publicProfile.displayName}</h3>
+              <p data-testid="public-profile-level">Уровень {publicProfile.level}{publicProfile.username && !publicProfile.username.includes(":") ? ` · ${publicProfile.username}` : ""}</p>
+              {publicProfile.bio ? <p>{publicProfile.bio}</p> : null}
+              <div data-testid="public-profile-history">
+                <b>История просмотров</b>
+                {publicProfile.watchHistory === null ? <p>Скрыто</p> : publicProfile.watchHistory.length === 0 ? <p>Пока пусто</p> : (
+                  <ul>
+                    {publicProfile.watchHistory.map((item) => (
+                      <li key={item.url} data-testid="public-profile-history-item" data-url={item.url}>{item.title || item.url} · {item.watchCount}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div data-testid="public-profile-friends">
+                <b>Друзья</b>
+                {publicProfile.friends === null ? <p>Скрыто</p> : publicProfile.friends.length === 0 ? <p>Пока пусто</p> : (
+                  <ul>{publicProfile.friends.map((friend) => <li key={friend.id}>{friend.displayName}</li>)}</ul>
+                )}
+              </div>
+            </section>
+          ) : null}
+          {friends.length > 0 ? (
+            <div className="people-results">
+              {friends.map((friend) => (
+                <div className="fr" key={friend.id}>
+                  <span className={`av lg p-${personHue(friend.userId)}`}>{initials(friend.displayName)}</span>
+                  <div><div className={`n p-${personHue(friend.userId)}`}>{friend.displayName}</div><div className="s">{friend.roomTitle ? `в «${friend.roomTitle}»` : "в lume"}</div></div>
+                  {friend.roomId ? <button type="button" className="mini" onClick={() => inviteFriend(friend.roomId!, friend.userId)}>Позвать</button> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div data-testid="leaderboards">
+          <h3>Таблица</h3>
           {(["messages", "reactions", "voice"] as const).map((board) => (
             <div key={board} data-testid={`profile-leaderboard-${board}`}>
               <b>{board === "messages" ? "Сообщения" : board === "reactions" ? "Реакции" : "Голос"}</b>
               {boards[board].length === 0 ? <p>Пока пусто</p> : boards[board].map((row) => (
-                <p key={row.userId} data-testid={`profile-leaderboard-${board}-row`} data-user-id={row.userId} data-value={row.value}>{row.displayName} · {row.value}</p>
+                <p key={row.userId} data-testid={`leaderboard-${board}-row`} data-user-id={row.userId} data-value={row.value}>{row.displayName} · {row.value}</p>
               ))}
             </div>
           ))}
@@ -392,6 +535,10 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             ))}
           </div>
         ) : <p className="empty-note">Пока нет недавних комнат.</p>}
+        <h3>Уведомления</h3>
+        {notes.length === 0 ? <p className="empty-note">Нет уведомлений.</p> : notes.slice(0, 5).map((note) => (
+          <p key={note.id} className="profile-note"><b>{note.title}</b> · {note.body}</p>
+        ))}
       </main>
     </div>
   );
@@ -401,6 +548,16 @@ interface LeaderboardRow {
   userId: string;
   displayName: string;
   value: number;
+}
+
+interface PublicProfile {
+  id: string;
+  displayName: string;
+  username: string | null;
+  bio: string | null;
+  level: number;
+  watchHistory: Array<{ url: string; title: string | null; watchCount: number }> | null;
+  friends: Array<{ id: string; displayName: string }> | null;
 }
 
 function formatSeconds(seconds: number): string {

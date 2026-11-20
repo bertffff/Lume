@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
-import { PeopleScreen } from "../screens/PeopleScreen.js";
 import type { ClientSession } from "../session.js";
 import { copy, viewersWord } from "./copy.js";
 import { AuthScreen, CodeInput, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
@@ -36,6 +35,15 @@ function viewFromPath(path: string): View {
   const name = path.replace(/^\//, "").split("/")[0] ?? "";
   if (name === "room-settings") return "room-settings";
   return views.has(name as View) ? (name as View) : "home";
+}
+
+function roomErrorText(code: string): string {
+  if (code === "room_full") return "В комнате нет свободных мест.";
+  if (code === "not_found") return "Комната с таким кодом не найдена.";
+  if (code === "unauthorized") return "Сессия истекла — войдите заново.";
+  if (code === "invalid_body") return "Проверьте название комнаты.";
+  if (code === "conflict") return "Комната уже занята — попробуйте ещё раз.";
+  return "Не удалось выполнить действие. Попробуйте ещё раз.";
 }
 
 export function DesignApp({
@@ -112,7 +120,11 @@ export function DesignApp({
   const accessToken = session?.accessToken;
   useEffect(() => {
     void api.listRooms(query).then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
-    void fetch(`${apiUrl}/ice-servers`, accessToken ? { headers: { authorization: `Bearer ${accessToken}` } } : undefined)
+    if (!accessToken) {
+      setIce(null);
+      return;
+    }
+    void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${accessToken}` } })
       .then((response) => (response.ok ? response.json() : null))
       .then((payload: { iceServers?: Array<{ urls?: string | string[] }> } | null) => {
         const urls = (payload?.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : []));
@@ -207,24 +219,47 @@ export function DesignApp({
 
   async function createRoom(event: FormEvent) {
     event.preventDefault();
-    if (!session) return;
-    const chosen = preset ? roomPresetById(preset) : null;
-    const result = await api.createRoom(
-      session.accessToken,
-      title.trim() || chosen?.title || "Кинозал",
-      chosen?.isPublic ?? true,
-      preset ?? undefined,
-    );
-    onOpen(result.room.id);
-    go("/");
+    if (!session) {
+      setError("Сначала войдите в аккаунт — тогда комнату можно создать.");
+      go("/auth");
+      return;
+    }
+    setError(null);
+    try {
+      const chosen = preset ? roomPresetById(preset) : null;
+      const result = await api.createRoom(
+        session.accessToken,
+        title.trim() || chosen?.title || "Кинозал",
+        chosen?.isPublic ?? true,
+        preset ?? undefined,
+      );
+      onOpen(result.room.id);
+      go("/");
+    } catch (caught) {
+      setError(caught instanceof ClientError ? roomErrorText(caught.code) : "Не удалось создать комнату. Попробуйте ещё раз.");
+    }
   }
 
   async function joinRoom(event: FormEvent) {
     event.preventDefault();
-    if (!session) return;
-    const result = await api.joinRoom(session.accessToken, code.trim());
-    onOpen(result.room.id);
-    go("/");
+    if (!session) {
+      setError("Сначала войдите в аккаунт — тогда можно войти по коду.");
+      go("/auth");
+      return;
+    }
+    const value = code.trim();
+    if (!value) {
+      setError("Введите код комнаты из приглашения.");
+      return;
+    }
+    setError(null);
+    try {
+      const result = await api.joinRoom(session.accessToken, value);
+      onOpen(result.room.id);
+      go("/");
+    } catch (caught) {
+      setError(caught instanceof ClientError ? (caught.code === "not_found" ? "Комната с таким кодом не найдена." : "Не удалось войти в комнату.") : "Не удалось войти в комнату.");
+    }
   }
 
   async function saveAppearance(nextStyle: StyleId, nextMode: ModeId) {
@@ -305,7 +340,7 @@ export function DesignApp({
           onJoin={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}
         />
       ) : null}
-      {(view === "home" || view === "create" || view === "join" || view === "onboarding") && style !== "gruvbox" && !narrow ? (
+      {(view === "home" || view === "onboarding") && style !== "gruvbox" && !narrow ? (
         <div className="wrap screen-scroll">
           <main>
             <div className="home-hero">
@@ -489,8 +524,7 @@ export function DesignApp({
           {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
-          {view === "profile" && session ? <PeopleScreen session={session} onOpen={onOpen} /> : null}
-          {view === "profile" ? <ProfileScreen token={session?.accessToken} apiUrl={apiUrl} userId={session?.user.id} displayName={session?.user.displayName} /> : null}
+          {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} /> : <EmptyScreen title="Профиль" body="Войдите, чтобы увидеть свои достижения, историю, друзей и статистику." action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>Войти</button>} />) : null}
           {view === "premium" ? <PremiumScreen /> : null}
           {view === "notifications" ? <NotificationsScreen items={notes} /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}

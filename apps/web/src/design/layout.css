@@ -214,6 +214,12 @@ html[data-style="cinema"] .design-app .inline-actions button{flex:none}
 .design-app .profile-wrap [data-testid^="profile-leaderboard-"]{padding:10px 12px;background:var(--s1);border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:8px}
 .design-app .profile-wrap [data-testid^="profile-leaderboard-"] p{margin:4px 0;color:var(--text-2);font-size:13px}
 .design-app .profile-wrap .rooms{margin-top:4px}
+.design-app .profile-wrap .friend-search-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.design-app .profile-wrap .friend-search-row input{flex:1;min-width:0}
+.design-app .profile-wrap .people-results{display:flex;flex-direction:column;margin-top:10px}
+.design-app .profile-wrap .public-profile{margin-top:14px;background:var(--s1);padding:14px}
+.design-app .fr-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.design-app .profile-note{margin:4px 0;color:var(--text-2);font-size:13px}
 .design-app .tabs2{align-self:flex-start}
 .design-app .ach span{min-height:34px}
 
