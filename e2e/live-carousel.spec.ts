@@ -13,14 +13,15 @@ test("the home carousel lists live rooms and the global counters track new rooms
   const beforeActive = Number(await page.getByTestId("stat-active-rooms").getAttribute("data-value"));
   const beforeOnline = Number(await page.getByTestId("stat-users-online").getAttribute("data-value"));
   expect(Number.isFinite(beforeActive)).toBe(true);
-  expect(beforeOnline).toBeGreaterThanOrEqual(1);
+  expect(Number.isFinite(beforeOnline)).toBe(true);
+  expect(beforeOnline).toBeGreaterThanOrEqual(0);
 
   const stamp = Date.now();
   const token = await page.evaluate(() => {
     const raw = window.localStorage.getItem("lume.session");
     return raw ? (JSON.parse(raw) as { accessToken?: string }).accessToken ?? "" : "";
   });
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < 6; index += 1) {
     const title = `Карусель ${stamp}-${index}`;
     const created = await page.request.post("http://127.0.0.1:3001/rooms", {
       headers: { authorization: `Bearer ${token}` },
@@ -30,11 +31,12 @@ test("the home carousel lists live rooms and the global counters track new rooms
   }
   await page.reload();
   await expect(page.getByTestId("live-carousel")).toBeVisible({ timeout: 20_000 });
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < 6; index += 1) {
     await expect(page.locator(`[data-testid="carousel-room"]:has-text("Карусель ${stamp}-${index}")`)).toBeVisible();
   }
   await expect(page.getByTestId("global-stats")).toHaveAttribute("data-ready", "true");
-  await expect.poll(async () => Number(await page.getByTestId("stat-active-rooms").getAttribute("data-value"))).toBeGreaterThanOrEqual(beforeActive + 3);
+  await expect.poll(async () => Number(await page.getByTestId("stat-active-rooms").getAttribute("data-value"))).toBeGreaterThanOrEqual(beforeActive + 6);
+  await expect.poll(async () => Number(await page.getByTestId("stat-users-online").getAttribute("data-value"))).toBeGreaterThanOrEqual(1);
 
   const track = page.locator(".carousel-track");
   const start = await track.evaluate((element) => element.scrollLeft);

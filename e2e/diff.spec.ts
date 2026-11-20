@@ -23,16 +23,16 @@ function mismatch(leftPath: string, rightPath: string, diffPath: string): number
 }
 
 const cases = [
-  ["E/home-desktop.html", "/?shot=home&demo=1&style=cinema&mode=dark", "compare-home-cinema-dark.png", 1440, 900],
-  ["E/home-desktop.html", "/?shot=home&demo=1&style=cinema&mode=light", "compare-home-cinema-light.png", 1440, 900],
-  ["E/home-mobile.html", "/?shot=home&demo=1&style=cinema&mode=dark", "compare-home-cinema-mobile.png", 390, 844],
+  ["E/home-desktop.html", "/?shot=home&style=cinema&mode=dark", "compare-home-cinema-dark.png", 1440, 900],
+  ["E/home-desktop.html", "/?shot=home&style=cinema&mode=light", "compare-home-cinema-light.png", 1440, 900],
+  ["E/home-mobile.html", "/?shot=home&style=cinema&mode=dark", "compare-home-cinema-mobile.png", 390, 844],
   ["E/room-desktop.html", "/?shot=room&style=cinema&mode=dark", "compare-room-cinema-dark.png", 1440, 900],
   ["E/notifications-desktop.html", "/?shot=notifications&style=cinema&mode=dark", "compare-notifications-cinema-dark.png", 1440, 900],
   ["E/queue-desktop.html", "/?shot=queue&style=cinema&mode=dark", "compare-queue-cinema-dark.png", 1440, 900],
   ["E/members-desktop.html", "/?shot=members&style=cinema&mode=dark", "compare-members-cinema-dark.png", 1440, 900],
-  ["E/create-desktop.html", "/?shot=create&demo=1&style=cinema&mode=dark", "compare-create-cinema-dark.png", 1440, 900],
-  ["E/join-desktop.html", "/?shot=join&demo=1&style=cinema&mode=dark", "compare-join-cinema-dark.png", 1440, 900],
-  ["E/onboarding-desktop.html", "/?shot=onboarding&demo=1&style=cinema&mode=dark", "compare-onboarding-cinema-dark.png", 1440, 900],
+  ["E/create-desktop.html", "/?shot=create&style=cinema&mode=dark", "compare-create-cinema-dark.png", 1440, 900],
+  ["E/join-desktop.html", "/?shot=join&style=cinema&mode=dark", "compare-join-cinema-dark.png", 1440, 900],
+  ["E/onboarding-desktop.html", "/?shot=onboarding&style=cinema&mode=dark", "compare-onboarding-cinema-dark.png", 1440, 900],
   ["E/room-not-found-desktop.html", "/?shot=missing&style=cinema&mode=dark", "compare-missing-cinema-dark.png", 1440, 900],
   ["E/offline-desktop.html", "/?shot=offline&style=cinema&mode=dark", "compare-offline-cinema-dark.png", 1440, 900],
   ["E/video-unavailable-desktop.html", "/?shot=unavailable&style=cinema&mode=dark", "compare-unavailable-cinema-dark.png", 1440, 900],

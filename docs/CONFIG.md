@@ -19,6 +19,15 @@ pnpm db:migrate
 pnpm dev
 ```
 
+## Tests
+
+`pnpm test` recreates `lume_test` for the API integration suite. Playwright E2E
+also runs strictly against `lume_test`: `apps/api/scripts/prepare-e2e-db.ts`
+recreates it and applies migrations before the API boots, so specs never write
+rooms or users into the developer database `lume`. The E2E config always starts
+its own API, realtime and preview servers on ports 3001, 3002 and 5173; stop
+`pnpm dev` (or free those ports) before `pnpm test:e2e`.
+
 Minimum useful local `.env`:
 
 ```bash
