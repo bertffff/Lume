@@ -1,12 +1,20 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { Bell, House, KeyRound, Moon, Plus, Search, Sun, UserRound } from "lucide-react";
 import { AppShell } from "../shell/AppShell.js";
-import { detectSource, roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
+import { detectSource, formatRoomCode, parseRoomCode, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
-import { copy, viewersWord } from "./copy.js";
-import { AuthScreen, CodeInput, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, SettingsScreen } from "./pages.js";
-import { initials, personHue, type ModeId, type StyleId } from "./theme.js";
+import { copy } from "./copy.js";
+import { AuthScreen, EmptyScreen, JoinScreen, MobileHome, OnboardingScreen, PremiumScreen, ProfileScreen, SettingsScreen } from "./pages.js";
+import { RoomCodeInput } from "./RoomCodeInput.js";
+import { initials, isStyleId, isThemeMode, personHue } from "./theme.js";
+import { NotificationInboxPage, NotificationInboxPopover, type NotificationInboxProps } from "./NotificationInbox.js";
+import { useNotificationFeed } from "./useNotificationFeed.js";
+import { RoomFeed, type RoomFeedLoader, type RoomFeedRoom } from "./RoomFeed.js";
+import { AppearanceControls } from "./AppearanceControls.js";
+import { CreateRoomWizard, type CreateRoomWizardLabels, type CreateRoomWizardSubmission } from "./CreateRoomWizard.js";
+import { RoomAppearanceContext } from "./room-appearance.js";
 import type { MessageKey } from "../i18n/ru.js";
 import { useAppearance } from "./useAppearance.js";
 import { bindBackButton } from "../telegram/adapter.js";
@@ -30,7 +38,6 @@ type View =
   | "unavailable";
 
 import { posterClasses, shotHeat, shotPeople, shotRooms } from "./shot-fixtures.js";
-import { roomFilters } from "./copy.js";
 
 const views = new Set<View>([
   "home", "room", "search", "create", "join", "settings",
@@ -51,6 +58,7 @@ function signInErrorKey(code: string): MessageKey {
 }
 
 function roomErrorKey(code: string): MessageKey {
+  if (code === "rate_limited") return "auth.error.rateLimited";
   if (code === "room_full") return "room.error.full";
   if (code === "not_found") return "room.error.notFound";
   if (code === "unauthorized") return "room.error.expired";
@@ -64,6 +72,8 @@ export function DesignApp({
   onSession,
   onSignOut: _onSignOut,
   roomId,
+  joiningInvite,
+  onJoinNeedsAuth,
   onOpen,
   onLeave,
   room,
@@ -72,6 +82,8 @@ export function DesignApp({
   onSession: (session: ClientSession) => void;
   onSignOut: () => void;
   roomId: string | null;
+  joiningInvite: boolean;
+  onJoinNeedsAuth: (code: string) => void;
   onOpen: (roomId: string) => void;
   onLeave: () => void;
   room: ReactNode;
@@ -83,26 +95,24 @@ export function DesignApp({
   const webApp = useMemo(() => readTelegramWebApp(), []);
   const { style, mode, setStyle, setMode, saveAppearance } = useAppearance(session);
   const [name, setName] = useState("");
-  const [title, setTitle] = useState("");
-  const [preset, setPreset] = useState<RoomPresetId | null>(null);
-  const [code, setCode] = useState(() => {
-    const match = window.location.pathname.match(/^\/join\/([^/]+)/);
-    return match?.[1] ? decodeURIComponent(match[1]) : "";
-  });
+  const [code, setCode] = useState("");
+  const [codeInvalid, setCodeInvalid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const creatingRef = useRef(false);
   const [rooms, setRooms] = useState<Array<{ id: string; title: string; code: string; memberCount?: number }>>([]);
-  const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
+  const [friendFeed, setFriendFeed] = useState<{ ownerId: string; items: Awaited<ReturnType<typeof api.friends>>["friends"] }>();
+  const friends = friendFeed && friendFeed.ownerId === session?.user.id ? friendFeed.items : [];
   const [blocked, setBlocked] = useState<Array<{ id: string; displayName: string }>>([]);
   const [globalBans, setGlobalBans] = useState<Array<{ id: string; userId: string; displayName: string; reason: string | null }>>([]);
-  const [notes, setNotes] = useState<Array<{ id: string; kind: string; title: string; body: string }>>([]);
-  const [unreadNotes, setUnreadNotes] = useState(0);
+  const notifications = useNotificationFeed(session?.accessToken);
+  const notes = notifications.feed?.notifications ?? [];
   const [heat, setHeat] = useState<Array<{ day: string; score: number }>>([]);
   const [level, setLevel] = useState(1);
-  const [resume, setResume] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "friends" | "film" | "music">("all");
+  const [resumeFeed, setResumeFeed] = useState<{ ownerId: string; card: Awaited<ReturnType<typeof api.resume>>["resume"] }>();
+  const resume = resumeFeed && resumeFeed.ownerId === session?.user.id ? resumeFeed.card : null;
+  const [resuming, setResuming] = useState(false);
+  const [invitee, setInvitee] = useState<string | null>(null);
+  const [friendCatalog, setFriendCatalog] = useState(0);
   const [searchTab, setSearchTab] = useState<"all" | "youtube" | "vk" | "rutube" | "direct">("all");
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   useEffect(() => {
@@ -113,7 +123,6 @@ export function DesignApp({
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
   const [people, setPeople] = useState<Array<{ id: string; displayName: string }>>([]);
-  const [ice, setIce] = useState<string | null>(null);
   const [offline, setOffline] = useState(() => !window.navigator.onLine);
   const { globalStats, statsReady } = useGlobalStats(shot, path, roomId);
 
@@ -131,37 +140,25 @@ export function DesignApp({
     };
   }, []);
 
-  const accessToken = session?.accessToken;
   useEffect(() => {
     if (shot) {
       setRooms(shotRooms);
       return;
     }
     void api.listRooms(query).then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
-    if (!accessToken) {
-      setIce(null);
-      return;
-    }
-    void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${accessToken}` } })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload: { iceServers?: Array<{ urls?: string | string[] }> } | null) => {
-        const urls = (payload?.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : []));
-        setIce(urls.length > 0 ? urls.join(" · ") : null);
-      })
-      .catch(() => setIce(null));
-  }, [query, path, roomId, accessToken, shot]);
+  }, [query, path, roomId, shot]);
 
   useEffect(() => {
     if (!session) return;
+    let current = true;
     void api.friends(session.accessToken).then((list) => {
-      setFriends(list.friends);
+      if (!current) return;
+      setFriendFeed({ ownerId: session.user.id, items: list.friends });
       setBlocked(list.blocked ?? []);
     }).catch(() => undefined);
-    void api.notifications(session.accessToken).then((feed) => {
-      setNotes(feed.notifications);
-      setUnreadNotes(feed.unread);
-    }).catch(() => undefined);
-    void api.resume(session.accessToken).then((card) => setResume(card.resume?.title ?? null)).catch(() => undefined);
+    void api.resume(session.accessToken).then((card) => {
+      if (current) setResumeFeed({ ownerId: session.user.id, card: card.resume });
+    }).catch(() => { if (current) setResumeFeed(undefined); });
     void fetch(`${apiUrl}/me/studio`, { headers: { authorization: `Bearer ${session.accessToken}` } })
       .then((response) => response.json())
       .then((payload: { level?: number; heatmap?: Array<{ day: string; score: number }> }) => {
@@ -171,11 +168,12 @@ export function DesignApp({
       .catch(() => undefined);
     void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${session.accessToken}` } })
       .then((response) => response.json())
-      .then((payload: { uiStyle?: StyleId; uiMode?: ModeId; telegramId?: string | null }) => {
-        if (payload.uiStyle === "cinema" || payload.uiStyle === "gruvbox") setStyle(payload.uiStyle);
-        if (payload.uiMode === "dark" || payload.uiMode === "light" || payload.uiMode === "system") setMode(payload.uiMode);
+      .then((payload: { uiStyle?: unknown; uiMode?: unknown }) => {
+        if (isStyleId(payload.uiStyle)) setStyle(payload.uiStyle);
+        if (isThemeMode(payload.uiMode)) setMode(payload.uiMode);
       })
       .catch(() => undefined);
+    return () => { current = false; };
   }, [session, setMode, setStyle]);
 
   useEffect(() => {
@@ -195,6 +193,7 @@ export function DesignApp({
   }, [path, session]);
 
   function go(next: string) {
+    setInvitee(null);
     window.history.pushState({}, "", next);
     setPath(next);
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -210,50 +209,59 @@ export function DesignApp({
     }
   }
 
-  async function createRoom(event: FormEvent) {
-    event.preventDefault();
-    if (creatingRef.current) return;
+  async function createRoom({ initialVideoUrl, ...setup }: CreateRoomWizardSubmission) {
     if (!session) {
-      setError(t("auth.signInFirst"));
       go("/auth");
-      return;
+      return { error: t("auth.signInFirst") };
     }
-    creatingRef.current = true;
-    setCreating(true);
     setError(null);
     try {
-      const chosen = preset ? roomPresetById(preset) : null;
-      const result = await api.createRoom(
-        session.accessToken,
-        title.trim() || chosen?.title || t("room.defaultTitle"),
-        chosen?.isPublic ?? true,
-        preset ?? undefined,
-      );
+      const result = await api.createRoom(session.accessToken, setup);
+      if (initialVideoUrl) {
+        try { await api.addRoomVideo(session.accessToken, result.room.id, initialVideoUrl); }
+        catch { setNotice(t("create.videoNotAdded")); }
+      }
+      if (invitee) {
+        try { await api.inviteFriend(session.accessToken, result.room.id, invitee); }
+        catch { setNotice(t("home.inviteFailed")); }
+        setInvitee(null);
+      }
       onOpen(result.room.id);
       go("/");
     } catch (caught) {
-      setError(caught instanceof ClientError ? t(roomErrorKey(caught.code)) : t("room.createFailed"));
-    } finally {
-      creatingRef.current = false;
-      setCreating(false);
+      return { error: caught instanceof ClientError ? t(roomErrorKey(caught.code)) : t("room.createFailed") };
     }
+  }
+
+  function updateCode(value: string) {
+    setCode(value);
+    setCodeInvalid(false);
+  }
+
+  async function openResume() {
+    if (!session || !resume || resuming) return;
+    setResuming(true);
+    try { onOpen((await api.resumeRoom(session.accessToken)).room.id); }
+    catch { setError(t("resume.openFailed")); }
+    finally { setResuming(false); }
   }
 
   async function joinRoom(event: FormEvent) {
     event.preventDefault();
-    if (!session) {
-      setError(t("auth.joinFirst"));
-      go("/auth");
+    const value = parseRoomCode(code);
+    if (!value) {
+      setCodeInvalid(true);
       return;
     }
-    const value = code.trim();
-    if (!value) {
-      setError(t("room.joinCodeNeeded"));
+    if (!session) {
+      updateCode("");
+      onJoinNeedsAuth(value);
       return;
     }
     setError(null);
     try {
       const result = await api.joinRoom(session.accessToken, value);
+      updateCode("");
       onOpen(result.room.id);
       go("/");
     } catch (caught) {
@@ -261,7 +269,7 @@ export function DesignApp({
     }
   }
 
-  const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
+  const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : joiningInvite ? "join" : viewFromPath(path);
   useEffect(() => {
     if (!webApp) return;
     if (view === "home" || view === "room" || view === "auth") {
@@ -270,7 +278,6 @@ export function DesignApp({
     }
     return bindBackButton(webApp, () => go("/"));
   }, [webApp, view]);
-  const chosenPreset = preset ? roomPresetById(preset) : null;
   const reminders = notes.filter((note) => note.kind === "SYSTEM");
   useEffect(() => {
     if (view !== "create" && view !== "join" && view !== "onboarding") return;
@@ -282,15 +289,86 @@ export function DesignApp({
   });
   const shownRooms = rooms.filter((roomItem) => {
     const q = query.trim().toLowerCase();
-    if (q && !roomItem.title.toLowerCase().includes(q) && !roomItem.code.includes(q)) return false;
-    if (filter === "film") return roomFilters.film.test(roomItem.title);
-    if (filter === "music") return roomFilters.music.test(roomItem.title);
+    if (q && !roomItem.title.toLowerCase().includes(q) && !roomItem.code.includes(q) && !formatRoomCode(roomItem.code).toLowerCase().includes(q)) return false;
     return true;
   });
 
+  const formatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
+  const inbox: NotificationInboxProps = {
+    unreadCount: notifications.feed?.unread ?? null,
+    status: notifications.phase,
+    markingAllRead: notifications.marking === null,
+    mutationError: notifications.failedMutation ? t("inbox.markError") : null,
+    icon: <Icon name="bell" />,
+    items: notes.map((row) => {
+      const date = new Date(row.createdAt);
+      return {
+        ...row,
+        markingRead: notifications.marking === row.id,
+        timestamp: Number.isFinite(date.getTime()) ? { dateTime: row.createdAt, label: formatter.format(date) } : null,
+        ...(row.target === "/profile" ? { action: { label: t("inbox.openProfile"), onSelect: () => go("/profile") } } : {}),
+      };
+    }),
+    labels: {
+      title: text.notifications, unreadCount: (count) => t("inbox.count", { count }), read: t("inbox.read"),
+      unread: t("inbox.unread"), markRead: t("inbox.mark"), markAllRead: t("inbox.markAll"), empty: t("inbox.empty"),
+      loading: t("inbox.loading"), error: t("inbox.error"), retry: t("common.retry"),
+    },
+    onMarkRead: (id) => void notifications.mark(id),
+    onMarkAllRead: () => void notifications.mark(null),
+    onRetry: () => void notifications.reload(),
+  };
+  const navActions = <>
+    <NotificationInboxPopover {...inbox} viewAllLabel={t("feed.all")} onOpenAll={() => go("/notifications")} />
+    <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, document.documentElement.dataset.theme === "dark" ? "light" : "dark")} aria-label={text.mode}><Icon name="sun" /><Icon name="moon" /></button>
+  </>;
+  const loadCatalog: RoomFeedLoader = async (selectedFilter, cursor, signal) => {
+    if (shot) {
+      const categories = ["film", "music", "vlog"] as const;
+      const preview = shotRooms.map<RoomFeedRoom>((item, index) => ({ ...item, category: categories[index % categories.length] ?? "other", isFull: false }));
+      return { rooms: preview.filter((item) => selectedFilter === "all" || selectedFilter === item.category), nextCursor: null };
+    }
+    return api.roomCatalog(selectedFilter, cursor, signal, session?.accessToken);
+  };
+  const openCatalogRoom = (item: Pick<RoomFeedRoom, "code">) => {
+    if (!session) { go("/auth"); return; }
+    void api.joinRoom(session.accessToken, item.code)
+      .then((result) => onOpen(result.room.id))
+      .catch((caught: unknown) => setError(caught instanceof ClientError ? t(roomErrorKey(caught.code)) : t("room.createFailed")));
+  };
+  const openFriendRoom = (target: string) => {
+    const visibleRoom = rooms.find((item) => item.id === target);
+    if (visibleRoom) { openCatalogRoom(visibleRoom); return; }
+    setFriendCatalog((current) => current + 1);
+    requestAnimationFrame(() => document.getElementById("public-rooms")?.scrollIntoView({ block: "start" }));
+  };
+  const inviteToNewRoom = (userId: string) => { go("/create"); setInvitee(userId); };
+  const catalog = <RoomFeed id="public-rooms" key={`${session?.user.id ?? "guest"}:${friendCatalog}`} initialFilter={friendCatalog ? "friends" : "all"}
+    style={style} signedIn={Boolean(session)} loadPage={loadCatalog} onOpenRoom={openCatalogRoom} onSignIn={() => go("/auth")} />;
+  const resumeContent = <div className="c">
+    <div className="eyebrow">{text.resume}</div>
+    <h2>{resume?.title ?? text.empty}</h2>
+    <div className="sub">{resume ? t("room.resumeHint") : t("room.resumeEmptyHint")}</div>
+    {resume?.positionMs != null && resume.durationMs != null && resume.durationMs > 0 ? (
+      <progress aria-label={t("resume.progress")} max={resume.durationMs} value={Math.min(resume.positionMs, resume.durationMs)} />
+    ) : null}
+  </div>;
+  const resumeTile = resume ? <button type="button" className="tile resume" disabled={resuming} onClick={() => void openResume()}
+    style={resume.posterUrl ? { backgroundImage: `linear-gradient(0deg, var(--bg), transparent), url(${JSON.stringify(resume.posterUrl)})` } : undefined}>
+    {resumeContent}
+  </button> : <section className="tile resume">{resumeContent}</section>;
+  const homeVisible = view === "home" || view === "create";
+  const wizardLabels: CreateRoomWizardLabels = {
+    steps: { video: t("create.stepVideo"), access: t("create.stepAccess"), rights: t("create.stepRights") },
+    presetOptions: Object.fromEntries(roomPresets.map((item) => [item.id, { name: item.title, hint: item.hint }])) as Record<RoomPresetId, { name: string; hint: string }>,
+    videoUrl: t("create.initialVideo"), category: t("create.category"),
+    categories: { auto: t("create.categoryAuto"), film: t("feed.film"), music: t("feed.music"), vlog: t("feed.vlog"), other: t("feed.other") },
+    invalidTitle: t("create.invalidTitle"), invalidVideoUrl: t("create.invalidVideo"),
+  };
+
   return (
-    <AppShell className={narrow ? "is-narrow session-hub" : "session-hub"} view={view}>
-      {view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
+    <AppShell className={narrow ? "is-narrow session-hub" : "session-hub"} view={view} style={style} header={
+      view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} actions={navActions} /> : (
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
           <label className="search-lg">
@@ -299,54 +377,65 @@ export function DesignApp({
             <span className="kbd">/</span>
           </label>
           <div className="nav-actions">
-            <button type="button" className="icon-btn bell" onClick={() => go("/notifications")} aria-label={text.notifications}><Icon name="bell" />{unreadNotes > 0 ? <span className="badge-dot" data-count={unreadNotes} /> : null}</button>
-            <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, mode === "dark" ? "light" : "dark")} aria-label={text.mode}><Icon name="sun" /><Icon name="moon" /></button>
+            {navActions}
             <button type="button" className="me" onClick={() => go("/profile")}>
               <span className="av p-me">{initials(session?.user.displayName ?? "?")}</span>
               <span className="nm p-me">{session?.user.displayName ?? text.signIn}</span>
             </button>
           </div>
         </nav>
-      )}
-      {view === "room" && roomId ? room : null}
+      )}>
+      {view === "room" && roomId ? (
+        <RoomAppearanceContext.Provider value={{ style, mode, onStyle: (next) => void saveAppearance(next, mode), onMode: (next) => void saveAppearance(style, next) }}>
+          {room}
+        </RoomAppearanceContext.Provider>
+      ) : null}
       {(view === "room" || view === "unavailable") && !roomId ? (
         <RoomPreview unavailable={view === "unavailable"} onGo={go} />
       ) : null}
-      {view === "home" && style === "gruvbox" ? (
+      {homeVisible && style === "gruvbox" ? (
         <GruvboxHome
           session={session}
           rooms={shownRooms}
-          heat={heat.length > 0 ? heat : shotHeat}
-          resume={resume ?? shotRooms[0]?.title ?? null}
+          heat={shot ? shotHeat : heat}
+          resume={resume?.title ?? (shot ? shotRooms[0]?.title ?? null : null)}
+          onResume={resume ? () => void openResume() : undefined}
+          catalog={catalog}
+          friends={friends}
+          onJoinFriend={openFriendRoom}
+          onInviteFriend={inviteToNewRoom}
           isShot={Boolean(shot)}
           name={name}
           onName={setName}
           onSignIn={(event) => void signIn(event)}
           onGo={go}
           code={code}
-          onCode={setCode}
-          onJoin={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}
+          codeInvalid={codeInvalid}
+          onCode={updateCode}
+          onJoin={(event) => void joinRoom(event)}
           onOpen={(item) => { if (!session) { go("/auth"); return; } void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}
         />
       ) : null}
-      {view === "home" && narrow && style !== "gruvbox" ? (
+      {homeVisible && narrow && style !== "gruvbox" ? (
         <MobileHome
+          catalog={catalog}
+          continueTile={session ? resumeTile : null}
+          storyPeople={shot ? shotPeople : friends.map((person) => ({ id: person.userId, name: person.displayName }))}
           session={session}
-          rooms={shownRooms}
           name={name}
           onName={setName}
           onSignIn={(event) => void signIn(event)}
           onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)}
           onCreate={() => go(session ? "/create" : "/auth")}
-          onOpenRoom={(item) => { if (!session) { go("/auth"); return; } void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}
           onProfile={() => go("/profile")}
           code={code}
-          onCode={setCode}
-          onJoin={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}
+          codeInvalid={codeInvalid}
+          onCode={updateCode}
+          onJoin={(event) => void joinRoom(event)}
         />
       ) : null}
-      {(view === "home" || view === "onboarding") && style !== "gruvbox" && !narrow ? (
-        <div className="wrap screen-scroll">
+      {(homeVisible || view === "onboarding") && style !== "gruvbox" && !narrow ? (
+        <div className={style === "telerave" ? "wrap screen-scroll legacy-home" : "wrap screen-scroll"}>
           <main>
             <div className="home-hero">
               <div className="greet">
@@ -356,12 +445,12 @@ export function DesignApp({
             </div>
             <div className="stories" aria-label={t("home.stories")}>
               <button type="button" className="st new" onClick={() => go(session ? "/create" : "/auth")}>
-                <span className="ring"><span className="face">+</span></span>
+                <span className="ring"><span className="face"><Plus size={18} aria-hidden="true" /></span></span>
                 <span className="nm">{t("home.storyMine")}</span>
               </button>
-              {(session && friends.length > 0
-                ? friends.slice(0, 4).map((row) => ({ id: row.userId, name: row.displayName }))
-                : shotPeople
+              {(shot
+                ? shotPeople
+                : friends.slice(0, 4).map((row) => ({ id: row.userId, name: row.displayName }))
               ).map((person) => (
                 <button key={person.id} type="button" className="st" onClick={() => go("/profile")}>
                   <span className="ring"><span className={`face av p-${personHue(person.id)}`}>{initials(person.name)}</span></span>
@@ -402,15 +491,12 @@ export function DesignApp({
                     <span className="hint">{t("home.signInFirst")}</span>
                   </div>
                 </div>
-                <form className="tile join" onSubmit={(event) => { event.preventDefault(); if (!session) { go("/auth"); return; } void joinRoom(event); }}>
+                <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
                   <div className="tile-head">
                     <span className="tile-ic"><Icon name="key" /></span>
                     <div><h3>{text.join}</h3><p>{text.joinHint}</p></div>
                   </div>
-                  <label>
-                    {t("join.codeLabel")}
-                    <CodeInput value={code} onChange={setCode} slots={8} />
-                  </label>
+                  <RoomCodeInput value={code} onChange={updateCode} invalid={codeInvalid} />
                   <div className="actions">
                     <button type="submit" className="btn btn-social" data-testid="lobby-join">{text.enter}</button>
                   </div>
@@ -418,83 +504,24 @@ export function DesignApp({
               </div>
             ) : (
               <div className="acts">
-                <button type="button" className="tile resume" onClick={() => {
-                  if (!session) return;
-                  void fetch(`${apiUrl}/rooms/resume-last`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}` } })
-                    .then((response) => response.json())
-                    .then((payload: { room?: { id: string } }) => { if (payload.room) onOpen(payload.room.id); });
-                }}>
-                  <div className="c">
-                    <div className="eyebrow">{text.resume}</div>
-                    <h2>{resume ?? text.empty}</h2>
-                    <div className="sub">{resume ? t("room.resumeHint") : t("room.resumeEmptyHint")}</div>
-                  </div>
+                {resumeTile}
+                <button type="button" className="tile create promo" data-testid="home-create-open" onClick={() => go("/create")}>
+                  <span className="promo-plus"><Icon name="plus" /></span>
+                  <h3>{text.create}</h3><p>{text.createHint}</p>
                 </button>
-                <form className="tile create" onSubmit={(event) => void createRoom(event)}>
-                  <div className="tile-head">
-                    <span className="tile-ic"><Icon name="plus" /></span>
-                    <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
-                  </div>
-                  <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("home.roomNamePlaceholder")} aria-label={t("home.roomNamePlaceholder")} />
-                  <div className="chips" data-testid="lobby-presets">
-                    {roomPresets.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className={preset === item.id ? "pill on" : "pill"}
-                        data-testid={`lobby-preset-${item.id}`}
-                        onClick={() => {
-                          setPreset(item.id);
-                          setTitle(item.title);
-                        }}
-                      >
-                        {item.title}
-                      </button>
-                    ))}
-                  </div>
-                  {chosenPreset ? (
-                    <small data-testid="lobby-preset-summary" data-public={chosenPreset.isPublic ? "true" : "false"} data-max={chosenPreset.maxMembers} data-slow={chosenPreset.slowModeSeconds}>
-                      {chosenPreset.hint}
-                    </small>
-                  ) : null}
-                  <div className="actions">
-                    <button type="submit" className="btn btn-primary" data-testid="lobby-create" disabled={creating}>{creating ? t("create.creating") : text.create}</button>
-                  </div>
-                </form>
-                <form className="tile join" onSubmit={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}>
+                <form className="tile join" onSubmit={(event) => void joinRoom(event)}>
                   <div className="tile-head">
                     <span className="tile-ic"><Icon name="key" /></span>
                     <div><h3>{text.join}</h3><p>{text.joinHint}</p></div>
                   </div>
-                  <label>
-                    {t("join.codeLabel")}
-                    <CodeInput value={code} onChange={setCode} slots={8} />
-                  </label>
+                  <RoomCodeInput value={code} onChange={updateCode} invalid={codeInvalid} />
                   <div className="actions">
                     <button type="submit" className="btn btn-social" data-testid="lobby-join">{text.enter}</button>
                   </div>
                 </form>
               </div>
             )}
-            <div className="sec">
-              <h3>{text.rooms}</h3>
-              <div className="chips">
-                {(["all", "friends", "film", "music"] as const).map((item) => (
-                  <button key={item} type="button" className={filter === item ? "pill on" : "pill"} onClick={() => setFilter(item)}>{text[item]}</button>
-                ))}
-              </div>
-            </div>
-            <LiveRoomsCarousel
-              rooms={shownRooms}
-              onCreate={() => go(session ? "/create" : "/auth")}
-              onOpen={(item) => {
-                if (!session) {
-                  go("/auth");
-                  return;
-                }
-                void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id));
-              }}
-            />
+            {catalog}
           </main>
           <aside className="side">
             <section className="card">
@@ -510,9 +537,9 @@ export function DesignApp({
                   <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? t("home.notInRoom")}</small></div>
                   <div className="fr-actions">
                     {row.roomId ? (
-                      <button type="button" className="mini go" onClick={() => onOpen(row.roomId as string)}>{t("home.enterRoom")}</button>
+                      <button type="button" className="mini go" onClick={() => { if (row.roomId) openFriendRoom(row.roomId); }}>{t("home.enterRoom")}</button>
                     ) : (
-                      <button type="button" className="mini" onClick={() => go("/profile")}>{t("home.profileShort")}</button>
+                      <button type="button" className="mini" onClick={() => inviteToNewRoom(row.userId)}>{t("room.invite")}</button>
                     )}
                     <button type="button" className="mini ghost" aria-label={t("home.remove")} onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } }).catch(() => undefined)}>×</button>
                   </div>
@@ -603,12 +630,14 @@ export function DesignApp({
               </div>
             </div>
           ) : null}
-          {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} busy={creating} /> : null}
-          {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
+           {view === "create" ? <CreateRoomWizard open labels={wizardLabels} onSubmit={createRoom} onClose={() => { setInvitee(null); go("/"); }} /> : null}
+          {view === "join" ? (joiningInvite && !shot
+            ? <EmptyScreen title={t("join.connecting")} />
+            : <JoinScreen code={code} codeInvalid={codeInvalid} onCode={updateCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} />) : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }).catch(() => undefined); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
-          {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} /> : <EmptyScreen title={t("profile.signInTitle")} body={t("profile.signInBody")} action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>{t("auth.login")}</button>} />) : null}
+           {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} appearance={<AppearanceControls style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} />} /> : <EmptyScreen title={t("profile.signInTitle")} body={t("profile.signInBody")} action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>{t("auth.login")}</button>} />) : null}
           {view === "premium" ? <PremiumScreen /> : null}
-          {view === "notifications" ? <NotificationsScreen items={notes} /> : null}
+          {view === "notifications" ? <NotificationInboxPage {...inbox} /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}
           {view === "auth" ? (
             <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }).then(() => setNotice(t("auth.magicSent"))).catch(() => setError(t("auth.magicFailed"))); }} onRegister={(event) => {
@@ -628,25 +657,17 @@ export function DesignApp({
                 });
             }} />
           ) : null}
-          {view === "missing" ? <EmptyScreen title={t("empty.notFoundTitle")} body={t("empty.notFoundBody")} action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>{t("empty.home")}</button><button type="button" className="btn btn-primary" onClick={() => go("/create")}>{t("create.submit")}</button></>} /> : null}
+          {view === "missing" ? <EmptyScreen title={t("empty.notFoundTitle")} body={t("empty.notFoundBody")} action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>{t("empty.home")}</button><button type="button" className="btn btn-primary" onClick={() => { updateCode(""); go("/join"); }}>{t("empty.tryRoomCode")}</button></>} /> : null}
           {view === "offline" ? <EmptyScreen title={t("empty.offlineTitle")} body={t("empty.offlineBody")} action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>{t("common.retry")}</button>} /> : null}
         </Page>
       ) : null}
       {narrow && view !== "room" ? (
         <nav className="tabbar" aria-label={t("nav.main")}>
-          <button type="button" className={view === "home" ? "on" : ""} onClick={() => go("/")}><span className="tab-ic">⌂</span>{t("nav.home")}</button>
-          <button type="button" className={view === "search" ? "on" : ""} onClick={() => go("/search")}><span className="tab-ic">⌕</span>{t("nav.search")}</button>
-          <button type="button" className={view === "notifications" ? "on" : ""} onClick={() => go("/notifications")}><span className="tab-ic">◔</span>{t("nav.events")}</button>
-          <button type="button" className={view === "profile" ? "on" : ""} onClick={() => go("/profile")}><span className="tab-ic">☺</span>{t("nav.me")}</button>
+          <button type="button" className={view === "home" ? "on" : ""} onClick={() => go("/")}><House className="tab-ic" size={18} aria-hidden="true" />{t("nav.home")}</button>
+          <button type="button" className={view === "search" ? "on" : ""} onClick={() => go("/search")}><Search className="tab-ic" size={18} aria-hidden="true" />{t("nav.search")}</button>
+          <button type="button" className={view === "notifications" ? "on" : ""} onClick={() => go("/notifications")}><Bell className="tab-ic" size={18} aria-hidden="true" />{t("nav.events")}</button>
+          <button type="button" className={view === "profile" ? "on" : ""} onClick={() => go("/profile")}><UserRound className="tab-ic" size={18} aria-hidden="true" />{t("nav.me")}</button>
         </nav>
-      ) : null}
-      {style === "gruvbox" ? (
-        <footer className="status">
-          <span className="sl-mode">{view.toUpperCase()}</span>
-          <span className="sl-file">lume/{view}</span>
-          <span className="sl-mid">{error ?? ice ?? ""}</span>
-          <span className="sl-keys"><b>:</b>{view}</span>
-        </footer>
       ) : null}
       {error ? <p className="app-note">{error}</p> : null}
       {notice ? <p className="app-note">{notice}</p> : null}
@@ -683,79 +704,11 @@ function Page({ title, onClose, children }: { title: string; onClose: () => void
   );
 }
 
-function Icon({ name }: { name: "search" | "bell" | "sun" | "moon" | "plus" | "key" | "user" }) {
-  const path = {
-    search: "M11 11l4 4M7.5 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z",
-    bell: "M12 20a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-5V10a6 6 0 1 0-12 0v5l-2 2h16z",
-    sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0-4v2m0 12v2M4 12H2m20 0h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19",
-    moon: "M16 14.5A6.5 6.5 0 0 1 9.5 4 6.5 6.5 0 1 0 16 14.5z",
-    plus: "M12 5v14M5 12h14",
-    key: "M14 8a4 4 0 1 0-3.2 6.4L8 17v2H6v2H4v-2.8l6.1-6.1A4 4 0 0 0 14 8z",
-    user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0",
-  }[name];
-  return (
-    <svg className={`icon icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const icons = { search: Search, bell: Bell, sun: Sun, moon: Moon, plus: Plus, key: KeyRound, user: UserRound } as const;
 
-function LiveRoomsCarousel({
-  rooms,
-  onCreate,
-  onOpen,
-}: {
-  rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
-  onCreate: () => void;
-  onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
-}) {
-  const { t } = useI18n();
-  const track = useRef<HTMLDivElement>(null);
-  const scroll = (direction: -1 | 1) => {
-    track.current?.scrollBy({ left: direction * 320, behavior: "smooth" });
-  };
-  if (rooms.length === 0) {
-    return (
-      <div className="livestream-empty">
-        <div>{t("home.noRoomsFriends")}</div>
-        <button type="button" className="btn btn-outline" onClick={onCreate}>{t("create.submit")}</button>
-      </div>
-    );
-  }
-  return (
-    <div className="live-carousel" data-testid="live-carousel">
-      <div className="carousel-track" ref={track}>
-        {rooms.map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            className="rc"
-            data-testid="carousel-room"
-            data-code={item.code}
-            onClick={() => onOpen(item)}
-          >
-            <div className={`th ${posterClasses[index % posterClasses.length]}`}>
-              <span className="tag"><i className="d" />{item.memberCount && item.memberCount > 0 ? `${item.memberCount} ${viewersWord(item.memberCount)}` : t("room.openTag")}</span>
-              <span className="rc-index mono">0{index + 1}</span>
-            </div>
-            <div className="bd">
-              <b>{item.title}</b>
-              <div className="meta">
-                <span className="viewers"><i />{(item.memberCount ?? 0) > 0 ? t("mobile.memberCount", { count: item.memberCount ?? 0 }) : t("room.waitingGuests")}</span>
-                <span className="code">{item.code}</span>
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-      {rooms.length > 1 ? (
-        <div className="carousel-nav">
-          <button type="button" data-testid="carousel-prev" onClick={() => scroll(-1)} aria-label={t("carousel.prev")}>‹</button>
-          <button type="button" data-testid="carousel-next" onClick={() => scroll(1)} aria-label={t("carousel.next")}>›</button>
-        </div>
-      ) : null}
-    </div>
-  );
+function Icon({ name }: { name: keyof typeof icons }) {
+  const Glyph = icons[name];
+  return <Glyph className={`icon icon-${name}`} aria-hidden="true" strokeWidth={1.8} />;
 }
 
 function GruvboxHome({
@@ -763,29 +716,41 @@ function GruvboxHome({
   rooms,
   heat,
   resume,
+  onResume,
   isShot,
   name,
   onName,
   onSignIn,
   onGo,
   code,
+  codeInvalid,
   onCode,
   onJoin,
   onOpen,
+  catalog,
+  friends,
+  onJoinFriend,
+  onInviteFriend,
 }: {
   session: ClientSession | null;
   rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
   heat: Array<{ day: string; score: number }>;
   resume: string | null;
+  onResume?: () => void;
   isShot: boolean;
   name: string;
   onName: (value: string) => void;
   onSignIn: (event: FormEvent) => void;
   onGo: (path: string) => void;
   code: string;
+  codeInvalid: boolean;
   onCode: (value: string) => void;
   onJoin: (event: FormEvent) => void;
   onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
+  catalog: ReactNode;
+  friends: Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>;
+  onJoinFriend: (roomId: string) => void;
+  onInviteFriend: (friendId: string) => void;
 }) {
   const { t } = useI18n();
   const rows = rooms.slice(0, 7);
@@ -798,7 +763,7 @@ function GruvboxHome({
             <span className={`g-th ${posterClasses[index % posterClasses.length]}`} aria-hidden="true" />
             <b>{item.title}</b>
             <span className="mono">{item.memberCount ?? 0} live</span>
-            <span className="mono dim">{item.code.slice(0, 3).toUpperCase()}</span>
+            <span className="mono dim">{formatRoomCode(item.code)}</span>
           </button>
         ))}
       </section>
@@ -806,26 +771,26 @@ function GruvboxHome({
         <div className="pt">{t("gruvbox.resume")}</div>
         <h2>{resume ?? t("resume.empty")}</h2>
         <p className="dim">{isShot ? t("gruvbox.resumeMeta") : t("gruvbox.resumeHint")}</p>
-        <p className="dim">{t("gruvbox.resumeMetaTwo")}</p>
-        <button type="button" className="go" onClick={() => onGo("/profile")}>{t("gruvbox.enterRoom")}</button>
+        {isShot ? <p className="dim">{t("gruvbox.resumeMetaTwo")}</p> : null}
+        {onResume ? <button type="button" className="go" onClick={onResume}>{t("gruvbox.enterRoom")}</button> : null}
       </section>
       <section className="pane">
         <div className="pt">{t("gruvbox.new")}</div>
         <h3>{t("gruvbox.newTitle")}</h3>
         <p>{t("gruvbox.newBody")}</p>
-        <button type="button" className="go" onClick={() => onGo(session ? "/create" : "/auth")}>{t("gruvbox.newAction")}</button>
+        <button type="button" className="go" data-testid="home-create-open" onClick={() => onGo(session ? "/create" : "/auth")}>{t("gruvbox.newAction")}</button>
       </section>
       <section className="pane">
         <div className="pt">{t("gruvbox.join")}</div>
         <h3>{t("gruvbox.joinTitle")}</h3>
         <form onSubmit={onJoin}>
-          <input data-testid="lobby-code" className="mono" value={code} onChange={(event) => onCode(event.target.value)} placeholder={t("code.placeholder")} maxLength={12} aria-label={t("join.codePlaceholder")} />
+          <RoomCodeInput value={code} onChange={onCode} invalid={codeInvalid} />
           <button type="submit" className="go" data-testid="lobby-join">{t("auth.login")}</button>
         </form>
       </section>
       <section className="pane">
         <div className="pt">{t("gruvbox.season")}</div>
-        <p className="dim">{t("gruvbox.seasonMeta")}</p>
+        {isShot ? <p className="dim">{t("gruvbox.seasonMeta")}</p> : null}
         {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">{t("gruvbox.seasonEmpty")}</p>}
       </section>
       {!session ? (
@@ -838,34 +803,31 @@ function GruvboxHome({
         </section>
       ) : null}
       <section className="pane">
-        <div className="pt">{t("gruvbox.bill")}</div>
-        <div className="g-bill">
-          {rows.slice(0, 3).map((item, index) => (
-            <button key={item.id} type="button" onClick={() => onOpen(item)}>
-              <span className={`g-shot ${posterClasses[index % posterClasses.length]}`} aria-hidden="true" />
-              <b>{item.title}</b>
-              <small className="dim">{t("gruvbox.viewers", { count: item.memberCount ?? 0 })}</small>
-            </button>
-          ))}
-        </div>
+        {catalog}
         <p className="dim">{t("gruvbox.billHint")}</p>
       </section>
       <section className="pane">
         <div className="pt">{t("gruvbox.friends")}</div>
-        {shotPeople.map((person) => (
+        {isShot ? shotPeople.map((person) => (
           <div key={person.id} className="g-friend">
             <span className={`av p-${personHue(person.id)}`}>{initials(person.name)}</span>
             <b>{person.name}</b>
             <span className="dim">{t("gruvbox.inRoom")}</span>
-            <button type="button" className="go" onClick={() => onGo("/profile")}>{t("gruvbox.enter")}</button>
           </div>
-        ))}
+        )) : friends.length ? friends.map((person) => (
+          <div key={person.id} className="g-friend">
+            <span className={`av p-${personHue(person.userId)}`}>{initials(person.displayName)}</span>
+            <b>{person.displayName}</b><span className="dim">{person.roomTitle ?? t("home.notInRoom")}</span>
+            {person.roomId ? <button type="button" className="go" onClick={() => { if (person.roomId) onJoinFriend(person.roomId); }}>{t("gruvbox.enter")}</button>
+              : <button type="button" className="go" onClick={() => onInviteFriend(person.userId)}>{t("room.invite")}</button>}
+          </div>
+        )) : <p className="lead">{t("profile.noFriends")}</p>}
       </section>
     </div>
   );
 }
 
-function GruvboxBar({ view, onGo, text }: { view: View; onGo: (path: string) => void; text: ReturnType<typeof copy> }) {
+function GruvboxBar({ view, onGo, text, actions }: { view: View; onGo: (path: string) => void; text: ReturnType<typeof copy>; actions: ReactNode }) {
   const tabs: Array<[View | "home", string]> = [["home", "home"], ["search", "search"], ["room", "room"], ["profile", "profile"]];
   return (
     <div className="tabline">
@@ -878,6 +840,7 @@ function GruvboxBar({ view, onGo, text }: { view: View; onGo: (path: string) => 
         ))}
       </div>
       <label className="search-lg"><input aria-label={text.search} placeholder={text.search} onFocus={() => onGo("/search")} /></label>
+      <div className="nav-actions">{actions}</div>
     </div>
   );
 }

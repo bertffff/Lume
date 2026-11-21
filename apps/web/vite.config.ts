@@ -11,8 +11,13 @@ export default defineConfig({
     port: 5173,
   },
   build: {
-    // Explicit budget: the entry, hls.js and LiveKit chunks are lazy but still
-    // large. Anything above this limit is a real regression and warns again.
     chunkSizeWarningLimit: 720,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: "react-runtime", test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/ }],
+        },
+      },
+    },
   },
 });

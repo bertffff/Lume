@@ -1,52 +1,13 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { favouriteLine, linkedLabel, roomPresetById, roomPresets, viewerPermissionKeys, type RoomPresetId } from "@lume/contracts";
+import { KeyRound, Plus, UserRound } from "lucide-react";
 import { permissionLabel } from "./copy.js";
-import { posterClasses, shotPeople } from "./shot-fixtures.js";
 import { useI18n } from "../i18n/context.js";
 import { Modal } from "../ui/index.js";
-import { initials, personHue } from "./theme.js";
-
-export function CodeInput({
-  value,
-  onChange,
-  slots = 8,
-  testId = "lobby-code",
-  label,
-  autoFocus = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  slots?: number;
-  testId?: string;
-  label?: string;
-  autoFocus?: boolean;
-}) {
-  const { t } = useI18n();
-  const count = Math.max(slots, Math.min(12, value.length));
-  return (
-    <div className="code-input">
-      <div className="code-cells" aria-hidden="true">
-        {Array.from({ length: count }, (_, index) => (
-          <span key={index} className={value[index] ? "filled" : ""}>{value[index] ?? ""}</span>
-        ))}
-      </div>
-      <input
-        data-testid={testId}
-        className="code-native"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        maxLength={12}
-        autoComplete="off"
-        autoCapitalize="none"
-        spellCheck={false}
-        aria-label={label || t("join.codePlaceholder")}
-        autoFocus={autoFocus}
-      />
-    </div>
-  );
-}
-
-import type { ModeId, StyleId } from "./theme.js";
+import { initials, personHue, type ModeId, type StyleId } from "./theme.js";
+import { RoomCodeInput } from "./RoomCodeInput.js";
+import { AppearanceControls } from "./AppearanceControls.js";
+import { ProfileView } from "./ProfileView.js";
 
 export function SettingsScreen({
   style,
@@ -97,7 +58,6 @@ export function SettingsScreen({
       })
       .catch(() => undefined);
   }, [token, apiUrl, t]);
-  const system = mode === "system";
   return (
     <div className="settings-wrap">
       <aside>
@@ -123,39 +83,7 @@ export function SettingsScreen({
       <div className="panel" id="settings-appearance">
         <h2>{t("settings.appearanceTitle")}</h2>
         <p className="lead">{t("settings.appearanceBody")}</p>
-        <div className="style-cards">
-          <button type="button" className={style === "cinema" ? "style-card on" : "style-card"} onClick={() => onStyle("cinema")}>
-            <span className="preview cinema" />
-            <b>{t("settings.cinema")}</b>
-            <small>{t("settings.cinemaHint")}</small>
-          </button>
-          <button type="button" className={style === "gruvbox" ? "style-card on" : "style-card"} onClick={() => onStyle("gruvbox")}>
-            <span className="preview gruv" />
-            <b>Gruvbox</b>
-            <small>{t("settings.gruvboxHint")}</small>
-          </button>
-        </div>
-        <div className="set-row">
-          <div><b>{t("settings.styleInterface")}</b><small>{t("settings.styleHint")}</small></div>
-          <div className="seg">
-            <button type="button" className={style === "cinema" ? "on" : ""} onClick={() => onStyle("cinema")}>{t("settings.cinema")}</button>
-            <button type="button" className={style === "gruvbox" ? "on" : ""} onClick={() => onStyle("gruvbox")}>Gruvbox</button>
-          </div>
-        </div>
-        <div className="set-row">
-          <div><b>{t("settings.theme")}</b><small>{t("settings.themeHint")}</small></div>
-          <div className="seg">
-            <button type="button" className={!system && mode === "dark" ? "on" : ""} onClick={() => onMode("dark")}>{t("settings.dark")}</button>
-            <button type="button" className={!system && mode === "light" ? "on" : ""} onClick={() => onMode("light")}>{t("settings.light")}</button>
-          </div>
-        </div>
-        <div className="set-row">
-          <div><b>{t("settings.systemFollow")}</b><small>{t("settings.systemHint")}</small></div>
-          <div className="seg">
-            <button type="button" className={system ? "" : "on"} onClick={() => onMode("dark")}>{t("settings.off")}</button>
-            <button type="button" className={system ? "on" : ""} onClick={() => onMode("system")}>{t("settings.on")}</button>
-          </div>
-        </div>
+        <AppearanceControls style={style} mode={mode} onStyle={onStyle} onMode={onMode} />
         <div className="set-row" id="settings-account">
           <div><b>Telegram</b><small>{linked}. {t("settings.unlinkHint")}</small></div>
           <div className="inline-actions">
@@ -229,8 +157,8 @@ export function SettingsScreen({
   );
 }
 
-export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: string; apiUrl?: string; userId?: string; displayName?: string } = {}) {
-  const { t } = useI18n();
+export function ProfileScreen({ token, apiUrl, userId, displayName, appearance }: { token?: string; apiUrl?: string; userId?: string; displayName?: string; appearance?: ReactNode } = {}) {
+  const { locale, t } = useI18n();
   const [favourites, setFavourites] = useState<Array<{ url: string; title: string | null; watchCount: number }>>([]);
   const [history, setHistory] = useState<Array<{ url: string; title: string | null; watchCount: number; lastWatchedAt: string }>>([]);
   const [achievements, setAchievements] = useState<Array<{ key: string; title: string; icon: string; earned: boolean }>>([]);
@@ -250,7 +178,6 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
   const [friendsWatch, setFriendsWatch] = useState<Array<{ partnerId: string; seconds: number }>>([]);
   const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
   const [incoming, setIncoming] = useState<Array<{ id: string; userId: string; displayName: string }>>([]);
-  const [notes, setNotes] = useState<Array<{ id: string; title: string; body: string }>>([]);
   const [bio, setBio] = useState("");
   const [heat, setHeat] = useState<Array<{ day: string; score: number }>>([]);
   const [boards, setBoards] = useState<{ messages: LeaderboardRow[]; reactions: LeaderboardRow[]; voice: LeaderboardRow[] }>({ messages: [], reactions: [], voice: [] });
@@ -286,10 +213,6 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
         setFriends([]);
         setIncoming([]);
       });
-    void fetch(`${apiUrl}/notifications`, { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => response.json())
-      .then((payload: { notifications?: Array<{ id: string; title: string; body: string }> }) => setNotes(payload.notifications ?? []))
-      .catch(() => setNotes([]));
     void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { bio?: string | null }) => setBio(payload.bio ?? ""))
@@ -377,9 +300,7 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
     });
   }
 
-  return (
-    <div className="profile-wrap">
-      <aside className="side-p">
+  const profileCard = (
         <div className="card" style={{ textAlign: "center" }}>
           <span className="av p-me ring" style={{ width: 80, height: 80, fontSize: 26, margin: "0 auto 10px" }}>{initials(displayName ?? t("profile.youFallback"))}</span>
           <b className="nm p-me" style={{ display: "block", font: "600 18px/22px var(--font-display)" }}>{displayName ?? t("profile.youFallback")}</b>
@@ -389,17 +310,22 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
           <p style={{ color: "var(--text-2)", fontSize: 13, marginTop: 6 }} data-testid="profile-next-level">{t("profile.nextLevel", { xp: Math.max(0, nextLevelXp - totalXp) })}</p>
           {bio ? <p style={{ color: "var(--text-2)", fontSize: 12, marginTop: 6 }}>{bio}</p> : null}
         </div>
+  );
+  const awardCards = (items: typeof achievements, complete: boolean) => (
         <div className="card">
           <h3>{t("profile.achievements")}</h3>
-          <div className="ach" data-testid="profile-achievements">
-            {achievements.map((item) => (
-              <span key={item.key} className={item.earned ? "got" : ""} title={item.title} data-testid="profile-achievement" data-key={item.key} data-earned={String(item.earned)}>
-                {item.icon}
-              </span>
+          <ul className="profile-achievements-grid" data-testid={complete ? "profile-achievements" : undefined}>
+            {items.map((item) => (
+              <li key={item.key} className={item.earned ? "got" : ""} data-testid={complete ? "profile-achievement" : undefined} data-key={item.key} data-earned={String(item.earned)}>
+                <span aria-hidden="true">{item.icon}</span><strong>{item.title.startsWith(item.icon) ? item.title.slice(item.icon.length).trim() : item.title}</strong>
+                <small>{t(item.earned ? "profile.awardEarned" : "profile.awardLocked")}</small>
+              </li>
             ))}
-          </div>
-          <div className="dim" data-testid="profile-achievements-count">{t("profile.openCount", { earned: earnedCount, total: totalAchievements })}</div>
+          </ul>
+          <div className="dim" data-testid={complete ? "profile-achievements-count" : undefined}>{t("profile.openCount", { earned: earnedCount, total: totalAchievements })}</div>
         </div>
+  );
+  const friendsPanel = (<>
         <div className="card">
           <h3>{t("profile.friends")}</h3>
           {friends.length > 0 ? friends.slice(0, 5).map((friend) => (
@@ -424,46 +350,6 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             ))}
           </div>
         ) : null}
-      </aside>
-      <main>
-        <div className="grid3">
-          <div className="stat"><small>{t("profile.levelLabel")}</small><b>{level}</b></div>
-          <div className="stat"><small>{t("profile.xpLabel")}</small><b>{totalXp} XP</b></div>
-          <div className="stat"><small>{t("profile.achievementsLabel")}</small><b>{t("profile.earnedOf", { earned: earnedCount, total: totalAchievements })}</b></div>
-        </div>
-        <div className="card" data-testid="profile-engagement">
-          <div className="heat-top"><h3>{t("profile.engagement")}</h3></div>
-          <div className="grid3">
-            <div className="stat">
-              <small>{t("profile.watchSeconds")}</small>
-              <b data-testid="engagement-watch" data-seconds={engagement?.watchSeconds ?? 0}>{formatSeconds(engagement?.watchSeconds ?? 0, t)}</b>
-            </div>
-            <div className="stat">
-              <small>{t("profile.voiceSeconds")}</small>
-              <b data-testid="engagement-voice" data-seconds={engagement?.voiceSeconds ?? 0}>{formatSeconds(engagement?.voiceSeconds ?? 0, t)}</b>
-            </div>
-            <div className="stat">
-              <small>{t("profile.messages")}</small>
-              <b data-testid="engagement-messages" data-count={engagement?.messages ?? 0}>{engagement?.messages ?? 0}</b>
-            </div>
-            <div className="stat">
-              <small>{t("profile.reactions")}</small>
-              <b data-testid="engagement-reactions" data-count={engagement?.reactions ?? 0}>{engagement?.reactions ?? 0}</b>
-            </div>
-          </div>
-          <div className="stats" data-testid="engagement-total" data-seconds={engagement?.totalSeconds ?? 0}>
-            {t("profile.totalActions", { time: formatSeconds(engagement?.totalSeconds ?? 0, t), count: engagement?.activity ?? 0 })}
-          </div>
-        </div>
-        <div className="card heat-wrap">
-          <div className="heat-top"><h3>{t("profile.season")}</h3></div>
-          {heat.some((cell) => cell.score > 0) ? (
-            <>
-              <div className="stats">{t("profile.seasonStats", { days: heat.filter((cell) => cell.score > 0).length, sessions: heat.reduce((total, cell) => total + cell.score, 0) })}</div>
-              <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
-            </>
-          ) : <p className="empty-note">{t("gruvbox.seasonEmpty")}</p>}
-        </div>
         <div className="card">
           <div className="heat-top"><h3>{t("profile.people")}</h3></div>
           <form className="friend-search-row" onSubmit={(event) => void searchPeople(event)}>
@@ -519,6 +405,20 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             </div>
           ) : null}
         </div>
+  </>);
+  const overview = (<>
+        <div className="card" data-testid="profile-engagement">
+          <h3>{t("profile.engagement")}</h3>
+          <dl className="grid3">
+            <div><dt>{t("profile.watchSeconds")}</dt><dd data-testid="engagement-watch" data-seconds={engagement?.watchSeconds ?? 0}>{engagement ? formatSeconds(engagement.watchSeconds, t) : "—"}</dd></div>
+            <div><dt>{t("profile.voiceSeconds")}</dt><dd data-testid="engagement-voice" data-seconds={engagement?.voiceSeconds ?? 0}>{engagement ? formatSeconds(engagement.voiceSeconds, t) : "—"}</dd></div>
+            <div><dt>{t("profile.messages")}</dt><dd data-testid="engagement-messages" data-count={engagement?.messages ?? 0}>{engagement?.messages ?? "—"}</dd></div>
+            <div><dt>{t("profile.reactions")}</dt><dd data-testid="engagement-reactions" data-count={engagement?.reactions ?? 0}>{engagement?.reactions ?? "—"}</dd></div>
+          </dl>
+          {engagement ? <div className="stats" data-testid="engagement-total" data-seconds={engagement.totalSeconds}>
+            {t("profile.totalActions", { time: formatSeconds(engagement.totalSeconds, t), count: engagement.activity })}
+          </div> : null}
+        </div>
         <div data-testid="leaderboards">
           <h3>{t("profile.board")}</h3>
           {(["messages", "reactions", "voice"] as const).map((board) => (
@@ -530,6 +430,8 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             </div>
           ))}
         </div>
+  </>);
+  const historyPanel = (<div className="card profile-history-panel">
         <h3>{t("profile.watchHistory")}</h3>
         <ul data-testid="profile-history">
           {history.length === 0 ? <li>{t("profile.nothingYet")}</li> : history.map((item) => (
@@ -558,12 +460,26 @@ export function ProfileScreen({ token, apiUrl, userId, displayName }: { token?: 
             ))}
           </div>
         ) : <p className="empty-note">{t("profile.noRecentRooms")}</p>}
-        <h3>{t("profile.notifications")}</h3>
-        {notes.length === 0 ? <p className="empty-note">{t("profile.noNotifications")}</p> : notes.slice(0, 5).map((note) => (
-          <p key={note.id} className="profile-note"><b>{note.title}</b> · {note.body}</p>
-        ))}
-      </main>
-    </div>
+  </div>);
+
+  return (
+    <ProfileView
+      locale={locale}
+      labels={{ tabsLabel: t("profile.sections"), tabs: { overview: t("profile.overviewTab"), history: t("profile.historyTab"), friends: t("profile.friends"), awards: t("profile.achievements") }, season: t("profile.season"), seasonEmpty: t("gruvbox.seasonEmpty"), seasonScore: (score) => t("profile.seasonScore", { score }) }}
+      profileCard={profileCard}
+      achievements={awardCards(achievements.slice(0, 4), false)}
+      kpis={[
+        { label: t("profile.levelLabel"), value: level },
+        { label: t("profile.xpLabel"), value: `${totalXp} XP` },
+        { label: t("profile.achievementsLabel"), value: t("profile.earnedOf", { earned: earnedCount, total: totalAchievements }) },
+      ]}
+      season={heat.some((cell) => cell.score > 0) ? heat.slice(-119) : []}
+      settings={appearance}
+      overviewExtra={overview}
+      history={historyPanel}
+      friends={friendsPanel}
+      awards={awardCards(achievements, true)}
+    />
   );
 }
 
@@ -730,7 +646,7 @@ export function CreateScreen({ title, onTitle, preset, onPreset, onSubmit, onCan
   );
 }
 
-export function JoinScreen({ code, onCode, onSubmit, onCancel }: { code: string; onCode: (value: string) => void; onSubmit: (event: FormEvent) => void; onCancel?: () => void }) {
+export function JoinScreen({ code, codeInvalid, onCode, onSubmit, onCancel }: { code: string; codeInvalid: boolean; onCode: (value: string) => void; onSubmit: (event: FormEvent) => void; onCancel?: () => void }) {
   const { t } = useI18n();
   return (
     <Modal
@@ -746,9 +662,7 @@ export function JoinScreen({ code, onCode, onSubmit, onCancel }: { code: string;
     >
       <form id="join-room-form" onSubmit={onSubmit}>
         <p className="lead">{t("join.subtitle")}</p>
-        <label className="field">{t("join.codeLabel")}
-          <CodeInput value={code} onChange={onCode} slots={8} autoFocus />
-        </label>
+        <RoomCodeInput value={code} onChange={onCode} invalid={codeInvalid} autoFocus />
         <p className="lead">{t("join.hint")}</p>
       </form>
     </Modal>
@@ -778,28 +692,32 @@ export function EmptyScreen({ title, body, action }: { title: string; body?: str
 
 export function MobileHome({
   session,
-  rooms = [],
+  catalog,
+  continueTile,
+  storyPeople,
   name,
   onName,
   onSignIn,
   onTelegram,
   onCreate,
-  onOpenRoom,
   onProfile,
   code,
+  codeInvalid,
   onCode,
   onJoin,
 }: {
   session: { user: { displayName: string } } | null;
-  rooms?: Array<{ id: string; title: string; code: string; memberCount?: number }>;
+  catalog: ReactNode;
+  continueTile?: ReactNode;
+  storyPeople: Array<{ id: string; name: string }>;
   name: string;
   onName: (value: string) => void;
   onSignIn: (event: FormEvent) => void;
   onTelegram: () => void;
   onCreate: () => void;
-  onOpenRoom: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
   onProfile: () => void;
   code: string;
+  codeInvalid: boolean;
   onCode: (value: string) => void;
   onJoin: (event: FormEvent) => void;
 }) {
@@ -809,10 +727,10 @@ export function MobileHome({
       <div className="greet"><h1>{session ? t("mobile.greetingSigned", { name: session.user.displayName }) : t("mobile.greeting")}</h1><div className="sub">{session ? t("mobile.subtitleSigned") : t("mobile.subtitleGuest")}</div></div>
       <div className="stories" aria-label={t("home.stories")}>
         <button type="button" className="st new" onClick={onCreate}>
-          <span className="ring"><span className="face">+</span></span>
+          <span className="ring"><span className="face"><Plus size={16} aria-hidden="true" /></span></span>
           <span className="nm">{t("home.storyMine")}</span>
         </button>
-        {shotPeople.map((person) => (
+        {storyPeople.map((person) => (
           <button key={person.id} type="button" className="st" onClick={onProfile}>
             <span className="ring"><span className={`face av p-${personHue(person.id)}`}>{initials(person.name)}</span></span>
             <span className="nm">{person.name}</span>
@@ -821,7 +739,7 @@ export function MobileHome({
       </div>
       {!session ? (
         <form className="tile auth" onSubmit={onSignIn}>
-          <div className="tile-head"><span className="tile-ic">☺</span><div><h3>{t("mobile.signInTitle")}</h3><p>{t("mobile.signInBody")}</p></div></div>
+          <div className="tile-head"><span className="tile-ic"><UserRound size={18} aria-hidden="true" /></span><div><h3>{t("mobile.signInTitle")}</h3><p>{t("mobile.signInBody")}</p></div></div>
           <label>{t("mobile.nameLabel")}<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder={t("mobile.namePlaceholder")} autoComplete="nickname" /></label>
           <div className="actions">
             <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">{t("mobile.enter")}</button>
@@ -830,26 +748,19 @@ export function MobileHome({
         </form>
       ) : null}
       <div className="acts">
-        <button type="button" className="tile create promo" onClick={onCreate}>
-          <span className="promo-plus" aria-hidden="true">+</span>
+        {continueTile}
+        <button type="button" className="tile create promo" data-testid="home-create-open" onClick={onCreate}>
+          <span className="promo-plus"><Plus size={20} aria-hidden="true" /></span>
           <h3>{t("mobile.createTitle")}</h3>
           <p>{t("mobile.createHint")}</p>
         </button>
         <form className="tile join" onSubmit={onJoin}>
-          <div className="tile-head"><span className="tile-ic">#</span><div><h3>{t("mobile.joinTitle")}</h3><p>{t("mobile.joinHint")}</p></div></div>
-          <label>{t("join.codeLabel")}<CodeInput value={code} onChange={onCode} slots={8} /></label>
+          <div className="tile-head"><span className="tile-ic"><KeyRound size={18} aria-hidden="true" /></span><div><h3>{t("mobile.joinTitle")}</h3><p>{t("mobile.joinHint")}</p></div></div>
+          <RoomCodeInput value={code} onChange={onCode} invalid={codeInvalid} />
           <div className="actions"><button type="submit" className="btn btn-social" data-testid="lobby-join">{t("mobile.enter")}</button></div>
         </form>
       </div>
-      <div className="sec"><h3>{t("mobile.rooms")}</h3></div>
-      <div className="rooms">
-        {rooms.length > 0 ? rooms.map((room, index) => (
-          <button key={room.id} type="button" className="rc" onClick={() => onOpenRoom(room)}>
-            <div className={`th ${posterClasses[index % posterClasses.length]}`} />
-            <div className="bd"><b>{room.title}</b><div className="meta"><span className="viewers">{t("mobile.memberCount", { count: room.memberCount ?? 0 })}</span><span className="code">{room.code}</span></div></div>
-          </button>
-        )) : <p className="empty-note">{t("mobile.noRooms")}</p>}
-      </div>
+      {catalog}
     </div>
   );
 }

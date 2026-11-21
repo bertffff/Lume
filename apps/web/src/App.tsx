@@ -1,4 +1,4 @@
-import { defaultRoomLayout, layoutAspectGroup, magicTokenFromSearch, parseStoredLayouts, ROOM_LAYOUT_STORAGE_KEY, serializeStoredLayouts, storeLayoutForAspect, type RoomLayout } from "@lume/contracts";
+import { defaultRoomLayout, layoutAspectGroup, magicTokenFromSearch, parseRoomCode, parseStoredLayouts, ROOM_LAYOUT_STORAGE_KEY, serializeStoredLayouts, storeLayoutForAspect, type RoomLayout } from "@lume/contracts";
 import { useEffect, useMemo, useState } from "react";
 import { api, apiUrl } from "./api/client.js";
 import { detectLocale, I18nProvider } from "./i18n/context.js";
@@ -13,18 +13,29 @@ import { bindBackButton, hapticImpact, themeParamsToCssVars } from "./telegram/a
 import { readTelegramWebApp } from "./telegram/types.js";
 
 const PENDING_JOIN_KEY = "lume-pending-room";
+const INVITE_PATH_PREFIX = "/join/";
 
-/** `/join/:code` links and Telegram `room_<code>` start params both carry a room code. */
-function pendingJoinCode(): string | null {
-  if (window.location.pathname.startsWith("/join/")) {
-    const code = window.location.pathname.split("/")[2] ?? "";
-    if (code) return decodeURIComponent(code);
+function inviteCodeFromPath(path: string): string | null {
+  try {
+    return parseRoomCode(decodeURIComponent(path.slice(INVITE_PATH_PREFIX.length)));
+  } catch {
+    return null;
   }
-  return sessionStorage.getItem(PENDING_JOIN_KEY);
 }
 
-function navigate(path: string): void {
-  window.history.pushState({}, "", path);
+function initialPendingJoin(start: string | undefined): string | null {
+  const path = window.location.pathname;
+  if (path.startsWith(INVITE_PATH_PREFIX)) return inviteCodeFromPath(path) ?? "invalid";
+  // The bot can supply a navigation hint in the URL; it is not Telegram auth data.
+  const source = start ?? new URLSearchParams(window.location.search).get("tgWebAppStartParam");
+  if (source?.startsWith("room_")) return parseRoomCode(source.slice("room_".length)) ?? "invalid";
+  const stored = window.sessionStorage.getItem(PENDING_JOIN_KEY);
+  return stored === null ? null : parseRoomCode(stored) ?? "invalid";
+}
+
+function navigate(path: string, replace = false): void {
+  if (replace) window.history.replaceState({}, "", path);
+  else window.history.pushState({}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
@@ -38,7 +49,7 @@ export function App() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [adminPath, setAdminPath] = useState(() => window.location.pathname.startsWith("/admin"));
   const [isAdmin, setIsAdmin] = useState(false);
-  const [pendingJoin, setPendingJoin] = useState<string | null>(() => pendingJoinCode());
+  const [pendingJoin, setPendingJoin] = useState(() => initialPendingJoin(webApp?.initDataUnsafe?.start_param));
   const [layout, setLayout] = useState<RoomLayout>(() => {
     const stored = parseStoredLayouts(window.localStorage.getItem(ROOM_LAYOUT_STORAGE_KEY));
     return stored[layoutAspectGroup(defaultRoomLayout.videoAspect)];
@@ -82,16 +93,18 @@ export function App() {
         window.history.replaceState({}, "", url.pathname + url.search);
       }).catch(() => undefined);
     }
-    const start = webApp?.initDataUnsafe?.start_param;
-    if (start?.startsWith("room_")) {
-      const code = start.slice("room_".length);
-      sessionStorage.setItem(PENDING_JOIN_KEY, code);
-      setPendingJoin(code);
-    }
   }, [locale, webApp]);
 
   useEffect(() => {
-    const onPop = () => setAdminPath(window.location.pathname.startsWith("/admin"));
+    const onPop = () => {
+      const path = window.location.pathname;
+      setAdminPath(path.startsWith("/admin"));
+      if (path.startsWith(INVITE_PATH_PREFIX)) setPendingJoin(inviteCodeFromPath(path) ?? "invalid");
+      else if (path !== "/auth") {
+        window.sessionStorage.removeItem(PENDING_JOIN_KEY);
+        setPendingJoin(null);
+      }
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -116,22 +129,29 @@ export function App() {
   }, [adminPath, session]);
 
   useEffect(() => {
-    if (!session || !pendingJoin) return;
+    if (!pendingJoin) return;
+    if (pendingJoin === "invalid") {
+      navigate("/missing", true);
+      return;
+    }
+    window.sessionStorage.setItem(PENDING_JOIN_KEY, pendingJoin);
+    if (!session) {
+      if (window.location.pathname !== "/auth") navigate(`/auth${window.location.search}`, true);
+      return;
+    }
     let stopped = false;
-    void api.joinRoom(session.accessToken, pendingJoin)
-      .then((result) => {
+    // Let a synchronous effect cleanup cancel the request before it spends join quota.
+    queueMicrotask(async () => {
+      if (stopped) return;
+      try {
+        const result = await api.joinRoom(session.accessToken, pendingJoin);
         if (stopped) return;
         setRoomId(result.room.id);
-        setPendingJoin(null);
-        sessionStorage.removeItem(PENDING_JOIN_KEY);
-        if (window.location.pathname.startsWith("/join/")) navigate("/");
-      })
-      .catch(() => {
-        if (!stopped) {
-          setPendingJoin(null);
-          sessionStorage.removeItem(PENDING_JOIN_KEY);
-        }
-      });
+        navigate("/", true);
+      } catch {
+        if (!stopped) navigate("/missing", true);
+      }
+    });
     return () => {
       stopped = true;
     };
@@ -140,20 +160,21 @@ export function App() {
   useEffect(() => {
     const button = webApp?.MainButton;
     if (!button) return;
-    if (roomId) {
+    if (roomId || (session && pendingJoin)) {
       button.hide();
       return;
     }
     button.setText(pendingJoin ? copy(locale).openRoom : copy(locale).create);
     button.show();
     const open = () => {
-      const code = sessionStorage.getItem(PENDING_JOIN_KEY);
-      if (code) setPendingJoin(code);
+      if (pendingJoin) {
+        if (window.location.pathname !== "/auth") navigate("/auth");
+      }
       else navigate("/create");
     };
     button.onClick(open);
     return () => button.offClick(open);
-  }, [roomId, pendingJoin, webApp, locale]);
+  }, [roomId, session, pendingJoin, webApp, locale]);
 
   useEffect(() => {
     if (!inTelegram || !roomId) return;
@@ -216,6 +237,11 @@ export function App() {
               setRoomId(null);
             }}
             roomId={roomId}
+            joiningInvite={Boolean(session && pendingJoin && pendingJoin !== "invalid")}
+            onJoinNeedsAuth={(code) => {
+              setPendingJoin(code);
+              navigate("/auth");
+            }}
             onOpen={(id) => {
               setRoomId(id);
               pulse("medium");

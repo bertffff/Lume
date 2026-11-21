@@ -1,8 +1,15 @@
-export type StyleId = "cinema" | "gruvbox";
-export type ModeId = "dark" | "light" | "system";
+import { styleIds, themeModes, type StyleId, type ThemeMode } from "@lume/contracts";
 
-const styles = new Set<StyleId>(["cinema", "gruvbox"]);
-const modes = new Set<ModeId>(["dark", "light", "system"]);
+export type { StyleId, ThemeMode };
+export type ModeId = ThemeMode;
+
+export function isStyleId(value: unknown): value is StyleId {
+  return styleIds.some((style) => style === value);
+}
+
+export function isThemeMode(value: unknown): value is ThemeMode {
+  return themeModes.some((mode) => mode === value);
+}
 
 export function resolveMode(mode: ModeId, prefersLight: boolean): "dark" | "light" {
   return mode === "system" ? (prefersLight ? "light" : "dark") : mode;
@@ -10,18 +17,19 @@ export function resolveMode(mode: ModeId, prefersLight: boolean): "dark" | "ligh
 
 export function readStoredStyle(): StyleId {
   const raw = window.localStorage.getItem("lume.style");
-  return styles.has(raw as StyleId) ? (raw as StyleId) : "cinema";
+  return isStyleId(raw) ? raw : "cinema";
 }
 
 export function readStoredMode(): ModeId {
   const raw = window.localStorage.getItem("lume.mode");
-  return modes.has(raw as ModeId) ? (raw as ModeId) : "dark";
+  return isThemeMode(raw) ? raw : "dark";
 }
 
 const STYLE_EVENT = "lume:appearance";
 
 export function currentStyle(): StyleId {
-  return document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema";
+  const { style } = document.documentElement.dataset;
+  return isStyleId(style) ? style : "cinema";
 }
 
 export function subscribeAppearance(listener: () => void): () => void {
@@ -29,13 +37,12 @@ export function subscribeAppearance(listener: () => void): () => void {
   return () => window.removeEventListener(STYLE_EVENT, listener);
 }
 
-export function applyAppearance(style: StyleId, mode: ModeId, prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches): void {
+/** Apply the effective palette without changing saved preferences. */
+export function applyAppearance(style: StyleId, mode: ModeId, prefersLight = false): void {
   const theme = resolveMode(mode, prefersLight);
   document.documentElement.dataset.style = style;
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.mode = mode;
-  window.localStorage.setItem("lume.style", style);
-  window.localStorage.setItem("lume.mode", mode);
   window.dispatchEvent(new Event(STYLE_EVENT));
 }
 

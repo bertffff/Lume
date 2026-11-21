@@ -14,8 +14,8 @@ html[data-style="cinema"], html[data-style="cinema"] body{font-size:14px;line-he
 .icon-btn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center}
 .eyebrow{font:500 11px/16px var(--font-ui)}
 .theme-btn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center}
-html[data-style="cinema"][data-theme="dark"] .theme-btn .icon-moon{display:none}
-html[data-style="cinema"][data-theme="light"] .theme-btn .icon-sun{display:none}
+html[data-theme="dark"] .theme-btn .icon-moon{display:none}
+html[data-theme="light"] .theme-btn .icon-sun{display:none}
 html[data-style="cinema"] .design-app .theme-btn .icon{width:15px;height:15px}
 .muted-badge{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;display:grid;place-items:center}
 .muted-badge .ph-fill{font-size:8px}

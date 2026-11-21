@@ -1,0 +1,15 @@
+.room-code-field{display:grid;gap:8px;min-width:0;width:100%}
+.room-code-input{position:relative;min-width:0}
+.room-code-input .room-code-cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto repeat(3,minmax(0,1fr));gap:clamp(2px,1vw,8px);align-items:center}
+.room-code-input .code-cell{display:grid;place-items:center;min-width:0;height:40px;border:1px solid var(--text-3,currentColor);border-radius:min(8px,var(--r,8px));background:var(--s2,Canvas);color:var(--text,CanvasText);font:600 16px/1 var(--font-mono,monospace)}
+.room-code-input .code-separator{grid-column:4;grid-row:1;color:var(--text,CanvasText);font:600 16px/1 var(--font-mono,monospace)}
+.room-code-input:hover .code-cell{border-color:var(--text-2,currentColor)}
+.room-code-input:focus-within .code-cell{border-color:var(--focus-outline,Highlight)}
+.room-code-input:has(.room-code-native:focus-visible) .room-code-cells{outline:2px solid var(--focus-outline,Highlight);outline-offset:2px;border-radius:min(8px,var(--r,8px))}
+.room-code-field .room-code-input .room-code-native{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:40px;padding:6px 12px;border:1px solid var(--text-3,currentColor);font:600 16px/1 var(--font-mono,monospace);cursor:text}
+.room-code-field .room-code-input:not(.room-code-input-raw) .room-code-native{position:absolute;inset:0;opacity:0}
+.room-code-field .room-code-input-raw .room-code-native{margin-top:8px;background:var(--s2);color:var(--text)}
+.room-code-field .room-code-input-raw .room-code-native:hover{border-color:var(--text-2,currentColor)}
+.room-code-field .room-code-input-raw .room-code-native:focus-visible{outline:2px solid var(--focus-outline,Highlight);outline-offset:2px}
+.room-code-error,.room-code-hint{color:var(--text-2,currentColor);font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.room-code-error{color:var(--text)}

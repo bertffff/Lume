@@ -278,11 +278,22 @@ html[data-style="cinema"] .design-app .inline-actions button{flex:none}
 .design-app .sku .btn{width:100%}
 
 /* ---------- Mobile ---------- */
+@media (min-width: 800px) {
+  .design-app .legacy-home.wrap{display:flex;flex-direction:column;width:min(100%,1120px);margin-inline:auto;gap:24px}
+  .design-app .legacy-home .home-hero{padding:18px 20px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--s1)}
+  .design-app .legacy-home .side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));position:static;gap:12px;align-items:start}
+}
 .design-app.is-narrow .search-lg{width:auto;flex:1;height:38px}
 .design-app.is-narrow .bell,.design-app.is-narrow .me,.design-app.is-narrow .side{display:none}
 .design-app.is-narrow .nav{height:58px;padding:0 14px;gap:8px}
+.design-app.is-narrow .style-frame-legacy .nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto;padding:0 10px}
+.design-app.is-narrow .style-frame-legacy .search-lg{width:100%;min-width:0;padding:0 8px;gap:6px}
+.design-app.is-narrow .style-frame-legacy .search-lg input{width:100%;min-width:0}
+.design-app.is-narrow .style-frame-legacy .search-lg .kbd{display:none}
+.design-app.is-narrow .style-frame-legacy .nav-actions{gap:8px}
 .design-app.is-narrow .wrap{display:flex;flex-direction:column;padding:16px 14px 96px;gap:16px}
 .design-app.is-narrow .acts{grid-template-columns:1fr;gap:12px}
+html[data-style="cinema"] .design-app.is-narrow .mobile-home .acts{grid-template-columns:minmax(0,1fr)}
 .design-app.is-narrow .results{grid-template-columns:1fr}
 html[data-style="gruvbox"] .design-app.is-narrow .g-home{grid-template-columns:1fr;grid-template-rows:auto;height:auto;min-height:calc(100dvh - 56px)}
 html[data-style="gruvbox"] .design-app.is-narrow .g-home .pane{min-width:0}

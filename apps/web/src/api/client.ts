@@ -1,4 +1,5 @@
-import type { RoomPresetId, RoomSummary, User } from "@lume/contracts";
+import type { RoomCategorySelection, RoomPresetId, RoomSummary, User, ViewerDefaultFlags } from "@lume/contracts";
+import type { RoomCatalogFilter, RoomCatalogResponse } from "../../../../packages/contracts/src/room-catalog.js";
 
 export const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:3001";
 
@@ -12,7 +13,7 @@ export function shouldRefresh(status: number, refreshToken: string | undefined, 
   return status === 401 && Boolean(refreshToken) && !tried;
 }
 
-async function request<T>(path: string, init?: { method?: string; token?: string; body?: unknown }, tried = false): Promise<T> {
+async function request<T>(path: string, init?: { method?: string; token?: string; body?: unknown; signal?: AbortSignal }, tried = false): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, {
     method: init?.method ?? "GET",
     headers: {
@@ -20,6 +21,7 @@ async function request<T>(path: string, init?: { method?: string; token?: string
       ...(init?.token ? { authorization: `Bearer ${init.token}` } : {}),
     },
     body: init?.body === undefined ? undefined : JSON.stringify(init.body),
+    signal: init?.signal,
   });
   if (response.status === 401 && !tried && path !== "/auth/refresh") {
     const raw = window.localStorage.getItem("lume.session");
@@ -55,12 +57,23 @@ export const api = {
     const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
     return request<{ rooms: RoomSummary[] }>(`/rooms${suffix}`);
   },
-  createRoom(token: string, title: string, isPublic: boolean, preset?: RoomPresetId) {
+  roomCatalog(filter: RoomCatalogFilter, cursor: string | null, signal: AbortSignal, token?: string) {
+    const query = new URLSearchParams({ filter });
+    if (cursor) query.set("cursor", cursor);
+    return request<RoomCatalogResponse>(`/rooms/catalog?${query}`, { token, signal });
+  },
+  createRoom(token: string, body: { title: string; isPublic: boolean; preset?: RoomPresetId; categorySelection: RoomCategorySelection; defaults: ViewerDefaultFlags }) {
     return request<{ room: RoomSummary } & Record<string, unknown>>("/rooms", {
       method: "POST",
       token,
-      body: { title, isPublic, ...(preset ? { preset } : {}) },
+      body,
     });
+  },
+  addRoomVideo(token: string, roomId: string, url: string) {
+    return request(`/rooms/${encodeURIComponent(roomId)}/queue`, { method: "POST", token, body: { url } });
+  },
+  inviteFriend(token: string, roomId: string, userId: string) {
+    return request(`/rooms/${encodeURIComponent(roomId)}/invite`, { method: "POST", token, body: { userId } });
   },
   joinRoom(token: string, code: string) {
     return request<{ room: RoomSummary }>("/rooms/join", {
@@ -109,16 +122,22 @@ export const api = {
     return request<{ ok: boolean }>(`/friends/${id}/decline`, { method: "POST", token, body: {} });
   },
   notifications(token: string) {
-    return request<{ unread: number; notifications: Array<{ id: string; kind: string; title: string; body: string; read: boolean }> }>(
-      "/notifications",
-      { token },
-    );
+    return request<import("../../../../packages/contracts/src/notifications.js").NotificationListResponse>("/notifications", { token });
+  },
+  markNotificationRead(token: string, id: string) {
+    return request<{ ok: true; unread: number }>(`/notifications/${encodeURIComponent(id)}/read`, { token, method: "POST", body: {} });
+  },
+  markAllNotificationsRead(token: string) {
+    return request<{ unread: number }>("/notifications/read-all", { token, method: "POST", body: {} });
   },
   resume(token: string) {
-    return request<{ resume: { title: string; positionMs: number; queueCount: number; historyCount: number } | null }>(
+    return request<{ resume: import("../../../../packages/contracts/src/resume.js").ResumeCard | null }>(
       "/me/resume",
       { token },
     );
+  },
+  resumeRoom(token: string) {
+    return request<{ room: RoomSummary }>("/rooms/resume-last", { token, method: "POST", body: {} });
   },
   logout(refreshToken: string) {
     return request<{ ok: boolean }>("/auth/logout", { method: "POST", body: { refreshToken } });

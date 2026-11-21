@@ -120,6 +120,9 @@ importers:
 
   apps/bot:
     dependencies:
+      '@lume/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       grammy:
         specifier: 1.46.0
         version: 1.46.0
@@ -209,6 +212,9 @@ importers:
       livekit-client:
         specifier: ^2.23.0
         version: 2.23.0(@types/dom-mediacapture-record@1.0.22)
+      lucide-react:
+        specifier: 0.577.0
+        version: 0.577.0(react@18.3.1)
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -2011,6 +2017,11 @@ packages:
   lru-cache@11.5.3:
     resolution: {integrity: sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==}
     engines: {node: 20 || >=22}
+
+  lucide-react@0.577.0:
+    resolution: {integrity: sha512-4LjoFv2eEPwYDPg/CUdBJQSDfPyzXCRrVW1X7jrx/trgxnxkHFjnVZINbzvzxjN70dxychOfg+FTYwBiS3pQ5A==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   luxon@3.7.2:
     resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
@@ -4227,6 +4238,10 @@ snapshots:
       js-tokens: 4.0.0
 
   lru-cache@11.5.3: {}
+
+  lucide-react@0.577.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   luxon@3.7.2: {}
 

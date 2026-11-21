@@ -1,5 +1,6 @@
 import { positionAt, shouldCorrectDrift, type AdapterPhase, type PlayerAdapter } from "@lume/contracts";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Maximize, Play } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from "react";
 import { useI18n } from "../../i18n/context.js";
 import { containSize } from "../contain.js";
 import { createPlayerAdapter } from "../../player/create.js";
@@ -14,16 +15,21 @@ export function PlayerPanel({
   aspect,
   onAspect,
   onError,
+  stage,
+  overlay,
+  controls,
+  reload,
 }: {
   aspect: number;
-  synced?: boolean;
   onAspect: (aspect: number) => void;
-  bare?: boolean;
   onError?: (url: string) => void;
+  stage: Omit<ComponentPropsWithRef<"div">, "ref" | "children"> & Record<`data-${string}`, string>;
+  overlay: ReactNode;
+  controls: ReactNode;
+  reload: number;
 }) {
   const { t } = useI18n();
   const handed = useRef(false);
-  const [emptyUrl, setEmptyUrl] = useState("");
   const live = useRoomActions();
   const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -34,6 +40,10 @@ export function PlayerPanel({
   const [rate, setRate] = useState(1);
   const playback = live?.state.playback ?? null;
   const nowPlaying = live?.state.room.nowPlaying ?? null;
+  const mediaId = nowPlaying?.id;
+  const mediaUrl = nowPlaying?.url;
+  const mediaProvider = nowPlaying?.provider;
+  const mediaExternalId = nowPlaying?.externalId;
   const reportedAspect = useRef(aspect);
   const reportViewerRef = useRef(live?.reportViewer);
   const canControlRef = useRef(live?.canControl);
@@ -105,14 +115,15 @@ export function PlayerPanel({
 
   useEffect(() => {
     const mount = mountRef.current;
-    if (!mount || !nowPlaying) {
+    if (!mount || !mediaId || !mediaUrl || mediaProvider === undefined || mediaExternalId === undefined) {
       adapterRef.current?.destroy();
       adapterRef.current = null;
       return;
     }
     let cancelled = false;
     setBlocked(false);
-    void createPlayerAdapter(nowPlaying, mount, window.location.hostname)
+    setRate(1);
+    void createPlayerAdapter({ provider: mediaProvider, url: mediaUrl, externalId: mediaExternalId }, mount, window.location.hostname)
       .then((adapter) => {
         if (cancelled) {
           adapter.destroy();
@@ -121,7 +132,9 @@ export function PlayerPanel({
         adapterRef.current = adapter;
         if (canControlRef.current) applyHostPlayback(adapter);
         adapter.onState((state) => {
-          if (state.phase === "error") onErrorRef.current?.(nowPlaying?.url ?? "");
+          if (cancelled) return;
+          phaseRef.current = state.phase;
+          if (state.phase === "error") onErrorRef.current?.(mediaUrl);
           if (canControlRef.current && playbackRef.current?.status === "playing" && state.phase === "ready") {
             void adapter.play();
           }
@@ -135,13 +148,13 @@ export function PlayerPanel({
           }
         });
       })
-      .catch(() => onErrorRef.current?.(nowPlaying?.url ?? ""));
+      .catch(() => { if (!cancelled) onErrorRef.current?.(mediaUrl); });
     return () => {
       cancelled = true;
       adapterRef.current?.destroy();
       adapterRef.current = null;
     };
-  }, [applyHostPlayback, nowPlaying]);
+  }, [applyHostPlayback, mediaId, mediaUrl, mediaProvider, mediaExternalId, reload]);
 
   useEffect(() => {
     if (!live?.canControl || !playback || !nowPlaying) return;
@@ -184,39 +197,28 @@ export function PlayerPanel({
   }, [live?.canControl, live?.offsetMs, playback]);
 
   return (
-    <div className="player-frame bare-stage" ref={frameRef}>
+    <>
+    <div {...stage} ref={frameRef}>
       {nowPlaying ? (
         <div ref={mountRef} className="player-embed" data-testid="player-mount" style={{ width: box.width, height: box.height }} />
       ) : (
         <div className="player-empty" data-testid="player-empty">
-          <span className="pe-ic" aria-hidden="true">▶</span>
+          <span className="pe-ic"><Play aria-hidden="true" /></span>
           <h2>{t("player.emptyTitle")}</h2>
           <p>{t("player.emptyBody")}</p>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              const next = emptyUrl.trim();
-              if (!next) return;
-              live?.addQueue(next);
-              setEmptyUrl("");
-            }}
-          >
-            <input
-              value={emptyUrl}
-              onChange={(event) => setEmptyUrl(event.target.value)}
-              placeholder="https://youtube.com/watch?v=…"
-              aria-label={t("queue.url")}
-              data-testid="player-empty-url"
-            />
-            <button type="submit" className="btn btn-primary" data-testid="player-empty-add">
-              {t("queue.add")}
-            </button>
-          </form>
-          <span className="pe-hint">{t("player.emptyHint")}</span>
         </div>
       )}
+      {nowPlaying && blocked ? (
+        <button type="button" className="player-unblock" onClick={() => void adapterRef.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))}>
+          {t("player.unblock")}
+        </button>
+      ) : null}
+      {overlay}
+    </div>
+    <div className="room-playbar" data-testid="room-playbar">
+      {controls}
       {nowPlaying ? (
-        <div className="player-quick">
+        <div className="room-player-tools">
           <button
             type="button"
             className="mini"
@@ -237,19 +239,15 @@ export function PlayerPanel({
             title={t("player.fullscreen")}
             aria-label={t("player.fullscreen")}
             onClick={() => {
-              if (document.fullscreenElement) void document.exitFullscreen();
-              else void frameRef.current?.requestFullscreen?.();
+              if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+              else void frameRef.current?.requestFullscreen?.().catch(() => undefined);
             }}
           >
-            ⛶
+            <Maximize aria-hidden="true" />
           </button>
         </div>
       ) : null}
-      {nowPlaying && blocked ? (
-        <button type="button" className="player-unblock" onClick={() => void adapterRef.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))}>
-          {t("player.unblock")}
-        </button>
-      ) : null}
     </div>
+    </>
   );
 }

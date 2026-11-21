@@ -25,17 +25,19 @@ export function RoomScreen({
   const [helpOpen, setHelpOpen] = useState(false);
   const clock = live.clockOffset || offset;
   const playback = live.state?.playback;
-  const [refreshed, setRefreshed] = useState<{ id: string; url: string } | null>(null);
+  const self = live.state?.members.find((member) => member.userId === selfId) ?? live.state?.self;
+  const canControl = canControlPlayback(self?.role ?? "viewer");
+  const [refreshed, setRefreshed] = useState<{ roomId: string; id: string; url: string } | null>(null);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
       if (event.key === "Escape") {
         setHelpOpen(false);
         return;
       }
-      const action = playerShortcut(event.key, canControlPlayback(live.state?.self.role ?? "viewer"));
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || target?.closest("input, textarea, select, [contenteditable], [role=dialog]")) return;
+      const action = playerShortcut(event.key, Boolean(live.state?.room.nowPlaying) && canControl);
       const anchor = live.state?.playback;
       const position = anchor
         ? Math.max(0, Math.round(positionAt(anchor, Date.now() + (live.clockOffset || 0))))
@@ -47,7 +49,7 @@ export function RoomScreen({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [live]);
+  }, [live, canControl]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setTick(Date.now()), 250);
@@ -67,9 +69,9 @@ export function RoomScreen({
 
   if (!live.state) {
     return (
-      <section className="app-room">
+      <main className="app-room" id="app-main" tabIndex={-1}>
         <p className="empty-note">{live.error === "kicked" ? t("room.kicked") : live.error ? t("room.connectFailed") : t("realtime.connecting")}</p>
-      </section>
+      </main>
     );
   }
 
@@ -80,13 +82,14 @@ export function RoomScreen({
     version: live.state.playback.version,
     updatedBy: live.state.playback.updatedBy,
   };
-  const positionMs = Math.max(0, Math.round(positionAt(anchor, tick + offset)));
+  const positionMs = Math.max(0, Math.round(positionAt(anchor, tick + clock)));
   const warn = sessionSoftWarn(Date.parse(live.state.room.createdAt), Date.now());
   const nowPlaying = live.state.room.nowPlaying;
-  const state =
-    refreshed && nowPlaying?.id === refreshed.id
+  const stateWithMedia =
+    refreshed && nowPlaying?.id === refreshed.id && refreshed.roomId === live.state.room.id
       ? { ...live.state, room: { ...live.state.room, nowPlaying: { ...nowPlaying, url: refreshed.url } } }
       : live.state;
+  const state = self ? { ...stateWithMedia, self: { role: self.role, muted: self.muted } } : stateWithMedia;
 
   return (
     <RoomProvider
@@ -94,7 +97,7 @@ export function RoomScreen({
         state,
         positionMs,
         offsetMs: clock,
-        canControl: canControlPlayback(live.state.self.role),
+        canControl,
         selfId,
         sendChat: live.sendChat,
         sendImage: live.sendImage,
@@ -127,13 +130,14 @@ export function RoomScreen({
       }}
     >
       <>
-        {warn ? <p className="app-banner">{t("room.warnSession")}</p> : null}
-        {live.error ? (
-          <p className="app-note" data-testid="room-error" data-code={live.error}>
-            {live.error === "kicked" ? t("room.kicked") : t("room.connectionLost")}
-          </p>
-        ) : null}
-        <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} onRefreshed={setRefreshed} />
+        <RoomStage key={state.room.id} layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave}
+          onRefreshed={(next) => setRefreshed({ ...next, roomId: state.room.id })}
+          notices={<>
+            {warn && <p className="app-banner">{t("room.warnSession")}</p>}
+            {live.error && <p className="app-note" role="status" data-testid="room-error" data-code={live.error}>
+              {live.error === "kicked" ? t("room.kicked") : t("room.connectionLost")}
+            </p>}
+          </>} />
         <Modal open={helpOpen} title={t("room.hotkeys")} onClose={() => setHelpOpen(false)}>
           <p><b>J / L</b> — {t("room.hotkeysSeek")}</p>
           <p><b>K</b> — {t("room.hotkeysPause")}</p>
