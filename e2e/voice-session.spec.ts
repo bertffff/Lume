@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openPeople } from "./helpers/room-ui";
 
 const apiUrl = process.env.API_URL ?? "http://127.0.0.1:3001";
 
@@ -13,9 +15,7 @@ test("voice mute is broadcast and every participant sees the same session clock"
   await owner.goto("/");
   await owner.getByTestId("lobby-name").fill(`Голос ${stamp}`);
   await owner.getByTestId("lobby-sign-in").click();
-  await owner.getByTestId("lobby-title").fill(`Голос ${stamp}`);
-  await owner.getByTestId("lobby-create").click();
-  await expect(owner.getByTestId("room-title")).toHaveText(`Голос ${stamp}`, { timeout: 20_000 });
+  await createRoom(owner, `Голос ${stamp}`);
   const code = (await owner.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
@@ -32,6 +32,8 @@ test("voice mute is broadcast and every participant sees the same session clock"
 
   await owner.getByTestId("voice-join").click();
   await expect(owner.getByTestId("voice-session")).toBeVisible();
+  await openPeople(owner);
+  await openPeople(guest);
   await expect(guest.getByTestId(`member-${ownerSession?.user.id}`)).toHaveAttribute("data-in-voice", "true", { timeout: 10_000 });
 
   await guest.getByTestId("voice-join").click();

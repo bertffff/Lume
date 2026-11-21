@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 
 const apiUrl = process.env.API_URL ?? "http://127.0.0.1:3001";
 
@@ -8,9 +9,7 @@ test("the live room shows the authenticated STUN/TURN list issued by the API", a
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(`ICE ${stamp}`);
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill(`ICE ${stamp}`);
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText(`ICE ${stamp}`, { timeout: 20_000 });
+  await createRoom(page, `ICE ${stamp}`);
 
   const session = await page.evaluate(() => JSON.parse(window.localStorage.getItem("lume.session") ?? "null") as { accessToken: string } | null);
   expect(session?.accessToken).toBeTruthy();
@@ -30,9 +29,8 @@ test("the live room shows the authenticated STUN/TURN list issued by the API", a
   const turn = payload.iceServers.find((server) => (Array.isArray(server.urls) ? server.urls : [server.urls]).some((url) => url.startsWith("turn:")));
   expect(turn).toMatchObject({ username: "lume-turn", credential: "lume-turn-test" });
 
-  const ice = page.getByTestId("voice-ice");
-  await expect(ice).toHaveAttribute("data-count", String(urls.length));
-  for (const url of urls) {
-    await expect(ice).toContainText(url);
-  }
+  // The room used to render an ICE inventory in the stage. That UI was
+  // deliberately removed (the room must not show `stun:` diagnostics), so the
+  // authenticated API contract above is all that remains verifiable here.
+  expect(urls.length).toBeGreaterThan(0);
 });

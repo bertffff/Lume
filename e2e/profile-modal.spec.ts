@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openMemberProfile } from "./helpers/room-ui";
 
 test("the live room opens a member profile card with friend and report actions", async ({ browser }) => {
   const stamp = Date.now().toString(36);
@@ -12,9 +14,7 @@ test("the live room opens a member profile card with friend and report actions",
   await host.goto("/");
   await host.getByTestId("lobby-name").fill(hostName);
   await host.getByTestId("lobby-sign-in").click();
-  await host.getByTestId("lobby-title").fill(`Профили ${stamp}`);
-  await host.getByTestId("lobby-create").click();
-  await expect(host.getByTestId("room-title")).toHaveText(`Профили ${stamp}`, { timeout: 20_000 });
+  await createRoom(host, `Профили ${stamp}`);
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
@@ -24,8 +24,7 @@ test("the live room opens a member profile card with friend and report actions",
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText(`Профили ${stamp}`, { timeout: 20_000 });
 
-  await host.locator('button[data-testid^="member-"]').filter({ hasText: guestName }).click();
-  await expect(host.getByTestId("profile-modal")).toBeVisible();
+  await openMemberProfile(host, guestName);
   await expect(host.getByTestId("profile-modal-name")).toHaveText(guestName);
 
   const friended = host.waitForResponse((response) => new URL(response.url()).pathname === "/friends/request" && response.request().method() === "POST");

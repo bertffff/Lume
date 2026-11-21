@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openQueue } from "./helpers/room-ui";
 
 test("a played row is reloaded from persisted history into the live queue", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("Повтор");
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Повтор");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Повтор", { timeout: 20_000 });
+  await createRoom(page, "Повтор");
+  await openQueue(page);
 
   const url = `https://cdn.example.com/reload-${Date.now()}.mp4`;
   await page.getByTestId("queue-input").fill(url);

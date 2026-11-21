@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { openCreateWizard, submitCreateWizard } from "./helpers/create-room";
+import { openChat, openQueue } from "./helpers/room-ui";
 
 test("the create wizard applies the full moderation preset instead of only the title", async ({ browser }) => {
   test.setTimeout(90_000);
@@ -12,14 +14,15 @@ test("the create wizard applies the full moderation preset instead of only the t
   await owner.getByTestId("lobby-name").fill(`Пресет ${stamp}`);
   await owner.getByTestId("lobby-sign-in").click();
 
-  await expect(owner.getByTestId("lobby-presets")).toBeVisible();
-  await owner.getByTestId("lobby-preset-closed").click();
+  await openCreateWizard(owner);
+  await expect(owner.getByTestId("create-presets")).toBeVisible();
+  await owner.getByTestId("create-preset-closed").click();
   await expect(owner.getByTestId("lobby-title")).toHaveValue("Закрытый");
-  await expect(owner.getByTestId("lobby-preset-summary")).toHaveAttribute("data-max", "6");
-  await expect(owner.getByTestId("lobby-preset-summary")).toHaveAttribute("data-public", "false");
+  await expect(owner.getByTestId("create-preset-summary")).toHaveAttribute("data-max", "6");
+  await expect(owner.getByTestId("create-preset-summary")).toHaveAttribute("data-public", "false");
 
   const created = owner.waitForResponse((response) => new URL(response.url()).pathname === "/rooms" && response.request().method() === "POST");
-  await owner.getByTestId("lobby-create").click();
+  await submitCreateWizard(owner);
   expect((await created).request().postDataJSON()).toMatchObject({ preset: "closed" });
   await expect(owner.getByTestId("room-title")).toHaveText("Закрытый", { timeout: 20_000 });
   const code = (await owner.getByTestId("room-code").innerText()).trim();
@@ -41,12 +44,14 @@ test("the create wizard applies the full moderation preset instead of only the t
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText("Закрытый", { timeout: 20_000 });
+  await openQueue(guest);
 
   await guest.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await guest.getByTestId("queue-add").click();
   await guest.waitForTimeout(1200);
-  await expect(owner.locator(".queue-list li")).toHaveCount(0);
+  await expect(owner.getByTestId("queue-item")).toHaveCount(0);
 
+  await openChat(guest);
   await guest.getByTestId("chat-input").fill(`чат из пресета ${stamp}`);
   await guest.getByTestId("chat-send").click();
   await expect(owner.getByTestId("chat-log")).toContainText(`чат из пресета ${stamp}`, { timeout: 10_000 });

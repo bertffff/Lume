@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openQueue } from "./helpers/room-ui";
 
 test("the live queue shows played history and the host clears it", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("История");
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("История");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("История", { timeout: 20_000 });
+  await createRoom(page, "История");
+  await openQueue(page);
 
   const url = `https://cdn.example.com/history-${Date.now()}.mp4`;
   await page.getByTestId("queue-input").fill(url);

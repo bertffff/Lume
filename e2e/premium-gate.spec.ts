@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openQueue } from "./helpers/room-ui";
 
 test("a free account is gated before an extraction-only source reaches the live queue", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("Гейт");
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Гейт");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Гейт", { timeout: 20_000 });
+  await createRoom(page, "Гейт");
+  await openQueue(page);
 
   await page.getByTestId("queue-input").fill("https://www.tiktok.com/@lume/video/7300000000000000000");
   await expect(page.getByTestId("premium-gate")).toHaveText("Нужен Premium для этой платформы");

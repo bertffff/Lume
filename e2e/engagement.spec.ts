@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 
 test.describe.configure({ mode: "serial" });
 
@@ -16,9 +17,7 @@ test("the live profile engagement widget aggregates watch, voice, and chat activ
   await owner.goto("/");
   await owner.getByTestId("lobby-name").fill(`Вовлечённость ${stamp}`);
   await owner.getByTestId("lobby-sign-in").click();
-  await owner.getByTestId("lobby-title").fill(`Вовлечённость ${stamp}`);
-  await owner.getByTestId("lobby-create").click();
-  await expect(owner.getByTestId("room-title")).toHaveText(`Вовлечённость ${stamp}`, { timeout: 20_000 });
+  await createRoom(owner, `Вовлечённость ${stamp}`);
   const code = (await owner.getByTestId("room-code").innerText()).trim();
 
   await partner.goto("/");
@@ -33,7 +32,7 @@ test("the live profile engagement widget aggregates watch, voice, and chat activ
   await expect(owner.getByTestId("chat-message").filter({ hasText: message })).toBeVisible();
 
   await owner.getByTestId("voice-join").click();
-  await expect(owner.locator(".voice-card .ct")).toContainText("в эфире");
+  await expect(owner.getByTestId("voice-session")).toContainText("в эфире");
   await owner.waitForTimeout(2200);
   const voiceFlushed = owner.waitForResponse((response) => new URL(response.url()).pathname === "/me/voice-seconds" && response.request().method() === "POST");
   await owner.getByTestId("voice-leave").click();
@@ -44,7 +43,7 @@ test("the live profile engagement widget aggregates watch, voice, and chat activ
   const left = owner.waitForResponse((response) => response.url().includes("/leave") && response.request().method() === "POST");
   await owner.getByTestId("session-dock-leave").click();
   expect((await left).status()).toBe(200);
-  await expect(owner.getByTestId("lobby-create")).toBeVisible();
+  await expect(owner.locator('[data-testid="home-create-open"].tile')).toBeVisible();
 
   const session = await owner.evaluate(() => {
     const raw = window.localStorage.getItem("lume.session");

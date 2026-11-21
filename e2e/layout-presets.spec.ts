@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openPersonalSettings } from "./helpers/room-ui";
 
 test("layout presets and aspect change the live player frame and persist per aspect", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Кадр");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Кадр", { timeout: 20_000 });
+  await createRoom(page, "Кадр");
+  await openPersonalSettings(page);
 
   const frame = page.getByTestId("player-frame");
   await expect(frame).toHaveAttribute("data-preset", "theater");

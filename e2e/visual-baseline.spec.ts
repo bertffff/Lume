@@ -4,7 +4,7 @@ import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 
 const views = ["home", "room", "create", "join", "onboarding"] as const;
-const styles = ["cinema", "gruvbox"] as const;
+const styles = ["cinema", "gruvbox", "telerave"] as const;
 const modes = ["dark", "light"] as const;
 const viewports = [
   { name: "desktop", width: 1440, height: 900 },

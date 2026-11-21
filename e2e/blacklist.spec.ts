@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openMemberProfile } from "./helpers/room-ui";
 
 test.describe.configure({ mode: "serial" });
 
@@ -16,9 +18,7 @@ test("a host manages the global blacklist from the live profile and settings scr
   await host.goto("/");
   await host.getByTestId("lobby-name").fill(`Хозяин ${stamp}`);
   await host.getByTestId("lobby-sign-in").click();
-  await host.getByTestId("lobby-title").fill(`Чёрный список ${stamp}`);
-  await host.getByTestId("lobby-create").click();
-  await expect(host.getByTestId("room-title")).toHaveText(`Чёрный список ${stamp}`, { timeout: 20_000 });
+  await createRoom(host, `Чёрный список ${stamp}`);
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
@@ -32,7 +32,7 @@ test("a host manages the global blacklist from the live profile and settings scr
   const guestSession = await guest.evaluate(() => JSON.parse(window.localStorage.getItem("lume.session") ?? "null") as { accessToken: string; user: { id: string } });
   expect(hostSession?.accessToken).toBeTruthy();
 
-  await host.locator('button[data-testid^="member-"]').filter({ hasText: guestName }).first().click();
+  await openMemberProfile(host, guestName);
   await expect(host.getByTestId("profile-modal-name")).toHaveText(guestName);
   const banned = host.waitForResponse((response) => new URL(response.url()).pathname.endsWith("/ban") && response.request().method() === "POST");
   await host.getByTestId("profile-global-ban").click();

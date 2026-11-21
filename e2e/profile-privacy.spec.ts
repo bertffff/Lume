@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openQueue } from "./helpers/room-ui";
 
 test.describe.configure({ mode: "serial" });
 
@@ -16,9 +18,8 @@ test("privacy switches hide friends and history on the public profile", async ({
   await owner.goto("/");
   await owner.getByTestId("lobby-name").fill(ownerName);
   await owner.getByTestId("lobby-sign-in").click();
-  await owner.getByTestId("lobby-title").fill(`Приват ${stamp}`);
-  await owner.getByTestId("lobby-create").click();
-  await expect(owner.getByTestId("room-title")).toHaveText(`Приват ${stamp}`, { timeout: 20_000 });
+  await createRoom(owner, `Приват ${stamp}`);
+  await openQueue(owner);
   await owner.getByTestId("queue-input").fill(url);
   await owner.getByTestId("queue-add").click();
   await expect(owner.locator(`[data-testid="queue-item"][data-url="${url}"]`)).toBeVisible();
@@ -41,8 +42,9 @@ test("privacy switches hide friends and history on the public profile", async ({
   await viewer.goto("/");
   await viewer.getByTestId("lobby-name").fill(`Зритель ${stamp}`);
   await viewer.getByTestId("lobby-sign-in").click();
-  await expect(viewer.getByTestId("lobby-title")).toBeVisible({ timeout: 20_000 });
+  await expect(viewer.locator('[data-testid="home-create-open"].tile')).toBeVisible({ timeout: 20_000 });
   await viewer.goto("/profile");
+  await viewer.getByRole("tab", { name: "Друзья" }).click();
   await viewer.getByTestId("friend-search").fill(ownerName);
   const searched = viewer.waitForResponse((response) => response.url().includes("/users/search") && response.request().method() === "GET");
   await viewer.getByRole("button", { name: "Искать" }).click();

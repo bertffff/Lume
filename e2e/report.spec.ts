@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openMemberProfile } from "./helpers/room-ui";
 
 test("the host reports the guest who is actually in the room", async ({ browser }) => {
   const hostContext = await browser.newContext();
@@ -10,9 +12,7 @@ test("the host reports the guest who is actually in the room", async ({ browser 
   await host.goto("/");
   await host.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await host.getByTestId("lobby-sign-in").click();
-  await host.getByTestId("lobby-title").fill("Жалоба");
-  await host.getByTestId("lobby-create").click();
-  await expect(host.getByTestId("room-title")).toHaveText("Жалоба", { timeout: 20_000 });
+  await createRoom(host, "Жалоба");
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
@@ -22,10 +22,12 @@ test("the host reports the guest who is actually in the room", async ({ browser 
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText("Жалоба", { timeout: 20_000 });
 
-  await expect(host.getByTestId("report-target")).toContainText(uniqueName("Марк"), { timeout: 15_000 });
+  // Reporting now starts from the member's in-room profile card.
+  await openMemberProfile(host, uniqueName("Марк"));
+  await expect(host.getByTestId("profile-modal-name")).toContainText(uniqueName("Марк"));
   const reported = host.waitForResponse((response) => response.url().includes("/reports") && response.request().method() === "POST");
-  await host.getByTestId("report-reason").fill("спам в чате");
-  await host.getByTestId("report-send").click();
+  await host.getByTestId("profile-report-reason").fill("спам в чате");
+  await host.getByTestId("profile-report").click();
   const response = await reported;
   expect(response.status()).toBe(200);
   const body = response.request().postDataJSON() as { targetId: string; reason: string };

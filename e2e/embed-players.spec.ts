@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openQueue } from "./helpers/room-ui";
 
 const vkStub = `<!doctype html><html><body><script>
 window.addEventListener("message", function (event) {
@@ -23,9 +25,8 @@ test("the live player drives the VK and Rutube postMessage embeds", async ({ pag
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("Эмбед");
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Эмбед");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Эмбед", { timeout: 20_000 });
+  await createRoom(page, "Эмбед");
+  await openQueue(page);
 
   await page.getByTestId("queue-input").fill("https://vk.com/video-200_456239017");
   await page.getByTestId("queue-add").click();

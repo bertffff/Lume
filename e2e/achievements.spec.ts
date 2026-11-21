@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 
 test.describe.configure({ mode: "serial" });
 
@@ -7,11 +8,10 @@ test("the live profile derives achievements, xp, and level from persisted state"
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(`Достижения ${stamp}`);
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill(`Достижения ${stamp}`);
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText(`Достижения ${stamp}`, { timeout: 20_000 });
+  await createRoom(page, `Достижения ${stamp}`);
 
   await page.goto("/profile");
+  await page.getByRole("tab", { name: "Достижения" }).click();
   await expect(page.getByTestId("profile-achievement")).toHaveCount(10);
   await expect(page.locator('[data-testid="profile-achievement"][data-key="first_party"]')).toHaveAttribute("data-earned", "true");
   const earned = await page.locator('[data-testid="profile-achievement"][data-earned="true"]').count();

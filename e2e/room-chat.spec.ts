@@ -1,18 +1,19 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openChat } from "./helpers/room-ui";
 
 const pixel = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   "base64",
 );
 
-test("chat follows new messages, previews attachments, and the narrow rail keeps controls", async ({ page }) => {
+test("chat follows new messages, previews attachments, and the narrow dock keeps controls", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(uniqueName("Чат"));
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill(`Чат ${Date.now()}`);
-  await page.getByTestId("lobby-create").click();
+  await createRoom(page, `Чат ${Date.now()}`);
   await expect(page.getByTestId("room-title")).toBeVisible({ timeout: 20_000 });
 
   const log = page.getByTestId("chat-log");
@@ -46,15 +47,25 @@ test("chat follows new messages, previews attachments, and the narrow rail keeps
   await expect(preview).toHaveAttribute("src", /\/uploads\//);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const rail = page.locator('[data-testid="session-dock"][data-variant="rail"]');
-  await expect(rail).toBeVisible();
-  await expect(rail.getByRole("button", { name: "Позвать" })).toBeVisible();
-  await expect(rail.getByRole("button", { name: "Настройки" })).toBeVisible();
-  const deafen = page.getByTestId("voice-deafen");
-  await expect(deafen).toHaveAttribute("aria-pressed", "false");
-  await deafen.click();
-  await expect(deafen).toHaveAttribute("aria-pressed", "true");
+  // The persistent narrow rail became an on-demand dock. The invite and
+  // settings controls stay in the header/player even while the dock is shut.
+  await expect(page.getByTestId("mobile-sheet-toggle")).toBeVisible();
+  await expect(page.getByTestId("session-dock-invite")).toBeVisible();
+  await expect(page.getByTestId("room-personal-settings")).toBeVisible();
 
-  const focusable = await rail.locator("button:visible").count();
+  await openChat(page);
+  const dock = page.getByTestId("session-dock");
+  await expect(dock).toBeVisible();
+  await expect(dock.getByTestId("chat-log")).toBeVisible();
+  const focusable = await dock.locator("button:visible").count();
   expect(focusable).toBeGreaterThanOrEqual(5);
+  await page.getByTestId("mobile-sheet-close").click();
+  await expect(dock).toBeHidden();
+
+  // Deafen now lives in the voice card and appears only after joining.
+  await page.getByTestId("voice-join").click();
+  const deafen = page.getByTestId("voice-deafen");
+  await expect(deafen).toHaveAttribute("aria-label", "Без звука");
+  await deafen.click();
+  await expect(deafen).toHaveAttribute("aria-label", "Вернуть звук");
 });

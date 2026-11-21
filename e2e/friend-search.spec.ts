@@ -13,7 +13,7 @@ test("a signed-in person sees the name search results", async ({ browser }) => {
   await target.goto("/");
   await target.getByTestId("lobby-name").fill(targetName);
   await target.getByTestId("lobby-sign-in").click();
-  await expect(target.getByTestId("lobby-title")).toBeVisible({ timeout: 20_000 });
+  await expect(target.locator('[data-testid="home-create-open"].tile')).toBeVisible({ timeout: 20_000 });
 
   await caller.goto("/");
   await caller.getByTestId("lobby-name").fill(`Ищущий${stamp}`);

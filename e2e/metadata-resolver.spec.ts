@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openQueue } from "./helpers/room-ui";
 
 test("the live queue shows resolved metadata and duration from the local metadata service", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("Метаданные");
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Метаданные");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Метаданные", { timeout: 20_000 });
+  await createRoom(page, "Метаданные");
+  await openQueue(page);
 
   await page.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=metadata-fixture");
   await page.getByTestId("queue-add").click();

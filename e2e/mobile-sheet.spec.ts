@@ -1,37 +1,48 @@
 import { expect, test } from "@playwright/test";
+import { join } from "node:path";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openQueue } from "./helpers/room-ui";
 
 test("the mobile room sheet switches chat, members, and the live queue", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Мобильный зал");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Мобильный зал", { timeout: 20_000 });
+  await createRoom(page, "Мобильный зал");
+  await openQueue(page);
 
   await page.getByTestId("queue-input").fill("https://mobile-sheet.example.com/video.mp4");
   await page.getByTestId("queue-add").click();
   await expect(page.getByTestId("queue-item")).toHaveCount(1, { timeout: 15_000 });
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByTestId("mobile-sheet")).toBeVisible();
+  const dock = page.getByTestId("session-dock");
+  await expect(dock).toBeHidden();
+  await page.getByTestId("mobile-sheet-toggle").click();
+  await expect(dock).toBeVisible();
+  await expect(dock).toHaveAttribute("data-open", "true");
+  expect((await dock.boundingBox())?.width).toBeGreaterThanOrEqual(360);
+  if (process.env.LUME_UX_SCREENSHOT_DIR) {
+    await page.screenshot({ path: join(process.env.LUME_UX_SCREENSHOT_DIR, "cinema-390-mobile-dock.png"), animations: "disabled" });
+  }
 
-  await page.getByTestId("mobile-sheet-tab-queue").click();
-  const panel = page.getByTestId("mobile-sheet-panel");
-  await expect(panel).toHaveAttribute("data-panel", "queue");
-  await expect(page.getByTestId("mobile-sheet-queue")).toContainText("mobile-sheet.example.com");
+  await page.getByTestId("session-dock-queue").click();
+  await expect(page.getByTestId("session-dock-queue")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("rail-queue")).toContainText("mobile-sheet.example.com");
 
-  await page.getByTestId("mobile-sheet-tab-chat").click();
-  await expect(panel).toHaveAttribute("data-panel", "chat");
+  await page.getByTestId("session-dock-chat").click();
+  await expect(page.getByTestId("session-dock-chat")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("chat-log")).toBeVisible();
 
-  await page.getByTestId("mobile-sheet-tab-members").click();
-  await expect(panel).toHaveAttribute("data-panel", "members");
-  await expect(page.getByTestId("mobile-sheet-members")).toContainText(uniqueName("Аня"));
+  await page.getByTestId("session-dock-people").click();
+  await expect(page.getByTestId("session-dock-people")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("rail-people")).toContainText(uniqueName("Аня"));
 
   await page.keyboard.press("Escape");
-  await expect(page.getByTestId("mobile-sheet-panel")).toHaveCount(0);
-  await expect(page.getByTestId("mobile-sheet")).toHaveAttribute("data-open", "false");
+  await expect(dock).toHaveAttribute("data-open", "false");
+  await expect(dock).toBeHidden();
 
   await page.getByTestId("mobile-sheet-toggle").click();
-  await expect(page.getByTestId("mobile-sheet-panel")).toHaveAttribute("data-panel", "members");
+  await expect(dock).toHaveAttribute("data-open", "true");
+  await expect(page.getByTestId("session-dock-people")).toHaveAttribute("aria-selected", "true");
 });

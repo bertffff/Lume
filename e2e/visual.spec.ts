@@ -5,7 +5,7 @@ const shots = [
   "settings", "premium", "auth", "onboarding", "notifications", "missing", "offline", "unavailable",
 ] as const;
 
-for (const style of ["cinema", "gruvbox"] as const) {
+for (const style of ["cinema", "gruvbox", "telerave"] as const) {
   for (const mode of ["dark", "light"] as const) {
     for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }] as const) {
       test(`${style} ${mode} ${viewport.name}`, async ({ page }) => {

@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
+import { openPersonalSettings } from "./helpers/room-ui";
 
 const apiUrl = process.env.API_URL ?? "http://127.0.0.1:3001";
 
@@ -8,9 +10,8 @@ test("the live voice preflight checks mic, speakers, and network and persists th
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(`Префлайт ${stamp}`);
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill(`Префлайт ${stamp}`);
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText(`Префлайт ${stamp}`, { timeout: 20_000 });
+  await createRoom(page, `Префлайт ${stamp}`);
+  await openPersonalSettings(page);
 
   const session = await page.evaluate(() => JSON.parse(window.localStorage.getItem("lume.session") ?? "null") as { accessToken: string } | null);
   expect(session?.accessToken).toBeTruthy();

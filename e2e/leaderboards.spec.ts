@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openCreateWizard } from "./helpers/create-room";
 
 test.describe.configure({ mode: "serial" });
 
@@ -16,7 +17,10 @@ test("the live profile renders message, reaction, and voice leaderboards from pe
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(`Лидер ${stamp}`);
   await page.getByTestId("lobby-sign-in").click();
+  await openCreateWizard(page);
   await page.getByTestId("lobby-title").fill(`Лидеры ${stamp}`);
+  await page.getByTestId("create-next").click();
+  await page.getByTestId("create-next").click();
 
   const created = page.waitForResponse((response) => new URL(response.url()).pathname === "/rooms" && response.request().method() === "POST");
   await page.getByTestId("lobby-create").click();

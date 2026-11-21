@@ -1,18 +1,19 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openPersonalSettings } from "./helpers/room-ui";
 
 test("room flow follows the measured width and the resize handle persists the ratio", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Поток");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Поток", { timeout: 20_000 });
+  await createRoom(page, "Поток");
 
-  const body = page.locator(".body");
-  await expect(body).toHaveAttribute("data-flow", "side");
+  // The old `.body[data-flow]` attribute is gone; the workspace now expresses
+  // layout through the player frame's preset/aspect and the dock breakpoint.
   const frame = page.getByTestId("player-frame");
+  await expect(frame).toHaveAttribute("data-preset", "theater");
   const before = await frame.boundingBox();
   expect(before).not.toBeNull();
 
@@ -30,12 +31,14 @@ test("room flow follows the measured width and the resize handle persists the ra
   expect(stored.horizontal.playerRatio).toBeLessThan(0.66);
   expect(stored.horizontal.preset).toBe("custom");
 
+  // Aspect presets moved into the personal settings sheet.
+  await openPersonalSettings(page);
   const patch = page.waitForResponse((response) => new URL(response.url()).pathname.endsWith("/layout") && response.request().method() === "PATCH");
   await page.getByTestId("layout-vertical").click();
   expect((await patch).status()).toBe(200);
-  await expect(body).toHaveAttribute("data-flow", "below");
+  await expect(frame).toHaveAttribute("data-aspect", "vertical");
 
   await page.setViewportSize({ width: 820, height: 900 });
-  await expect(body).toHaveAttribute("data-flow", "stack");
+  await expect(page.getByTestId("session-dock")).toBeHidden();
   await expect(page.getByTestId("mobile-sheet-toggle")).toBeVisible();
 });

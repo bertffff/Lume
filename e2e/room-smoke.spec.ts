@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openChat, openPeople, openQueue } from "./helpers/room-ui";
 
 test("two guests create a room, sync playback, and chat", async ({ browser }) => {
   const hostContext = await browser.newContext();
@@ -10,9 +12,7 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   await host.goto("/");
   await host.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await host.getByTestId("lobby-sign-in").click();
-  await host.getByTestId("lobby-title").fill("Вечерний зал");
-  await host.getByTestId("lobby-create").click();
-  await expect(host.getByTestId("room-title")).toHaveText("Вечерний зал", { timeout: 20_000 });
+  await createRoom(host, "Вечерний зал");
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
@@ -21,18 +21,22 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText("Вечерний зал", { timeout: 20_000 });
-  await expect(guest.getByTestId("member-list")).toContainText(uniqueName("Аня"));
+  await openPeople(guest);
+  await expect(guest.getByTestId("rail-people")).toContainText(uniqueName("Аня"));
 
+  await openQueue(host);
   await host.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await host.getByTestId("queue-add").click();
-  await expect(host.locator(".queue-list li")).toHaveCount(1, { timeout: 15_000 });
+  await expect(host.getByTestId("queue-item")).toHaveCount(1, { timeout: 15_000 });
   await host.getByTestId("queue-next").click();
   await expect(host.getByTestId("player-mount")).toBeVisible();
   await host.getByTestId("playback-play").click();
   await expect(guest.getByTestId("playback-status")).toContainText(/идёт|playing/, { timeout: 15_000 });
 
+  await openChat(host);
   await host.getByTestId("chat-input").fill("привет");
   await host.getByTestId("chat-send").click();
+  await openChat(guest);
   await expect(guest.getByTestId("chat-log")).toContainText("привет", { timeout: 15_000 });
   if (!process.env.LIVEKIT_URL) {
     await expect(host.getByTestId("voice-fallback")).toBeVisible();

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 
 const apiUrl = process.env.API_URL ?? "http://127.0.0.1:3001";
 
@@ -6,9 +7,7 @@ test("the live composer emoji picker has category tabs, search, and persisted re
   await page.goto("/");
   await page.getByTestId("lobby-name").fill("Эмодзи");
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Эмодзи");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Эмодзи", { timeout: 20_000 });
+  await createRoom(page, "Эмодзи");
 
   await page.getByTestId("emoji-picker-toggle").click();
   await expect(page.getByTestId("emoji-picker")).toBeVisible();

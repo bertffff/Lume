@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
 
 test("the live chat anchors the first unread message and jumps to it", async ({ browser }) => {
@@ -10,9 +11,7 @@ test("the live chat anchors the first unread message and jumps to it", async ({ 
   await host.goto("/");
   await host.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await host.getByTestId("lobby-sign-in").click();
-  await host.getByTestId("lobby-title").fill("Непрочитанные");
-  await host.getByTestId("lobby-create").click();
-  await expect(host.getByTestId("room-title")).toHaveText("Непрочитанные", { timeout: 20_000 });
+  await createRoom(host, "Непрочитанные");
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");

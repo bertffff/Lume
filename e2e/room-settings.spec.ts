@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
+import { openChat, openQueue } from "./helpers/room-ui";
 
 test("the live room settings sheet saves description, cap, visibility, and hide-reactions", async ({ page, browser }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
-  await page.getByTestId("lobby-title").fill("Настройки");
-  await page.getByTestId("lobby-create").click();
-  await expect(page.getByTestId("room-title")).toHaveText("Настройки", { timeout: 20_000 });
+  await createRoom(page, "Настройки");
 
   await page.getByTestId("room-settings-open").click();
   await expect(page.getByTestId("room-settings-sheet")).toBeVisible();
@@ -56,11 +56,13 @@ test("the live room settings sheet saves description, cap, visibility, and hide-
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText("Ночной зал", { timeout: 20_000 });
+  await openQueue(guest);
 
   await guest.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await guest.getByTestId("queue-add").click();
-  await expect(page.locator(".queue-list li")).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.getByTestId("queue-item")).toHaveCount(1, { timeout: 15_000 });
 
+  await openChat(guest);
   await guest.getByTestId("chat-input").fill("привет из чата");
   await guest.getByTestId("chat-send").click();
   await page.waitForTimeout(1500);
