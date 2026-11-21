@@ -746,3 +746,42 @@
   object-fit: cover;
   background: var(--s3);
 }
+
+.player-quick {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.16s var(--ease-out), transform 0.16s var(--ease-out);
+}
+.stage-card:hover .player-quick,
+.player-quick:focus-within {
+  opacity: 1;
+  transform: none;
+}
+.player-quick .mini {
+  height: 30px;
+  min-height: 30px;
+  border-radius: 8px;
+  background: rgba(10, 8, 7, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  font: 600 11px/1 var(--font-mono);
+}
+.cinema-room.is-narrow .layout-switch,
+.cinema-room.is-narrow .sync button,
+.cinema-room.is-narrow .room-viewers {
+  display: none;
+}
+
+.cinema-room.is-narrow .mobile-sheet {
+  bottom: 52px;
+}
+.session-rail {
+  z-index: 60;
+}

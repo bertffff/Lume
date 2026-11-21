@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { favouriteLine, linkedLabel, roomPresetById, roomPresets, viewerPermissionKeys, type RoomPresetId } from "@lume/contracts";
 import { permissionLabel } from "./copy.js";
+import { posterClasses, shotPeople } from "./shot-fixtures.js";
 import { useI18n } from "../i18n/context.js";
 import { Modal } from "../ui/index.js";
 import { initials, personHue } from "./theme.js";
@@ -784,6 +785,7 @@ export function MobileHome({
   onTelegram,
   onCreate,
   onOpenRoom,
+  onProfile,
   code,
   onCode,
   onJoin,
@@ -796,6 +798,7 @@ export function MobileHome({
   onTelegram: () => void;
   onCreate: () => void;
   onOpenRoom: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
+  onProfile: () => void;
   code: string;
   onCode: (value: string) => void;
   onJoin: (event: FormEvent) => void;
@@ -804,6 +807,18 @@ export function MobileHome({
   return (
     <div className="pad mobile-home">
       <div className="greet"><h1>{session ? t("mobile.greetingSigned", { name: session.user.displayName }) : t("mobile.greeting")}</h1><div className="sub">{session ? t("mobile.subtitleSigned") : t("mobile.subtitleGuest")}</div></div>
+      <div className="stories" aria-label={t("home.stories")}>
+        <button type="button" className="st new" onClick={onCreate}>
+          <span className="ring"><span className="face">+</span></span>
+          <span className="nm">{t("home.storyMine")}</span>
+        </button>
+        {shotPeople.map((person) => (
+          <button key={person.id} type="button" className="st" onClick={onProfile}>
+            <span className="ring"><span className={`face av p-${personHue(person.id)}`}>{initials(person.name)}</span></span>
+            <span className="nm">{person.name}</span>
+          </button>
+        ))}
+      </div>
       {!session ? (
         <form className="tile auth" onSubmit={onSignIn}>
           <div className="tile-head"><span className="tile-ic">☺</span><div><h3>{t("mobile.signInTitle")}</h3><p>{t("mobile.signInBody")}</p></div></div>
@@ -828,9 +843,9 @@ export function MobileHome({
       </div>
       <div className="sec"><h3>{t("mobile.rooms")}</h3></div>
       <div className="rooms">
-        {rooms.length > 0 ? rooms.map((room) => (
+        {rooms.length > 0 ? rooms.map((room, index) => (
           <button key={room.id} type="button" className="rc" onClick={() => onOpenRoom(room)}>
-            <div className="th" />
+            <div className={`th ${posterClasses[index % posterClasses.length]}`} />
             <div className="bd"><b>{room.title}</b><div className="meta"><span className="viewers">{t("mobile.memberCount", { count: room.memberCount ?? 0 })}</span><span className="code">{room.code}</span></div></div>
           </button>
         )) : <p className="empty-note">{t("mobile.noRooms")}</p>}

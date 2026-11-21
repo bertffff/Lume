@@ -35,7 +35,7 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   await host.getByTestId("chat-send").click();
   await expect(guest.getByTestId("chat-log")).toContainText("привет", { timeout: 15_000 });
   if (!process.env.LIVEKIT_URL) {
-    await expect(host.getByTestId("voice-disabled")).toBeVisible();
+    await expect(host.getByTestId("voice-fallback")).toBeVisible();
   }
 
   await hostContext.close();

@@ -5,7 +5,8 @@ import { applyAppearance, readStoredMode, readStoredStyle, type ModeId, type Sty
 /** Appearance state: URL override, persistence, system-mode listener, profile sync. */
 export function useAppearance(session: { accessToken: string } | null) {
   const params = new URLSearchParams(window.location.search);
-  const [style, setStyle] = useState<StyleId>(params.get("style") === "gruvbox" ? "gruvbox" : readStoredStyle);
+  const requested = params.get("style");
+  const [style, setStyle] = useState<StyleId>(requested === "gruvbox" || requested === "cinema" ? requested : readStoredStyle);
   const [mode, setMode] = useState<ModeId>(
     params.get("mode") === "light" || params.get("mode") === "system" || params.get("mode") === "dark"
       ? (params.get("mode") as ModeId)

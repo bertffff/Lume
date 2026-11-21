@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AppShell } from "../shell/AppShell.js";
-import { roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
+import { detectSource, roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
@@ -29,7 +29,7 @@ type View =
   | "offline"
   | "unavailable";
 
-import { shotRooms } from "./shot-fixtures.js";
+import { posterClasses, shotHeat, shotPeople, shotRooms } from "./shot-fixtures.js";
 import { roomFilters } from "./copy.js";
 
 const views = new Set<View>([
@@ -103,6 +103,7 @@ export function DesignApp({
   const [level, setLevel] = useState(1);
   const [resume, setResume] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "friends" | "film" | "music">("all");
+  const [searchTab, setSearchTab] = useState<"all" | "youtube" | "vk" | "rutube" | "direct">("all");
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   useEffect(() => {
     const onResize = () => setNarrow(window.innerWidth < 800);
@@ -315,8 +316,9 @@ export function DesignApp({
         <GruvboxHome
           session={session}
           rooms={shownRooms}
-          heat={heat}
-          resume={resume}
+          heat={heat.length > 0 ? heat : shotHeat}
+          resume={resume ?? shotRooms[0]?.title ?? null}
+          isShot={Boolean(shot)}
           name={name}
           onName={setName}
           onSignIn={(event) => void signIn(event)}
@@ -337,6 +339,7 @@ export function DesignApp({
           onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)}
           onCreate={() => go(session ? "/create" : "/auth")}
           onOpenRoom={(item) => { if (!session) { go("/auth"); return; } void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}
+          onProfile={() => go("/profile")}
           code={code}
           onCode={setCode}
           onJoin={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}
@@ -350,6 +353,21 @@ export function DesignApp({
                 <h1>{text.evening}{session ? `, ${session.user.displayName}` : ""}</h1>
                 <p className="sub">{session ? t("home.subtitleSigned") : t("home.subtitleGuest")}</p>
               </div>
+            </div>
+            <div className="stories" aria-label={t("home.stories")}>
+              <button type="button" className="st new" onClick={() => go(session ? "/create" : "/auth")}>
+                <span className="ring"><span className="face">+</span></span>
+                <span className="nm">{t("home.storyMine")}</span>
+              </button>
+              {(session && friends.length > 0
+                ? friends.slice(0, 4).map((row) => ({ id: row.userId, name: row.displayName }))
+                : shotPeople
+              ).map((person) => (
+                <button key={person.id} type="button" className="st" onClick={() => go("/profile")}>
+                  <span className="ring"><span className={`face av p-${personHue(person.id)}`}>{initials(person.name)}</span></span>
+                  <span className="nm">{person.name.split(" ")[0]}</span>
+                </button>
+              ))}
             </div>
             <section className="global-stats" data-testid="global-stats" data-ready={statsReady ? "true" : "false"}>
               <div className="stat"><small>{t("stats.online")}</small><b data-testid="stat-users-online" data-value={globalStats.usersOnline}>{globalStats.usersOnline}</b></div>
@@ -490,7 +508,14 @@ export function DesignApp({
                 <div className="fr" key={row.id}>
                   <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
                   <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? t("home.notInRoom")}</small></div>
-                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } }).catch(() => undefined)}>{t("home.remove")}</button>
+                  <div className="fr-actions">
+                    {row.roomId ? (
+                      <button type="button" className="mini go" onClick={() => onOpen(row.roomId as string)}>{t("home.enterRoom")}</button>
+                    ) : (
+                      <button type="button" className="mini" onClick={() => go("/profile")}>{t("home.profileShort")}</button>
+                    )}
+                    <button type="button" className="mini ghost" aria-label={t("home.remove")} onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } }).catch(() => undefined)}>×</button>
+                  </div>
                 </div>
               )) : <p className="empty-note">{session ? t("home.noFriendsOnline") : t("home.signInForFriends")}</p>}
             </section>
@@ -518,10 +543,65 @@ export function DesignApp({
       {view !== "home" && view !== "room" ? (
         <Page title={view} onClose={() => go("/")}>
           {view === "search" ? (
-            <form onSubmit={(event) => { event.preventDefault(); void fetch(`${apiUrl}/video/search?q=${encodeURIComponent(query)}`).then((r) => r.json()).then((p: { results?: Array<{ title: string; url: string }> }) => setFound(p.results ?? [])).catch(() => setFound([])); }}>
-              <input className="inbox" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text.search} />
-              <div className="results">{found.map((item) => <button key={item.url} type="button" className="res" onClick={() => window.open(item.url, "_blank", "noopener")}><b>{item.title || item.url}</b><small>{item.url}</small></button>)}</div>
-            </form>
+            <div className="search-page">
+              <div className="search-panel">
+                <header className="search-head">
+                  <h2>{t("search.title")}</h2>
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void fetch(`${apiUrl}/video/search?q=${encodeURIComponent(query)}`)
+                        .then((response) => response.json())
+                        .then((payload: { results?: Array<{ title: string; url: string }> }) => setFound(payload.results ?? []))
+                        .catch(() => setFound([]));
+                    }}
+                  >
+                    <input className="inbox" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} aria-label={t("search.placeholder")} autoFocus />
+                    <button type="submit" className="btn btn-primary">{t("profile.search")}</button>
+                  </form>
+                </header>
+                <div className="search-tabs" role="tablist" aria-label={t("search.sources")}>
+                  {(["all", "youtube", "vk", "rutube", "direct"] as const).map((tab) => (
+                    <button key={tab} type="button" role="tab" aria-selected={searchTab === tab} className={searchTab === tab ? "pill on" : "pill"} onClick={() => setSearchTab(tab)}>
+                      {t(`search.source.${tab}`)}
+                    </button>
+                  ))}
+                </div>
+                {found.length === 0 ? (
+                  <p className="empty-note">{t("search.empty")}</p>
+                ) : (
+                  <div className="search-grid">
+                    {found
+                      .filter((item) => searchTab === "all" || (detectSource(item.url)?.id ?? "direct") === searchTab)
+                      .map((item, index) => (
+                        <article key={item.url} className="search-card">
+                          <div className={`th ${posterClasses[index % posterClasses.length]}`} />
+                          <div className="bd">
+                            <b>{item.title || item.url}</b>
+                            <small>{detectSource(item.url)?.id ?? t("search.source.direct")}</small>
+                            <div className="actions">
+                              <button type="button" className="btn btn-primary" onClick={() => window.open(item.url, "_blank", "noopener")}>{t("search.play")}</button>
+                              <button type="button" className="btn btn-outline" onClick={() => void navigator.clipboard?.writeText(item.url)}>{t("search.copy")}</button>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                  </div>
+                )}
+                <form
+                  className="search-direct"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const url = String(new FormData(event.currentTarget).get("url") ?? "").trim();
+                    if (!url) return;
+                    window.open(url, "_blank", "noopener");
+                  }}
+                >
+                  <input name="url" placeholder={t("search.directPlaceholder")} aria-label={t("search.directPlaceholder")} />
+                  <button type="submit" className="btn btn-outline">{t("search.open")}</button>
+                </form>
+              </div>
+            </div>
           ) : null}
           {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} busy={creating} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
@@ -645,7 +725,7 @@ function LiveRoomsCarousel({
   return (
     <div className="live-carousel" data-testid="live-carousel">
       <div className="carousel-track" ref={track}>
-        {rooms.map((item) => (
+        {rooms.map((item, index) => (
           <button
             key={item.id}
             type="button"
@@ -654,8 +734,9 @@ function LiveRoomsCarousel({
             data-code={item.code}
             onClick={() => onOpen(item)}
           >
-            <div className="th">
+            <div className={`th ${posterClasses[index % posterClasses.length]}`}>
               <span className="tag"><i className="d" />{item.memberCount && item.memberCount > 0 ? `${item.memberCount} ${viewersWord(item.memberCount)}` : t("room.openTag")}</span>
+              <span className="rc-index mono">0{index + 1}</span>
             </div>
             <div className="bd">
               <b>{item.title}</b>
@@ -682,6 +763,7 @@ function GruvboxHome({
   rooms,
   heat,
   resume,
+  isShot,
   name,
   onName,
   onSignIn,
@@ -695,6 +777,7 @@ function GruvboxHome({
   rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
   heat: Array<{ day: string; score: number }>;
   resume: string | null;
+  isShot: boolean;
   name: string;
   onName: (value: string) => void;
   onSignIn: (event: FormEvent) => void;
@@ -712,18 +795,19 @@ function GruvboxHome({
         <div className="pt">{t("sessions.title")} <span className="dim">{rows.length}</span></div>
         {rows.length === 0 ? <p className="lead">{t("home.noRooms")}</p> : rows.map((item, index) => (
           <button key={item.id} type="button" className={index === 0 ? "srow on" : "srow"} onClick={() => onOpen(item)}>
-            <span>{index === 0 ? ">" : " "}</span>
+            <span className={`g-th ${posterClasses[index % posterClasses.length]}`} aria-hidden="true" />
             <b>{item.title}</b>
-            <span>{item.memberCount ?? "--"}</span>
-            <span>{item.memberCount ? "live" : item.code}</span>
+            <span className="mono">{item.memberCount ?? 0} live</span>
+            <span className="mono dim">{item.code.slice(0, 3).toUpperCase()}</span>
           </button>
         ))}
       </section>
       <section className="pane">
         <div className="pt">{t("gruvbox.resume")}</div>
         <h2>{resume ?? t("resume.empty")}</h2>
-        <p>{t("gruvbox.resumeHint")}</p>
-        <button type="button" className="go" onClick={() => onGo("/profile")}>{t("profile.signInTitle")}</button>
+        <p className="dim">{isShot ? t("gruvbox.resumeMeta") : t("gruvbox.resumeHint")}</p>
+        <p className="dim">{t("gruvbox.resumeMetaTwo")}</p>
+        <button type="button" className="go" onClick={() => onGo("/profile")}>{t("gruvbox.enterRoom")}</button>
       </section>
       <section className="pane">
         <div className="pt">{t("gruvbox.new")}</div>
@@ -739,6 +823,11 @@ function GruvboxHome({
           <button type="submit" className="go" data-testid="lobby-join">{t("auth.login")}</button>
         </form>
       </section>
+      <section className="pane">
+        <div className="pt">{t("gruvbox.season")}</div>
+        <p className="dim">{t("gruvbox.seasonMeta")}</p>
+        {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">{t("gruvbox.seasonEmpty")}</p>}
+      </section>
       {!session ? (
         <section className="pane">
           <div className="pt">{t("gruvbox.login")}</div>
@@ -747,16 +836,30 @@ function GruvboxHome({
             <button type="submit" className="go" data-testid="lobby-sign-in">{t("auth.login")}</button>
           </form>
         </section>
-      ) : (
-        <section className="pane">
-          <div className="pt">{t("gruvbox.season")}</div>
-          {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">{t("gruvbox.seasonEmpty")}</p>}
-        </section>
-      )}
+      ) : null}
       <section className="pane">
         <div className="pt">{t("gruvbox.bill")}</div>
-        <p>{rows[0] ? `${rows[0].title} · ${rows[0].memberCount ?? 0}` : t("sessions.empty")}</p>
+        <div className="g-bill">
+          {rows.slice(0, 3).map((item, index) => (
+            <button key={item.id} type="button" onClick={() => onOpen(item)}>
+              <span className={`g-shot ${posterClasses[index % posterClasses.length]}`} aria-hidden="true" />
+              <b>{item.title}</b>
+              <small className="dim">{t("gruvbox.viewers", { count: item.memberCount ?? 0 })}</small>
+            </button>
+          ))}
+        </div>
         <p className="dim">{t("gruvbox.billHint")}</p>
+      </section>
+      <section className="pane">
+        <div className="pt">{t("gruvbox.friends")}</div>
+        {shotPeople.map((person) => (
+          <div key={person.id} className="g-friend">
+            <span className={`av p-${personHue(person.id)}`}>{initials(person.name)}</span>
+            <b>{person.name}</b>
+            <span className="dim">{t("gruvbox.inRoom")}</span>
+            <button type="button" className="go" onClick={() => onGo("/profile")}>{t("gruvbox.enter")}</button>
+          </div>
+        ))}
       </section>
     </div>
   );

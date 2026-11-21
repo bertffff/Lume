@@ -473,7 +473,7 @@ export function RoomStage({
             {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>{t("room.openPanels")}</button> : null}
             <div className="card voice-card">
               <div className="ct">{t("room.voiceTitle")}
-                {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{t("room.onAir", { seconds: sharedVoice })}</small> : voice.enabled === false ? <small data-testid="voice-disabled" data-stub={voice.stub ? "true" : "false"}>{t("voice.disabled")}</small> : null}
+                {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{t("room.onAir", { seconds: sharedVoice })}</small> : null}
                 <small data-testid="voice-ice" data-count={iceUrls.length} title={iceUrls.join(" · ")}>{iceUrls.length > 0 ? iceUrls.join(" · ") : t("room.stunDefault")}</small>
               </div>
               <div className="voice-body">

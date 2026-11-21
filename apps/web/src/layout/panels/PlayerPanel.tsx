@@ -31,6 +31,7 @@ export function PlayerPanel({
   const phaseRef = useRef<AdapterPhase>("idle");
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [blocked, setBlocked] = useState(false);
+  const [rate, setRate] = useState(1);
   const playback = live?.state.playback ?? null;
   const nowPlaying = live?.state.room.nowPlaying ?? null;
   const reportedAspect = useRef(aspect);
@@ -214,6 +215,36 @@ export function PlayerPanel({
           <span className="pe-hint">{t("player.emptyHint")}</span>
         </div>
       )}
+      {nowPlaying ? (
+        <div className="player-quick">
+          <button
+            type="button"
+            className="mini"
+            title={t("player.speed")}
+            aria-label={t("player.speed")}
+            onClick={() => {
+              const rates = [1, 1.25, 1.5, 2] as const;
+              const next = rates[(rates.indexOf(rate as 1 | 1.25 | 1.5 | 2) + 1) % rates.length] ?? 1;
+              setRate(next);
+              adapterRef.current?.setPlaybackRate?.(next);
+            }}
+          >
+            {rate}×
+          </button>
+          <button
+            type="button"
+            className="mini"
+            title={t("player.fullscreen")}
+            aria-label={t("player.fullscreen")}
+            onClick={() => {
+              if (document.fullscreenElement) void document.exitFullscreen();
+              else void frameRef.current?.requestFullscreen?.();
+            }}
+          >
+            ⛶
+          </button>
+        </div>
+      ) : null}
       {nowPlaying && blocked ? (
         <button type="button" className="player-unblock" onClick={() => void adapterRef.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))}>
           {t("player.unblock")}
