@@ -11,6 +11,7 @@ import "@fontsource/jetbrains-mono/cyrillic-400.css";
 import "@fontsource/jetbrains-mono/cyrillic-500.css";
 import "./design/cinema.css";
 import "./design/gruvbox.css";
+import "./design/surfaces.css";
 import "./design/layout.css";
 import "./design/room.css";
 

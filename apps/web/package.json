@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src vite.config.ts",
+    "lint": "eslint src vite.config.ts && node scripts/check-theme-tokens.mjs",
     "test": "vitest run"
   },
   "dependencies": {
