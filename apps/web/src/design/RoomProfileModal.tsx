@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { apiUrl } from "../api/client.js";
+import { useI18n } from "../i18n/context.js";
+import { Button, Modal } from "../ui/index.js";
 
 export interface InRoomProfile {
   userId: string;
@@ -22,17 +24,10 @@ export function RoomProfileModal({
   canBan?: boolean;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [reason, setReason] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   async function addFriend() {
     setBusy(true);
@@ -44,12 +39,12 @@ export function RoomProfileModal({
       });
       const payload = (await response.json().catch(() => ({}))) as { status?: string; error?: string };
       if (response.ok) {
-        setNote(payload.status === "accepted" ? "Теперь вы друзья" : "Заявка отправлена");
+        setNote(payload.status === "accepted" ? t("profile.friendsNow") : t("profile.requestSent"));
       } else {
-        setNote(payload.error ?? "Не получилось добавить");
+        setNote(payload.error ?? t("profile.actionFailed"));
       }
     } catch {
-      setNote("Не получилось добавить");
+      setNote(t("profile.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -58,7 +53,7 @@ export function RoomProfileModal({
   async function report() {
     const text = reason.trim();
     if (!text) {
-      setNote("Опишите причину жалобы");
+      setNote(t("profile.reportReasonNeeded"));
       return;
     }
     setBusy(true);
@@ -68,9 +63,9 @@ export function RoomProfileModal({
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
         body: JSON.stringify({ targetKind: "user", targetId: member.userId, roomId, reason: text }),
       });
-      setNote(response.ok ? "Жалоба отправлена" : "Не получилось отправить");
+      setNote(response.ok ? t("profile.reportSent") : t("profile.actionFailed"));
     } catch {
-      setNote("Не получилось отправить");
+      setNote(t("profile.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -84,67 +79,58 @@ export function RoomProfileModal({
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
         body: JSON.stringify({ userId: member.userId, type: "blacklist", reason: "глобальная блокировка" }),
       });
-      setNote(response.ok ? "Заблокирован во всех ваших комнатах" : "Не получилось заблокировать");
+      setNote(response.ok ? t("profile.blockedEverywhere") : t("profile.actionFailed"));
     } catch {
-      setNote("Не получилось заблокировать");
+      setNote(t("profile.actionFailed"));
     } finally {
       setBusy(false);
     }
   }
 
-  const roleLabel = member.role === "host" ? "ведущий" : member.role === "mod" ? "модератор" : "смотрит";
+  const roleLabel = member.role === "host" ? t("profile.roleHost") : member.role === "mod" ? t("profile.roleMod") : t("profile.roleViewer");
 
   return (
-    <div className="overlay docked" role="dialog" aria-modal="true" data-testid="profile-modal">
-      <div className="modal">
-        <div className="mh">
-          <h2 data-testid="profile-modal-name">{member.displayName}</h2>
-          <span className="sp" />
-          <button type="button" data-testid="profile-modal-close" onClick={onClose} aria-label="Закрыть">×</button>
-        </div>
-        <div className="mb">
-          <p>{roleLabel}</p>
-          {member.userId === selfId ? (
-            <p data-testid="profile-modal-self">Это вы.</p>
-          ) : (
-            <>
-              <div className="set-row">
-                <div><b>Друзья</b><small>Заявка придёт в уведомления.</small></div>
-                <button type="button" className="btn btn-outline" data-testid="profile-add-friend" disabled={busy} onClick={() => void addFriend()}>
-                  Добавить
-                </button>
-              </div>
-              {canBan ? (
-                <div className="set-row">
-                  <div><b>Глобальный чёрный список</b><small>Отдельно от блокировки друзей. Закрывает вход во все ваши комнаты.</small></div>
-                  <button type="button" className="btn btn-outline" data-testid="profile-global-ban" disabled={busy} onClick={() => void blacklist()}>
-                    Заблокировать везде
-                  </button>
-                </div>
-              ) : null}
-              <form
-                className="set-row"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void report();
-                }}
-              >
-                <div><b>Жалоба</b><small>До 500 знаков. Хранится в модерации.</small></div>
-                <input
-                  data-testid="profile-report-reason"
-                  value={reason}
-                  onChange={(event) => setReason(event.target.value)}
-                  placeholder="Причина"
-                />
-                <button type="submit" className="btn btn-outline" data-testid="profile-report" disabled={busy}>
-                  Пожаловаться
-                </button>
-              </form>
-            </>
-          )}
-          {note ? <p data-testid="profile-modal-note">{note}</p> : null}
-        </div>
-      </div>
-    </div>
+    <Modal open title={<span data-testid="profile-modal-name">{member.displayName}</span>} onClose={onClose} testId="profile-modal">
+      <p>{roleLabel}</p>
+      {member.userId === selfId ? (
+        <p data-testid="profile-modal-self">{t("profile.thisIsYou")}</p>
+      ) : (
+        <>
+          <div className="set-row">
+            <div><b>{t("profile.friends")}</b><small>{t("profile.friendsHint")}</small></div>
+            <Button variant="outline" data-testid="profile-add-friend" disabled={busy} onClick={() => void addFriend()}>
+              {t("profile.add")}
+            </Button>
+          </div>
+          {canBan ? (
+            <div className="set-row">
+              <div><b>{t("profile.blockEverywhere")}</b><small>{t("profile.blockEverywhereHint")}</small></div>
+              <Button variant="outline" data-testid="profile-global-ban" disabled={busy} onClick={() => void blacklist()}>
+                {t("profile.blockEverywhere")}
+              </Button>
+            </div>
+          ) : null}
+          <form
+            className="set-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void report();
+            }}
+          >
+            <div><b>{t("profile.report")}</b><small>{t("profile.reportHint")}</small></div>
+            <input
+              data-testid="profile-report-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder={t("profile.reportReason")}
+            />
+            <button type="submit" className="btn btn-outline" data-testid="profile-report" disabled={busy}>
+              {t("profile.reportSend")}
+            </button>
+          </form>
+        </>
+      )}
+      {note ? <p data-testid="profile-modal-note">{note}</p> : null}
+    </Modal>
   );
 }

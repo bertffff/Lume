@@ -9,8 +9,8 @@ html[data-style="gruvbox"] body{font-family:var(--font)!important}
 html[data-style] :focus-visible{outline:2px solid var(--accent, var(--yellow));outline-offset:2px}
 @media (prefers-reduced-motion: reduce){html[data-style] *{animation:none!important;transition:none!important}}
 
-.tr-app:has(.design-app) > .tr-header{display:none}
-.tr-app:has(.design-app) > .tr-main{padding:0;margin:0;max-width:none}
+.app-root:has(.design-app) > .tr-header{display:none}
+.app-root:has(.design-app) > .tr-main{padding:0;margin:0;max-width:none}
 .design-app{min-height:100dvh;width:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--text);position:relative}
 html[data-style="cinema"] .design-app{font-family:var(--font-ui)}
 html[data-style="gruvbox"] .design-app{font-family:var(--font)}
@@ -487,3 +487,297 @@ html[data-style="gruvbox"] .design-app.is-narrow .status .sl-file{display:none}
 .cinema-room .rail-list{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .design-app .overlay.docked{inset:64px 0 0 0}
 .design-app.is-narrow .overlay.docked{inset:58px 0 0 0}
+
+/* ============ Shared UI primitives ============ */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font: 500 12px/1.4 var(--font-ui);
+  color: var(--text-2);
+}
+.ui-field input,
+.ui-field textarea,
+.ui-field select {
+  width: 100%;
+  min-width: 0;
+}
+.ui-field-error {
+  color: var(--danger);
+  font-size: 11.5px;
+}
+.ui-field-hint {
+  color: var(--text-3);
+  font-size: 11.5px;
+}
+.ui-field.is-invalid input,
+.ui-field.is-invalid textarea,
+.ui-field.is-invalid select {
+  border-color: var(--danger);
+}
+.btn-lg {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+.btn-full {
+  width: 100%;
+}
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: ui-spin 0.8s linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ui-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font: 600 10.5px/1 var(--font-mono);
+  background: var(--s3);
+  color: var(--text);
+}
+.ui-badge-accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.ui-badge-social {
+  background: var(--social);
+  color: var(--social-ink);
+}
+.ui-badge-ok {
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  color: var(--ok-text);
+}
+.ui-badge-danger {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+.ui-badge-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.ui-badge-dot.ui-badge-social {
+  background: var(--social);
+}
+.ui-badge-dot.ui-badge-ok {
+  background: var(--ok);
+}
+.ui-badge-dot.ui-badge-danger {
+  background: var(--danger);
+}
+.ui-card-action {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.overlay.ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.ui-overlay:has(.ui-sheet) {
+  align-items: flex-end;
+  padding: 0;
+}
+.ui-modal {
+  max-height: min(820px, calc(100dvh - 32px));
+  outline: none;
+}
+.ui-sheet {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  max-height: min(88dvh, 820px);
+}
+.ui-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.ui-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+.ui-skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--s2), var(--s3), var(--s2));
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes ui-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 140;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--s1);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+.toast-success {
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+}
+.toast-danger {
+  border-color: color-mix(in srgb, var(--danger) 42%, transparent);
+  color: var(--danger);
+}
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.app-shell-main {
+  display: contents;
+}
+
+/* Admin */
+.admin-page {
+  display: block;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+.admin-shell {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+.admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.admin-head h1 {
+  font: 600 26px/1.15 var(--font-display, var(--font-ui));
+  letter-spacing: -0.02em;
+  margin-right: auto;
+}
+.admin-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--s2);
+  min-width: 0;
+}
+.admin-row > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+@media (max-width: 620px) {
+  .admin-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .admin-row > button {
+    grid-column: 1 / -1;
+  }
+}
+
+/* App frame and live-room notices (replaces the legacy .tr-* layer). */
+.app-root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+.app-room {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.app-banner,
+.app-note {
+  margin: 8px 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--s1);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.app-banner {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.empty-note {
+  color: var(--text-3);
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 8px 0;
+}
+.queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

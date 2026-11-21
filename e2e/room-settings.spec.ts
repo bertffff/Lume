@@ -59,7 +59,7 @@ test("the live room settings sheet saves description, cap, visibility, and hide-
 
   await guest.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await guest.getByTestId("queue-add").click();
-  await expect(page.locator(".tr-queue li")).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.locator(".queue-list li")).toHaveCount(1, { timeout: 15_000 });
 
   await guest.getByTestId("chat-input").fill("привет из чата");
   await guest.getByTestId("chat-send").click();

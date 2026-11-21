@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/context.js";
 import { RoomStage } from "../design/RoomStage.js";
 import { RoomProvider } from "../room/live.js";
+import { Modal } from "../ui/index.js";
 import type { useRoomChannel } from "../realtime/useRoomChannel.js";
 
 export function RoomScreen({
@@ -66,8 +67,8 @@ export function RoomScreen({
 
   if (!live.state) {
     return (
-      <section className="tr-room">
-        <p className="tr-empty">{live.error === "kicked" ? "Вас удалили из комнаты" : live.error ? "Не удалось подключиться к комнате" : t("realtime.connecting")}</p>
+      <section className="app-room">
+        <p className="empty-note">{live.error === "kicked" ? "Вас удалили из комнаты" : live.error ? "Не удалось подключиться к комнате" : t("realtime.connecting")}</p>
       </section>
     );
   }
@@ -126,25 +127,18 @@ export function RoomScreen({
       }}
     >
       <>
-        {warn ? <p className="tr-banner">{t("room.warnSession")}</p> : null}
+        {warn ? <p className="app-banner">{t("room.warnSession")}</p> : null}
         {live.error ? (
-          <p className="tr-note" data-testid="room-error" data-code={live.error}>
+          <p className="app-note" data-testid="room-error" data-code={live.error}>
             {live.error === "kicked" ? "Вас удалили из комнаты" : "Соединение с комнатой прервано"}
           </p>
         ) : null}
         <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} onRefreshed={setRefreshed} />
-        {helpOpen ? (
-          <div className="overlay docked" role="dialog" aria-modal="true" aria-label="Горячие клавиши">
-            <div className="modal">
-              <div className="mh"><h2>Горячие клавиши</h2><button type="button" aria-label="Закрыть" onClick={() => setHelpOpen(false)}>×</button></div>
-              <div className="mb">
-                <p><b>J / L</b> — назад / вперёд на 10 секунд</p>
-                <p><b>K</b> — пауза или продолжение</p>
-                <p><b>?</b> — эта справка</p>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <Modal open={helpOpen} title={t("room.hotkeys")} onClose={() => setHelpOpen(false)}>
+          <p><b>J / L</b> — {t("room.hotkeysSeek")}</p>
+          <p><b>K</b> — {t("room.hotkeysPause")}</p>
+          <p><b>?</b> — {t("room.hotkeysHelp")}</p>
+        </Modal>
       </>
     </RoomProvider>
   );

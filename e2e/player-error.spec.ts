@@ -11,7 +11,7 @@ test("a failed live video shows retry, open, and replace", async ({ page }) => {
 
   await page.getByTestId("queue-input").fill("http://127.0.0.1:3001/health");
   await page.getByTestId("queue-add").click();
-  await expect(page.locator(".tr-queue li")).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.locator(".queue-list li")).toHaveCount(1, { timeout: 15_000 });
   await page.getByTestId("queue-next").click();
   await expect(page.getByTestId("player-error")).toBeVisible({ timeout: 20_000 });
 

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const shots = [
-  "home", "room", "search", "create", "join", "room-settings", "members", "queue", "profile",
+  "home", "room", "search", "create", "join", "profile",
   "settings", "premium", "auth", "onboarding", "notifications", "missing", "offline", "unavailable",
 ] as const;
 

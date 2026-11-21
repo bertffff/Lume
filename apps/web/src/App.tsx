@@ -2,6 +2,7 @@ import { defaultRoomLayout, layoutAspectGroup, magicTokenFromSearch, parseStored
 import { useEffect, useMemo, useState } from "react";
 import { api, apiUrl } from "./api/client.js";
 import { detectLocale, I18nProvider } from "./i18n/context.js";
+import { ToastProvider } from "./ui/Toast.js";
 import { useRoomChannel } from "./realtime/useRoomChannel.js";
 import { DesignApp } from "./design/DesignApp.js";
 import { AdminScreen } from "./screens/AdminScreen.js";
@@ -178,7 +179,8 @@ export function App() {
 
   return (
     <I18nProvider locale={locale}>
-      <div className="tr-app">
+      <ToastProvider>
+      <div className="app-root">
         {adminPath && session && isAdmin ? (
           <AdminScreen token={session.accessToken} />
         ) : (
@@ -221,6 +223,7 @@ export function App() {
           />
         )}
       </div>
+      </ToastProvider>
     </I18nProvider>
   );
 }

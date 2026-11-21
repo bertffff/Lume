@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { AppShell } from "../shell/AppShell.js";
 import { roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
 import { copy, viewersWord } from "./copy.js";
-import { AuthScreen, CodeInput, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, RoomSettingsScreen, SettingsScreen } from "./pages.js";
-import { applyAppearance, initials, personHue, readStoredMode, readStoredStyle, type ModeId, type StyleId } from "./theme.js";
+import { AuthScreen, CodeInput, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, SettingsScreen } from "./pages.js";
+import { initials, personHue, type ModeId, type StyleId } from "./theme.js";
+import { useAppearance } from "./useAppearance.js";
+import { useGlobalStats } from "./useGlobalStats.js";
 
 type View =
   | "home"
@@ -14,9 +17,6 @@ type View =
   | "create"
   | "join"
   | "settings"
-  | "room-settings"
-  | "members"
-  | "queue"
   | "profile"
   | "premium"
   | "auth"
@@ -33,16 +33,14 @@ const shotRooms = [
   { id: "shot-music", title: "Музыка до утра", code: "shotmusic", memberCount: 3 },
   { id: "shot-serial", title: "Сериал в четыре глаза", code: "shotserial", memberCount: 2 },
 ];
-const shotStats = { usersOnline: 12, activeRooms: 3, totalVideos: 148, totalWatchHours: 42.5 };
 
 const views = new Set<View>([
-  "home", "room", "search", "create", "join", "settings", "room-settings", "members", "queue",
+  "home", "room", "search", "create", "join", "settings",
   "profile", "premium", "auth", "onboarding", "notifications", "missing", "offline", "unavailable",
 ]);
 
 function viewFromPath(path: string): View {
   const name = path.replace(/^\//, "").split("/")[0] ?? "";
-  if (name === "room-settings") return "room-settings";
   return views.has(name as View) ? (name as View) : "home";
 }
 
@@ -84,9 +82,7 @@ export function DesignApp({
   const text = copy(locale);
   const [path, setPath] = useState(() => window.location.pathname);
   const [shot] = useState(() => new URLSearchParams(window.location.search).get("shot"));
-  const params = new URLSearchParams(window.location.search);
-  const [style, setStyle] = useState<StyleId>(params.get("style") === "gruvbox" ? "gruvbox" : readStoredStyle);
-  const [mode, setMode] = useState<ModeId>(params.get("mode") === "light" || params.get("mode") === "system" || params.get("mode") === "dark" ? params.get("mode") as ModeId : readStoredMode);
+  const { style, mode, setStyle, setMode, saveAppearance } = useAppearance(session);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [preset, setPreset] = useState<RoomPresetId | null>(null);
@@ -99,8 +95,6 @@ export function DesignApp({
   const [creating, setCreating] = useState(false);
   const creatingRef = useRef(false);
   const [rooms, setRooms] = useState<Array<{ id: string; title: string; code: string; memberCount?: number }>>([]);
-  const [globalStats, setGlobalStats] = useState({ usersOnline: 0, activeRooms: 0, totalVideos: 0, totalWatchHours: 0 });
-  const [statsReady, setStatsReady] = useState(false);
   const [friends, setFriends] = useState<Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>>([]);
   const [blocked, setBlocked] = useState<Array<{ id: string; displayName: string }>>([]);
   const [globalBans, setGlobalBans] = useState<Array<{ id: string; userId: string; displayName: string; reason: string | null }>>([]);
@@ -110,9 +104,9 @@ export function DesignApp({
   const [level, setLevel] = useState(1);
   const [resume, setResume] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "friends" | "film" | "music">("all");
-  const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
+  const [narrow, setNarrow] = useState(() => window.innerWidth < 860);
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth < 800);
+    const onResize = () => setNarrow(window.innerWidth < 860);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -121,18 +115,7 @@ export function DesignApp({
   const [people, setPeople] = useState<Array<{ id: string; displayName: string }>>([]);
   const [ice, setIce] = useState<string | null>(null);
   const [offline, setOffline] = useState(() => !window.navigator.onLine);
-
-  useEffect(() => {
-    applyAppearance(style, mode);
-  }, [style, mode]);
-
-  useEffect(() => {
-    if (mode !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = () => applyAppearance(style, "system", media.matches);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, [style, mode]);
+  const { globalStats, statsReady } = useGlobalStats(shot, path, roomId);
 
   useEffect(() => {
     const onPop = () => setPath(window.location.pathname);
@@ -169,37 +152,6 @@ export function DesignApp({
   }, [query, path, roomId, accessToken, shot]);
 
   useEffect(() => {
-    if (shot) {
-      setGlobalStats(shotStats);
-      setStatsReady(true);
-      return;
-    }
-    let stopped = false;
-    const load = () => {
-      void fetch(`${apiUrl}/stats/global`)
-        .then((response) => response.json())
-        .then((payload: Partial<typeof globalStats>) => {
-          if (!stopped) {
-            setGlobalStats({
-              usersOnline: Number(payload.usersOnline ?? 0),
-              activeRooms: Number(payload.activeRooms ?? 0),
-              totalVideos: Number(payload.totalVideos ?? 0),
-              totalWatchHours: Number(payload.totalWatchHours ?? 0),
-            });
-            setStatsReady(true);
-          }
-        })
-        .catch(() => undefined);
-    };
-    load();
-    const timer = window.setInterval(load, 30_000);
-    return () => {
-      stopped = true;
-      window.clearInterval(timer);
-    };
-  }, [path, roomId, shot]);
-
-  useEffect(() => {
     if (!session) return;
     void api.friends(session.accessToken).then((list) => {
       setFriends(list.friends);
@@ -224,7 +176,7 @@ export function DesignApp({
         if (payload.uiMode === "dark" || payload.uiMode === "light" || payload.uiMode === "system") setMode(payload.uiMode);
       })
       .catch(() => undefined);
-  }, [session]);
+  }, [session, setMode, setStyle]);
 
   useEffect(() => {
     if (!session || !path.startsWith("/settings")) return;
@@ -309,18 +261,6 @@ export function DesignApp({
     }
   }
 
-  async function saveAppearance(nextStyle: StyleId, nextMode: ModeId) {
-    setStyle(nextStyle);
-    setMode(nextMode);
-    applyAppearance(nextStyle, nextMode);
-    if (!session) return;
-    await fetch(`${apiUrl}/me`, {
-      method: "PATCH",
-      headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" },
-      body: JSON.stringify({ uiStyle: nextStyle, uiMode: nextMode }),
-    }).catch(() => undefined);
-  }
-
   const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
   const chosenPreset = preset ? roomPresetById(preset) : null;
   const reminders = notes.filter((note) => note.kind === "SYSTEM");
@@ -341,7 +281,7 @@ export function DesignApp({
   });
 
   return (
-    <div className={narrow ? "design-app is-narrow session-hub" : "design-app session-hub"} data-view={view}>
+    <AppShell className={narrow ? "is-narrow session-hub" : "session-hub"} view={view}>
       {view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} /> : (
         <nav className="nav">
           <button type="button" className="logo" onClick={() => { onLeave(); go("/"); }}><i />lume</button>
@@ -361,7 +301,7 @@ export function DesignApp({
         </nav>
       )}
       {view === "room" && roomId ? room : null}
-      {(view === "room" || view === "members" || view === "queue" || view === "unavailable") && !roomId ? (
+      {(view === "room" || view === "unavailable") && !roomId ? (
         <RoomPreview unavailable={view === "unavailable"} onGo={go} />
       ) : null}
       {view === "home" && style === "gruvbox" ? (
@@ -603,11 +543,6 @@ export function DesignApp({
           ) : null}
           {view === "missing" ? <EmptyScreen title="Комната не найдена" body="Такого кода нет или сеанс уже закончился. Проверьте приглашение или создайте свою." action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>На главную</button><button type="button" className="btn btn-primary" onClick={() => go("/create")}>Создать комнату</button></>} /> : null}
           {view === "offline" ? <EmptyScreen title="Нет соединения" body="Похоже, вы офлайн. Проверьте сеть — комната дождётся, когда вы вернётесь." action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Повторить</button>} /> : null}
-          {view === "members" ? null : null}
-          {view === "room-settings" ? (
-            <RoomSettingsScreen token={session?.accessToken} apiUrl={apiUrl} roomId={roomId} />
-          ) : null}
-          {view === "queue" ? null : null}
         </Page>
       ) : null}
       {narrow && view !== "room" ? (
@@ -626,9 +561,9 @@ export function DesignApp({
           <span className="sl-keys"><b>:</b>{view}</span>
         </footer>
       ) : null}
-      {error ? <p className="tr-note">{error}</p> : null}
-      {notice ? <p className="tr-note">{notice}</p> : null}
-    </div>
+      {error ? <p className="app-note">{error}</p> : null}
+      {notice ? <p className="app-note">{notice}</p> : null}
+    </AppShell>
   );
 }
 

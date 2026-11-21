@@ -7,13 +7,15 @@ import { ResizeHandle } from "../layout/ResizeHandle.js";
 import { resolveFlow } from "../layout/reflow.js";
 import { clamp } from "../layout/weights.js";
 import { useRoomActions } from "../room/live.js";
-import { runVoicePreflight, saveVoicePreflight, type VoicePreflightResult } from "../voice/preflight.js";
+import { useChatScroll } from "../room/hooks/useChatScroll.js";
+import { useRoomMeta } from "../room/hooks/useRoomMeta.js";
+import { runVoicePreflight, saveVoicePreflight } from "../voice/preflight.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
 import { EmojiPicker } from "./EmojiPicker.js";
 import { permissionLabel, viewersWord } from "./copy.js";
 import { posterStyle } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
-import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
+import { RoomSettingsSheet } from "./RoomSettingsSheet.js";
 import { SessionDock } from "./SessionDock.js";
 import { currentStyle, initials, personHue, subscribeAppearance } from "./theme.js";
 
@@ -66,20 +68,12 @@ export function RoomStage({
   const [refreshState, setRefreshState] = useState<"idle" | "busy" | "error">("idle");
   const [url, setUrl] = useState("");
   const [detected, setDetected] = useState<string | null>(null);
-  const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }>>([]);
-  const [recommendations, setRecommendations] = useState<Array<{ url: string; title: string | null; reason: string }>>([]);
-  const [iceUrls, setIceUrls] = useState<string[]>([]);
-  const [preflight, setPreflight] = useState<VoicePreflightResult | null>(null);
   const [preflightBusy, setPreflightBusy] = useState(false);
   const [voiceSeconds, setVoiceSeconds] = useState(0);
   const [voiceClock, setVoiceClock] = useState(() => Date.now());
   const voiceSecondsRef = useRef(0);
-  const [permissions, setPermissions] = useState({ canChat: true, canQueue: true, canSpeak: true, canReact: true, canSeek: false, canInvite: true });
   const [playerError, setPlayerError] = useState<string | null>(null);
-  const [hideOther, setHideOther] = useState(false);
-  const [premium, setPremium] = useState(false);
   const [premiumBlocked, setPremiumBlocked] = useState(false);
-  const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -91,16 +85,31 @@ export function RoomStage({
   const seenReady = useRef(false);
   const chatRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
-  const chatPinned = useRef(true);
-  const [chatNew, setChatNew] = useState(0);
   const [profile, setProfile] = useState<InRoomProfile | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [roomTitle, setRoomTitle] = useState<string | null>(null);
-  const [roomHideReactions, setRoomHideReactions] = useState(false);
-  const liveRoomId = live?.state.room.id;
-  const accessToken = live?.accessToken;
   const hasLive = Boolean(live);
   const messageCount = live?.state.messages.length ?? 0;
+  const meta = useRoomMeta(live?.state.room.id, live?.accessToken, live?.state.room.nowPlaying?.id);
+  const {
+    settings,
+    setSettings,
+    permissions,
+    setPermissions,
+    iceUrls,
+    hideOther,
+    setHideOther,
+    premium,
+    recentEmojis,
+    setRecentEmojis,
+    preflight,
+    setPreflight,
+    history,
+    recommendations,
+    clearHistory,
+  } = meta;
+  const roomTitle = settings?.title ?? null;
+  const roomHideReactions = settings?.hideReactions ?? false;
+  const chat = useChatScroll(chatRef, messageCount);
   useEffect(() => {
     const element = bodyRef.current;
     if (!element) {
@@ -118,69 +127,6 @@ export function RoomStage({
       .then((payload: { extractors?: boolean }) => setExtractors(Boolean(payload.extractors)))
       .catch(() => setExtractors(false));
   }, []);
-  useEffect(() => {
-    if (!liveRoomId || !accessToken) return;
-    let stopped = false;
-    void fetch(`${apiUrl}/rooms/${liveRoomId}/settings`, { headers: { authorization: `Bearer ${accessToken}` } })
-      .then((response) => response.json())
-      .then((payload: RoomSettings & { defaults?: Record<string, boolean> | null }) => {
-        if (stopped) return;
-        setRoomTitle(payload.title);
-        setRoomHideReactions(Boolean(payload.hideReactions));
-        const defaults = payload.defaults;
-        if (defaults) {
-          setPermissions({
-            canChat: defaults.canChat ?? true,
-            canQueue: defaults.canQueue ?? true,
-            canSpeak: defaults.canSpeak ?? true,
-            canReact: defaults.canReact ?? true,
-            canSeek: defaults.canSeek ?? false,
-            canInvite: defaults.canInvite ?? true,
-          });
-        }
-      })
-      .catch(() => undefined);
-    void fetch(`${apiUrl}/ice-servers`, { headers: { authorization: `Bearer ${accessToken}` } })
-      .then((response) => response.json())
-      .then((payload: { iceServers?: Array<{ urls?: string | string[] }> }) => {
-        if (stopped) return;
-        setIceUrls((payload.iceServers ?? []).flatMap((server) => (Array.isArray(server.urls) ? server.urls : server.urls ? [server.urls] : [])));
-      })
-      .catch(() => {
-        if (!stopped) setIceUrls([]);
-      });
-    void fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${accessToken}` } })
-      .then((response) => response.json())
-      .then((payload: { hideOtherReactions?: boolean; isPremium?: boolean; recentEmojis?: string[] }) => {
-        if (stopped) return;
-        setHideOther(Boolean(payload.hideOtherReactions));
-        setPremium(Boolean(payload.isPremium));
-        setRecentEmojis(Array.isArray(payload.recentEmojis) ? payload.recentEmojis : []);
-      })
-      .catch(() => {
-        if (stopped) return;
-        setHideOther(false);
-        setPremium(false);
-        setRecentEmojis([]);
-      });
-    return () => {
-      stopped = true;
-    };
-  }, [accessToken, liveRoomId]);
-  useEffect(() => {
-    const token = live?.accessToken;
-    if (!token) return;
-    let stopped = false;
-    void fetch(`${apiUrl}/voice/preflight`, { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => response.json())
-      .then((payload: { preflight?: VoicePreflightResult | null }) => {
-        if (!stopped) setPreflight(payload.preflight ?? null);
-      })
-      .catch(() => undefined);
-    return () => {
-      stopped = true;
-    };
-  }, [live?.accessToken]);
   useEffect(() => {
     const timer = window.setInterval(() => setVoiceClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -216,49 +162,6 @@ export function RoomStage({
       })();
     };
   }, [voice.joined, live?.accessToken]);
-  useEffect(() => {
-    const room = live?.state.room.id;
-    const token = live?.accessToken;
-    if (!room || !token) return;
-    let stopped = false;
-    void fetch(`${apiUrl}/rooms/${room}/history`, { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => response.json())
-      .then((payload: { history?: Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }> }) => {
-        if (!stopped) setHistory(payload.history ?? []);
-      })
-      .catch(() => {
-        if (!stopped) setHistory([]);
-      });
-    return () => {
-      stopped = true;
-    };
-  }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
-  useEffect(() => {
-    const room = live?.state.room.id;
-    const token = live?.accessToken;
-    if (!room || !token) return;
-    let stopped = false;
-    void fetch(`${apiUrl}/me/discovery?roomId=${encodeURIComponent(room)}`, { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => response.json())
-      .then((payload: { items?: Array<{ url: string; title: string | null; reason: string }> }) => {
-        if (!stopped) setRecommendations(payload.items ?? []);
-      })
-      .catch(() => {
-        if (!stopped) setRecommendations([]);
-      });
-    return () => {
-      stopped = true;
-    };
-  }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
-  useEffect(() => {
-    const element = chatRef.current;
-    if (!element) return;
-    if (chatPinned.current) {
-      element.scrollTop = element.scrollHeight;
-    } else {
-      setChatNew((count) => count + 1);
-    }
-  }, [messageCount]);
   useEffect(() => {
     if (!hasLive || seenReady.current) return;
     seenReady.current = true;
@@ -298,19 +201,8 @@ export function RoomStage({
     ? Math.min(100, Math.max(0, (live.positionMs / room.nowPlaying.durationMs) * 100))
     : 0;
 
-  function onChatScroll() {
-    const element = chatRef.current;
-    if (!element) return;
-    const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 40;
-    chatPinned.current = atBottom;
-    if (atBottom) setChatNew(0);
-  }
-
   function jumpToLatest() {
-    const element = chatRef.current;
-    if (element) element.scrollTop = element.scrollHeight;
-    chatPinned.current = true;
-    setChatNew(0);
+    chat.jumpToLatest();
     setSeenCount(live?.state.messages.length ?? 0);
   }
 
@@ -383,17 +275,6 @@ export function RoomStage({
       .then((payload: { source?: string | null; plan?: { type?: string } }) => setDetected(`${payload.source ?? "unknown"}${payload.plan?.type ? `:${payload.plan.type}` : ""}`))
       .catch(() => setDetected(null));
     setUrl("");
-  }
-
-  async function clearHistory() {
-    if (!live) return;
-    const response = await fetch(`${apiUrl}/rooms/${room.id}/history`, {
-      method: "DELETE",
-      headers: { authorization: `Bearer ${live.accessToken}` },
-    }).catch(() => null);
-    if (response?.ok) {
-      setHistory([]);
-    }
   }
 
   function pickEmoji(emoji: string) {
@@ -674,7 +555,7 @@ export function RoomStage({
                       ) : null}
                     </div>
                   ) : null}
-                  <ol className="tr-queue q">
+                  <ol className="queue-list q">
                     {queue.slice(0, 3).map((item) => (
                       <li key={item.id} className="qi" data-testid="queue-item" data-url={item.url} data-provider={item.provider} data-title={item.title}>
                         <div className="im" style={posterStyle(item.id, item.thumbnailUrl)} />
@@ -714,7 +595,7 @@ export function RoomStage({
                   ) : null}
                 </h4>
                 {history.length === 0 ? <p className="empty-note">История пуста</p> : (
-                  <ol className="tr-queue history-list">
+                  <ol className="queue-list history-list">
                     {history.map((item) => (
                       <li key={item.id} data-testid="queue-history-item" data-url={item.url}>
                         <b>{item.title ?? item.url}</b>
@@ -802,7 +683,7 @@ export function RoomStage({
           </div>
           {railTab === "chat" ? (
             <>
-              <div className="log" data-testid="chat-log" ref={chatRef} onScroll={onChatScroll}>
+              <div className="log" data-testid="chat-log" ref={chatRef} onScroll={chat.onScroll}>
                 {live.state.messages.length === 0 ? <p className="rail-empty">Пока тихо. Напишите первым.</p> : null}
                 {live.state.messages.map((message, index) => {
                   const mine = message.userId === live.selfId;
@@ -831,9 +712,9 @@ export function RoomStage({
                 })}
               </div>
               <div className="quick">{Object.values(emojiCategories).flat().slice(0, 7).map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)} aria-label={`Реакция ${emoji}`}>{emoji}</button>)}</div>
-              {chatNew > 0 ? (
+              {chat.newCount > 0 ? (
                 <button type="button" className="chat-new" data-testid="chat-new" onClick={jumpToLatest}>
-                  {t("chat.new", { count: chatNew })}
+                  {t("chat.new", { count: chat.newCount })}
                 </button>
               ) : null}
               {emojiOpen ? (
@@ -957,7 +838,7 @@ export function RoomStage({
             <div className="mobile-sheet-panel" data-testid="mobile-sheet-panel" data-panel={mobilePanel}>
               {mobilePanel === "chat" ? (
                 <div className="log" data-testid="mobile-sheet-chat">
-                  {live.state.messages.length === 0 ? <p className="tr-empty">Пока пусто</p> : null}
+                  {live.state.messages.length === 0 ? <p className="empty-note">Пока пусто</p> : null}
                   {live.state.messages.slice(-12).map((message) => (
                     <div key={message.id} className="m">
                       <div className="bu">
@@ -982,7 +863,7 @@ export function RoomStage({
                 </ul>
               ) : null}
               {mobilePanel === "queue" ? (
-                <ol className="tr-queue mobile-sheet-queue" data-testid="mobile-sheet-queue">
+                <ol className="queue-list mobile-sheet-queue" data-testid="mobile-sheet-queue">
                   {sheetItems.length === 0 ? <li className="empty">Очередь пуста</li> : null}
                   {sheetItems.map((item) => (
                     <li key={item.id}>
@@ -1012,8 +893,7 @@ export function RoomStage({
           token={live.accessToken}
           onClose={() => setSettingsOpen(false)}
           onSaved={(next) => {
-            setRoomTitle(next.title);
-            setRoomHideReactions(Boolean(next.hideReactions));
+            setSettings({ title: next.title, hideReactions: Boolean(next.hideReactions), defaults: next.defaults ?? null });
           }}
         />
       ) : null}

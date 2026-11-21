@@ -44,7 +44,7 @@ export function ResizeHandle({
       aria-orientation={axis === "x" ? "vertical" : "horizontal"}
       aria-label={label}
       tabIndex={0}
-      className={`tr-handle tr-handle-${axis}`}
+      className={`resize-handle resize-handle-${axis}`}
       onPointerDown={(event) => {
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);

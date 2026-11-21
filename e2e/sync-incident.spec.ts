@@ -15,7 +15,7 @@ test("reporting a sync failure does not run when a video is queued", async ({ pa
   });
   await page.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await page.getByTestId("queue-add").click();
-  await expect(page.locator(".tr-queue li")).toHaveCount(1, { timeout: 15_000 });
+  await expect(page.locator(".queue-list li")).toHaveCount(1, { timeout: 15_000 });
   expect(incidents).toBe(0);
 
   const posted = page.waitForResponse((response) => response.url().includes("/sync-incident") && response.request().method() === "POST");

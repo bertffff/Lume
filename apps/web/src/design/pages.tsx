@@ -162,7 +162,7 @@ export function SettingsScreen({
         <div className="set-row" id="settings-notifications"><div><b>Уведомления</b><small>Сеансы друзей, приглашения, напоминания</small></div></div>
         <div className="set-row" id="settings-privacy">
           <div><b>Приватность</b><small>Друзья и история видны другим, пока вы не скроете их.</small></div>
-          <label className="tr-check">
+          <label className="check">
             <input
               data-testid="privacy-friends"
               type="checkbox"
@@ -176,7 +176,7 @@ export function SettingsScreen({
             />
             Друзья видны
           </label>
-          <label className="tr-check">
+          <label className="check">
             <input
               data-testid="privacy-history"
               type="checkbox"
@@ -758,70 +758,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
       </div>
       <div className="mf"><button type="button" className="btn btn-ghost" onClick={onDone}>Пропустить</button><button type="button" className="btn btn-primary" onClick={onDone}>Дальше</button></div>
     </div></div>
-  );
-}
-
-export function RoomSettingsScreen({ token, apiUrl, roomId }: { token?: string; apiUrl?: string; roomId?: string | null }) {
-  const [settings, setSettings] = useState<{
-    title: string;
-    description: string;
-    isPublic: boolean;
-    maxMembers: number;
-    hideReactions: boolean;
-    defaults: Record<string, boolean> | null;
-  } | null>(null);
-  const [incidents, setIncidents] = useState<Array<{ id: string; detail: string }>>([]);
-  useEffect(() => {
-    if (!token || !apiUrl || !roomId) return;
-    let stopped = false;
-    void fetch(`${apiUrl}/rooms/${roomId}/sync-incidents`, { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => response.json())
-      .then((payload: { incidents?: Array<{ id: string; detail: string }> }) => {
-        if (!stopped) setIncidents(payload.incidents ?? []);
-      })
-      .catch(() => {
-        if (!stopped) setIncidents([]);
-      });
-    void fetch(`${apiUrl}/rooms/${roomId}/settings`, { headers: { authorization: `Bearer ${token}` } })
-      .then((response) => response.json())
-      .then((payload: typeof settings) => {
-        if (!stopped) setSettings(payload);
-      })
-      .catch(() => undefined);
-    return () => {
-      stopped = true;
-    };
-  }, [token, apiUrl, roomId]);
-  if (!token || !roomId) {
-    return (
-      <div className="settings-wrap">
-        <div className="panel">
-          <h2>Настройки комнаты</h2>
-          <p className="empty-note">Откройте комнату, чтобы увидеть её настройки.</p>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="settings-wrap">
-      <aside><div className="slink on">Модерация</div><div className="slink">Права</div></aside>
-      <div className="panel">
-        <h2>Настройки комнаты</h2>
-        <p className="lead">Текущие значения из базы. Изменять их можно в самой комнате.</p>
-        {settings ? (
-          <>
-            <div className="set-row"><div><b>{settings.title}</b><small>{settings.isPublic ? "Публичная комната" : "Вход по коду"}</small></div></div>
-            <div className="set-row"><div><b>Лимит участников</b><small>{settings.maxMembers}</small></div></div>
-            <div className="set-row"><div><b>Чужие реакции</b><small>{settings.hideReactions ? "Скрыты" : "Показаны"}</small></div></div>
-            {viewerPermissionKeys.map((key) => (
-              <div className="set-row" key={key}><div><b>{permissionLabel(key)}</b><small>{settings.defaults?.[key] ? "Разрешено зрителям" : "Запрещено зрителям"}</small></div></div>
-            ))}
-          </>
-        ) : <p className="empty-note">Загрузка настроек…</p>}
-        <h3>Сбои синхронизации</h3>
-        {incidents.length === 0 ? <p>Пока пусто. Храним последние 10.</p> : incidents.map((item) => <p key={item.id}>{item.detail || item.id}</p>)}
-      </div>
-    </div>
   );
 }
 

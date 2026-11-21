@@ -45,7 +45,7 @@ test("the create wizard applies the full moderation preset instead of only the t
   await guest.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await guest.getByTestId("queue-add").click();
   await guest.waitForTimeout(1200);
-  await expect(owner.locator(".tr-queue li")).toHaveCount(0);
+  await expect(owner.locator(".queue-list li")).toHaveCount(0);
 
   await guest.getByTestId("chat-input").fill(`чат из пресета ${stamp}`);
   await guest.getByTestId("chat-send").click();

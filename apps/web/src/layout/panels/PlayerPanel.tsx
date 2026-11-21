@@ -1,48 +1,18 @@
-import {
-  autoQuality,
-  gestureDelta,
-  heartbeatLag,
-  planDrift,
-  playbackRates,
-  shouldHoldForReady,
-  shouldCorrectDrift,
-  positionAt,
-  type AdapterPhase,
-  type PlaybackSnapshot,
-  type PlayerAdapter,
-} from "@lume/contracts";
+import { positionAt, shouldCorrectDrift, type AdapterPhase, type PlayerAdapter } from "@lume/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiUrl } from "../../api/client.js";
 import { useI18n } from "../../i18n/context.js";
 import { containSize } from "../contain.js";
 import { createPlayerAdapter } from "../../player/create.js";
 import { useFollowSync } from "../../player/useFollowSync.js";
 import { useRoomActions } from "../../room/live.js";
 
-const aspects = [
-  { id: "16:9", value: 16 / 9 },
-  { id: "4:3", value: 4 / 3 },
-  { id: "1:1", value: 1 },
-  { id: "9:16", value: 9 / 16 },
-] as const;
-
-function nearestAspect(aspect: number) {
-  return aspects.reduce((best, item) =>
-    Math.abs(item.value - aspect) < Math.abs(best.value - aspect) ? item : best,
-  );
-}
-
-function clock(totalSeconds: number): string {
-  const safe = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
+/**
+ * The live room renders the player inside its own stage card. The former
+ * standalone panel chrome is gone with the unused RoomLayoutView.
+ */
 export function PlayerPanel({
   aspect,
   onAspect,
-  bare = false,
   onError,
 }: {
   aspect: number;
@@ -53,32 +23,35 @@ export function PlayerPanel({
 }) {
   const { t } = useI18n();
   const handed = useRef(false);
-  const [hideFloats, setHideFloats] = useState(() => window.localStorage.getItem("lume-hide-floats") === "1");
-  const [hideRoomFloats, setHideRoomFloats] = useState(false);
-  const [quality, setQuality] = useState(() => window.localStorage.getItem("lume-quality") ?? "auto");
   const [emptyUrl, setEmptyUrl] = useState("");
-  const [lowBandwidth, setLowBandwidth] = useState(() => window.localStorage.getItem("lume-low-bandwidth") === "1");
   const live = useRoomActions();
-  useEffect(() => {
-    if (!live?.canControl) return;
-    const timer = window.setInterval(() => live.heartbeat(), 1000);
-    return () => window.clearInterval(timer);
-  }, [live]);
   const frameRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const adapterRef = useRef<PlayerAdapter | null>(null);
   const phaseRef = useRef<AdapterPhase>("idle");
   const [box, setBox] = useState({ width: 0, height: 0 });
-  const [limited, setLimited] = useState(false);
   const [blocked, setBlocked] = useState(false);
-  const current = nearestAspect(aspect);
-  const playback: PlaybackSnapshot | null = live?.state.playback ?? null;
+  const playback = live?.state.playback ?? null;
   const nowPlaying = live?.state.room.nowPlaying ?? null;
   const reportedAspect = useRef(aspect);
   const reportViewerRef = useRef(live?.reportViewer);
   const canControlRef = useRef(live?.canControl);
   const playNextRef = useRef(live?.playNext);
+  const setPlaybackRef = useRef(live?.setPlayback);
+  const onAspectRef = useRef(onAspect);
+  const onErrorRef = useRef(onError);
+  const playbackRef = useRef(playback);
+  const offsetRef = useRef(live?.offsetMs ?? 0);
+  const lastHostCommand = useRef("");
+  reportViewerRef.current = live?.reportViewer;
+  canControlRef.current = live?.canControl;
   playNextRef.current = live?.playNext;
+  setPlaybackRef.current = live?.setPlayback;
+  onAspectRef.current = onAspect;
+  onErrorRef.current = onError;
+  playbackRef.current = playback;
+  offsetRef.current = live?.offsetMs ?? 0;
+
   useEffect(() => {
     if (handed.current || !live) return;
     const params = new URLSearchParams(window.location.search);
@@ -89,19 +62,8 @@ export function PlayerPanel({
     if (video) live.addQueue(video);
     if (at && Number.isFinite(Number(at))) live.setPlayback("seek", Number(at) * 1000);
   }, [live]);
-  const setPlaybackRef = useRef(live?.setPlayback);
-  reportViewerRef.current = live?.reportViewer;
-  canControlRef.current = live?.canControl;
-  setPlaybackRef.current = live?.setPlayback;
-  const onBlocked = useCallback(() => setBlocked(true), []);
-  const playbackStatusRef = useRef(playback?.status);
-  playbackStatusRef.current = playback?.status;
-  const playbackRef = useRef(playback);
-  playbackRef.current = playback;
-  const offsetRef = useRef(live?.offsetMs ?? 0);
-  offsetRef.current = live?.offsetMs ?? 0;
-  const lastHostCommand = useRef("");
 
+  const onBlocked = useCallback(() => setBlocked(true), []);
   const applyHostPlayback = useCallback((adapter: PlayerAdapter) => {
     const snapshot = playbackRef.current;
     if (!snapshot) return;
@@ -126,16 +88,10 @@ export function PlayerPanel({
       void adapter.pause().then(() => adapter.seek(target)).catch(() => undefined);
     }
   }, []);
-  const onAspectRef = useRef(onAspect);
-  onAspectRef.current = onAspect;
-  const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
 
   useEffect(() => {
     const element = frameRef.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
     const measure = () => {
       const rect = element.getBoundingClientRect();
       setBox(containSize(rect.width, rect.height, aspect));
@@ -154,7 +110,6 @@ export function PlayerPanel({
       return;
     }
     let cancelled = false;
-    setLimited(false);
     setBlocked(false);
     void createPlayerAdapter(nowPlaying, mount, window.location.hostname)
       .then((adapter) => {
@@ -163,39 +118,23 @@ export function PlayerPanel({
           return;
         }
         adapterRef.current = adapter;
-        setLimited(adapter.limited);
-        if (canControlRef.current) {
-          applyHostPlayback(adapter);
-        }
+        if (canControlRef.current) applyHostPlayback(adapter);
         adapter.onState((state) => {
-          phaseRef.current = state.phase;
           if (state.phase === "error") onErrorRef.current?.(nowPlaying?.url ?? "");
-          if (canControlRef.current && playbackStatusRef.current === "playing" && state.phase === "ready") {
+          if (canControlRef.current && playbackRef.current?.status === "playing" && state.phase === "ready") {
             void adapter.play();
           }
-          if (canControlRef.current && state.phase === "ended") {
-            playNextRef.current?.();
-          }
-          if (
-            state.aspectRatio &&
-            state.aspectRatio > 0 &&
-            Math.abs(state.aspectRatio - reportedAspect.current) > 0.04
-          ) {
+          if (canControlRef.current && state.phase === "ended") playNextRef.current?.();
+          if (state.aspectRatio && state.aspectRatio > 0 && Math.abs(state.aspectRatio - reportedAspect.current) > 0.04) {
             reportedAspect.current = state.aspectRatio;
             onAspectRef.current(state.aspectRatio);
           }
-          if (
-            !canControlRef.current &&
-            (state.phase === "buffering" || state.phase === "ready" || state.phase === "playing")
-          ) {
+          if (!canControlRef.current && (state.phase === "buffering" || state.phase === "ready" || state.phase === "playing")) {
             reportViewerRef.current?.(state.phase === "buffering" ? "buffering" : "ready");
           }
         });
       })
-      .catch(() => {
-        phaseRef.current = "error";
-        onErrorRef.current?.(nowPlaying?.url ?? "");
-      });
+      .catch(() => onErrorRef.current?.(nowPlaying?.url ?? ""));
     return () => {
       cancelled = true;
       adapterRef.current?.destroy();
@@ -221,14 +160,10 @@ export function PlayerPanel({
   });
 
   useEffect(() => {
-    if (!live?.canControl || !playback || playback.status !== "playing") {
-      return;
-    }
+    if (!live?.canControl || !playback || playback.status !== "playing") return;
     const timer = window.setInterval(() => {
       const adapter = adapterRef.current;
-      if (!adapter) {
-        return;
-      }
+      if (!adapter) return;
       const predicted = positionAt(
         {
           status: playback.status,
@@ -247,300 +182,43 @@ export function PlayerPanel({
     return () => window.clearInterval(timer);
   }, [live?.canControl, live?.offsetMs, playback]);
 
-  function cycleAspect() {
-    const index = aspects.findIndex((item) => item.id === current.id);
-    const next = aspects[(index + 1) % aspects.length];
-    if (next) {
-      onAspect(next.value);
-    }
-  }
-
-  async function toggle() {
-    const adapter = adapterRef.current;
-    if (!live) {
-      return;
-    }
-    if (playback?.status === "playing") {
-      const position = Math.round(adapter?.getCurrentTime() ?? live.positionMs);
-      live.setPlayback("pause", position);
-      await adapter?.pause();
-      return;
-    }
-    const position = Math.round(adapter?.getCurrentTime() ?? 0);
-    live.setPlayback("play", position);
-    if (!adapter) {
-      return;
-    }
-    try {
-      await adapter.play();
-      setBlocked(false);
-    } catch {
-      setBlocked(true);
-    }
-  }
-
-  async function seekForward() {
-    const adapter = adapterRef.current;
-    const base = adapter?.getCurrentTime() ?? live?.positionMs ?? 0;
-    const next = Math.round(base + 15_000);
-    await adapter?.seek(next);
-    live?.setPlayback("seek", next);
-  }
-
-  async function unblock() {
-    try {
-      await adapterRef.current?.play();
-      setBlocked(false);
-    } catch {
-      setBlocked(true);
-    }
-  }
-
-  const playing = playback?.status === "playing";
-  const label = `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock((live?.positionMs ?? 0) / 1000)}`;
-  const syncLabel = (() => {
-    const adapter = adapterRef.current;
-    if (!adapter || !playback || live?.canControl) return t("player.synced");
-    const plan = planDrift({
-      localMs: adapter.getCurrentTime(),
-      expectedMs: live?.positionMs ?? 0,
-      embed: adapter.limited,
-      loadedAgoMs: 20_000,
-      bufferedToMs: adapter.getBuffered(),
-      recentSeeks: [],
-      nowMs: Date.now(),
-      buffering: phaseRef.current === "buffering",
-      bufferEndedAtMs: null,
-    });
-    if (plan.status === "waiting") return t("player.waiting");
-    if (plan.status === "hard-seeking") return t("player.lagging");
-    if (plan.status === "soft-correcting") return t("player.syncing");
-    return t("player.synced");
-  })();
-  const bufferingNames =
-    live?.state.viewers
-      .filter((viewer) => viewer.phase === "buffering")
-      .map((viewer) => live.state.members.find((member) => member.userId === viewer.userId)?.displayName ?? viewer.userId) ??
-    [];
-
-  if (bare) {
-    return (
-      <div className="tr-frame bare-stage" ref={frameRef}>
-        {nowPlaying ? (
-          <div ref={mountRef} className="tr-embed" data-testid="player-mount" />
-        ) : (
-          <div className="player-empty" data-testid="player-empty">
-            <span className="pe-ic" aria-hidden="true">▶</span>
-            <h2>Пока ничего не играет</h2>
-            <p>Вставьте ссылку на видео — оно встанет в очередь. Запустить может ведущий комнаты.</p>
-            <form onSubmit={(event) => {
+  return (
+    <div className="player-frame bare-stage" ref={frameRef}>
+      {nowPlaying ? (
+        <div ref={mountRef} className="player-embed" data-testid="player-mount" style={{ width: box.width, height: box.height }} />
+      ) : (
+        <div className="player-empty" data-testid="player-empty">
+          <span className="pe-ic" aria-hidden="true">▶</span>
+          <h2>{t("player.emptyTitle")}</h2>
+          <p>{t("player.emptyBody")}</p>
+          <form
+            onSubmit={(event) => {
               event.preventDefault();
               const next = emptyUrl.trim();
               if (!next) return;
               live?.addQueue(next);
               setEmptyUrl("");
-            }}>
-              <input
-                value={emptyUrl}
-                onChange={(event) => setEmptyUrl(event.target.value)}
-                placeholder="https://youtube.com/watch?v=…"
-                aria-label="Ссылка на видео"
-                data-testid="player-empty-url"
-              />
-              <button type="submit" className="btn btn-primary" data-testid="player-empty-add">Добавить в очередь</button>
-            </form>
-            <span className="pe-hint">YouTube · VK · Rutube · прямая ссылка на файл</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <section className="tr-panel tr-player" aria-label={t("player.stage")}>
-      <header className="tr-panel-bar">
-        <span>{t("player.stage")}</span>
-        <span className="tr-chip" data-testid="playback-status">
-          {label}
-        </span>
-      </header>
-      <div
-        className="tr-frame"
-        ref={frameRef}
-        onDoubleClick={(event) => {
-          if (!live?.canControl) return;
-          const bounds = event.currentTarget.getBoundingClientRect();
-          const ratio = (event.clientX - bounds.left) / Math.max(1, bounds.width);
-          const zone = ratio < 0.33 ? "left" : ratio > 0.66 ? "right" : "center";
-          const delta = gestureDelta(zone, 2);
-          if (typeof delta === "number") live.setPlayback("seek", Math.max(0, live.positionMs + delta * 1000));
-        }}
-      >
-        <div className="tr-stage" style={{ width: box.width, height: box.height }}>
-          {nowPlaying ? (
-            <div ref={mountRef} className="tr-embed" data-testid="player-mount" />
-          ) : (
-            <p className="tr-empty">{t("player.empty")}</p>
-          )}
-          {live?.canControl ? (
-            <button
-              type="button"
-              className="tr-play"
-              data-testid="playback-play"
-              onClick={() => void toggle()}
-              aria-label={playing ? t("player.pause") : t("player.play")}
-            >
-              {playing ? "II" : "▶"}
+            }}
+          >
+            <input
+              value={emptyUrl}
+              onChange={(event) => setEmptyUrl(event.target.value)}
+              placeholder="https://youtube.com/watch?v=…"
+              aria-label={t("queue.url")}
+              data-testid="player-empty-url"
+            />
+            <button type="submit" className="btn btn-primary" data-testid="player-empty-add">
+              {t("queue.add")}
             </button>
-          ) : null}
-          {blocked ? (
-            <button type="button" className="tr-play" onClick={() => void unblock()}>
-              {t("player.unblock")}
-            </button>
-          ) : null}
+          </form>
+          <span className="pe-hint">{t("player.emptyHint")}</span>
         </div>
-      </div>
-      <footer className="tr-panel-bar">
-        <button type="button" className="tr-text-button" onClick={cycleAspect}>
-          {t("player.aspect")} {current.id}
+      )}
+      {nowPlaying && blocked ? (
+        <button type="button" className="player-unblock" onClick={() => void adapterRef.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))}>
+          {t("player.unblock")}
         </button>
-        {live?.canControl ? (
-          <button type="button" className="tr-text-button" onClick={() => void seekForward()}>
-            {t("player.seek")}
-          </button>
-        ) : null}
-        {nowPlaying ? <span>{nowPlaying.title}</span> : null}
-        {limited ? <span className="tr-chip">{t("player.limited")}</span> : null}
-        {bufferingNames.length > 0 ? (
-          <span className="tr-chip" data-testid="buffering-list">
-            {t("player.buffering")}: {bufferingNames.join(", ")}
-          </span>
-        ) : null}
-        <button type="button" className="tr-text-button" data-testid="vote-skip" onClick={() => live?.voteSkip(false)}>
-          {t("player.skip")} {live?.skip.votes ?? 0}/{live?.skip.needed ?? 1}
-        </button>
-        <button
-          type="button"
-          className="tr-text-button"
-          data-testid="resync"
-          onClick={() => {
-            const adapter = adapterRef.current;
-            if (!adapter || !live) return;
-            void adapter.seek(Math.max(0, Math.round(live.positionMs)));
-          }}
-        >
-          {t("player.resync")}
-        </button>
-        <span className="tr-chip" data-testid="sync-indicator">
-          {syncLabel}
-          {live?.heartbeatAt ? ` ${heartbeatLag(Date.now(), live.heartbeatAt)}` : ""}
-        </span>
-        <label className="tr-check">
-          <input type="checkbox" onChange={(event) => {
-            if (shouldHoldForReady(event.target.checked, bufferingNames.length)) live?.setPlayback("pause", live.positionMs);
-          }} />
-          {t("player.buffering")}
-        </label>
-        <button type="button" className="tr-text-button" onClick={() => live?.heartbeat()}>{t("player.resync")}</button>
-        {nowPlaying ? (
-          <button type="button" className="tr-text-button" onClick={() => {
-            void fetch(`${apiUrl}/video/resolve`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: nowPlaying.url }) });
-          }}>{t("player.quality")}</button>
-        ) : null}
-        <button type="button" className="tr-text-button" onClick={() => {
-          const next = window.prompt(t("queue.url"));
-          if (next) live?.addQueue(next);
-        }}>{t("queue.add")}</button>
-        {(["👍", "❤️", "😂", "🔥"] as const).map((emoji) => (
-          <button key={emoji} type="button" className="tr-text-button" onClick={() => live?.sendFloat(emoji)}>
-            {emoji}
-          </button>
-        ))}
-        <button
-          type="button"
-          className="tr-text-button"
-          onClick={() => {
-            const seconds = Math.round((live?.positionMs ?? 0) / 1000);
-            const url = nowPlaying?.url ?? "";
-            const link = `${window.location.origin}${window.location.pathname}?t=${seconds}&v=${encodeURIComponent(url)}`;
-            void navigator.clipboard?.writeText(link);
-          }}
-        >
-          {t("player.share")}
-        </button>
-        <label>
-          {t("player.quality")}
-          <select
-            value={quality}
-            onChange={(event) => {
-              const next = event.target.value;
-              setQuality(next);
-              window.localStorage.setItem("lume-quality", next);
-            }}
-          >
-            <option value="auto">{autoQuality(null)}</option>
-            <option value="low">low</option>
-            <option value="high">high</option>
-          </select>
-        </label>
-        <label>
-          {t("player.speed")}
-          <select
-            onChange={(event) => adapterRef.current?.setPlaybackRate?.(Number(event.target.value))}
-            defaultValue="1"
-          >
-            {playbackRates.map((rate) => (
-              <option key={rate} value={rate}>{rate}</option>
-            ))}
-          </select>
-        </label>
-        <label className="tr-check">
-          <input
-            type="checkbox"
-            checked={lowBandwidth}
-            onChange={(event) => {
-              setLowBandwidth(event.target.checked);
-              window.localStorage.setItem("lume-low-bandwidth", event.target.checked ? "1" : "0");
-              document.documentElement.toggleAttribute("data-low-bandwidth", event.target.checked);
-            }}
-          />
-          {t("player.low")}
-        </label>
-      </footer>
-      <label className="tr-check">
-        <input
-          type="checkbox"
-          checked={hideFloats}
-          onChange={(event) => {
-            setHideFloats(event.target.checked);
-            window.localStorage.setItem("lume-hide-floats", event.target.checked ? "1" : "0");
-          }}
-        />
-        {t("player.hideMine")}
-      </label>
-      <label className="tr-check">
-        <input
-          type="checkbox"
-          checked={hideRoomFloats}
-          onChange={(event) => {
-            setHideRoomFloats(event.target.checked);
-            if (!live) return;
-            void fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:3001"}/rooms/${live.state.room.id}/settings`, {
-              method: "PATCH",
-              headers: { "content-type": "application/json", authorization: `Bearer ${live.accessToken}` },
-              body: JSON.stringify({ hideReactions: event.target.checked }),
-            });
-          }}
-        />
-        {t("player.hideRoom")}
-      </label>
-      <div className="tr-floats" aria-hidden="true">
-        {(live?.floats ?? []).filter((item) => !hideRoomFloats && !(hideFloats && item.userId !== live?.selfId)).map((item) => (
-          <span key={item.id} style={{ left: `${item.x}%`, top: `${item.y}%` }}>
-            {item.emoji}
-          </span>
-        ))}
-      </div>
-    </section>
+      ) : null}
+    </div>
   );
 }
