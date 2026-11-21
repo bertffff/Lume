@@ -1,0 +1,35 @@
+
+{
+  "header": "Chat",
+  "placeholder": "Type a message...",
+  "sendButton": "Send",
+  "replyPreview": "Photo",
+  "emoji": {
+    "button": "Emoji",
+    "searchPlaceholder": "Search emoji...",
+    "noResults": "Nothing found",
+    "noRecent": "No recent emojis",
+    "categories": {
+      "smileys": "Smileys",
+      "gestures": "Gestures",
+      "objects": "Objects",
+      "symbols": "Symbols",
+      "recent": "Recent"
+    }
+  },
+  "reactions": {
+    "title": "Reactions"
+  },
+  "typing": "typing...",
+  "photo": "📷 Photo",
+  "disabled": "Chat disabled by host",
+  "replyPlaceholder": "Reply...",
+  "messagePlaceholder": "Message...",
+  "pinned": {
+    "title": "Pinned"
+  },
+  "unread": "Unread",
+  "jumpToTimecode": "Jump to timecode"
+}
+
+

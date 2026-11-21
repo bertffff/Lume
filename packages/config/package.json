@@ -1,0 +1,19 @@
+{
+  "name": "@lume/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./eslint/node.js": "./eslint/node.js",
+    "./eslint/react.js": "./eslint/react.js",
+    "./tailwind/theme.css": "./tailwind/theme.css"
+  },
+  "dependencies": {
+    "@eslint/js": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "typescript-eslint": "catalog:"
+  }
+}

@@ -1,0 +1,108 @@
+@import "tailwindcss";
+@import "@lume/config/tailwind/theme.css";
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/fraunces/500.css";
+
+:root {
+  color-scheme: dark;
+  --lume-bg: #100e0c;
+  --lume-surface: #1b1612;
+  --lume-panel: #241c16;
+  --lume-text: #f6efe6;
+  --lume-muted: #b3a292;
+  --lume-accent: #e3924a;
+  --lume-accent-text: #1a1008;
+  --lume-line: rgba(246, 239, 230, 0.14);
+  --lume-danger: #e15b4c;
+  --lume-ok: #8fbf78;
+  --lume-radius-sm: 8px;
+  --lume-radius-md: 16px;
+  --lume-radius-lg: 28px;
+  --lume-font-sans: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+  --lume-font-display: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --z-nav: 20;
+  --z-sheet: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 420px at 12% -10%, color-mix(in srgb, var(--lume-accent) 22%, transparent), transparent 70%),
+    var(--lume-bg);
+  color: var(--lume-text);
+  font-family: var(--lume-font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent, var(--lume-accent));
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(255, 178, 62, 0.32);
+  color: #fff7ec;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

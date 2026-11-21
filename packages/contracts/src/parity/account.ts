@@ -1,0 +1,229 @@
+export function vkEmbedCommand(videoId: string): { source: "vk" | "rutube"; method: "play" | "pause"; videoId: string } {
+  return { source: videoId.startsWith("rt") ? "rutube" : "vk", method: "play", videoId };
+}
+
+export const viewerPermissionKeys = ["canChat", "canQueue", "canSpeak", "canReact", "canSeek", "canInvite"] as const;
+
+export const moderationPresets = ["Киноночь", "Вечеринка", "Закрытый", "С модерацией"] as const;
+
+export function cobaltServices(apiUrl: string | undefined): string[] {
+  return apiUrl ? ["cobalt"] : [];
+}
+
+export function needsRange(header: string | undefined): boolean {
+  return header === undefined || !header.startsWith("bytes=");
+}
+
+export function favouriteLine(title: string | null, watchCount: number): string {
+  return `${title ?? "видео"} · ${watchCount}`;
+}
+
+export function historyLabel(count: number): string {
+  return count > 0 ? `история ${count}` : "";
+}
+
+export function withoutBlocked<T extends { id: string }>(rows: readonly T[], id: string): T[] {
+  return rows.filter((row) => row.id !== id);
+}
+
+export const emojiCategories = {
+  hot: ["🔥", "❤️", "😂"],
+  faces: ["😮", "👏", "😢"],
+  marks: ["👍", "👎", "✨"],
+} as const;
+
+/** Category tabs for the chat emoji picker. Quick reactions stay in emojiCategories. */
+export const emojiPickerCategories = {
+  faces: ["😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😎", "🤔", "😮", "😢", "😭"],
+  gestures: ["👍", "👎", "👏", "🙌", "🤝", "✌️", "🤞", "👌"],
+  hearts: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💔", "💯"],
+  animals: ["🐶", "🐱", "🦊", "🐻", "🐼", "🦁", "🐸", "🐵"],
+  food: ["🍕", "🍔", "🌮", "🍣", "🍿", "🍩", "🍎", "🍺"],
+  symbols: ["🔥", "✨", "🎉", "🎬", "🎵", "⚡", "💫", "✅"],
+} as const;
+
+export const emojiKeywords: Record<string, readonly string[]> = {
+  "😀": ["улыбка", "смех", "smile"],
+  "😁": ["ухмылка", "grin"],
+  "😂": ["смех", "слёзы", "laugh"],
+  "🤣": ["ржу", "laugh"],
+  "😊": ["улыбка", "blush"],
+  "😍": ["любовь", "heart-eyes"],
+  "😘": ["поцелуй", "kiss"],
+  "😎": ["круто", "sunglasses"],
+  "🤔": ["думаю", "think"],
+  "😮": ["удивление", "wow"],
+  "😢": ["грусть", "слеза", "sad"],
+  "😭": ["плач", "cry"],
+  "👍": ["лайк", "палец", "up"],
+  "👎": ["дислайк", "down"],
+  "👏": ["аплодисменты", "clap"],
+  "🙌": ["руки", "celebrate"],
+  "🤝": ["рукопожатие", "handshake"],
+  "✌️": ["мир", "peace"],
+  "🤞": ["удача", "luck"],
+  "👌": ["ок", "ok"],
+  "❤️": ["сердце", "love"],
+  "🧡": ["оранжевое", "heart"],
+  "💛": ["жёлтое", "yellow"],
+  "💚": ["зелёное", "green"],
+  "💙": ["синее", "blue"],
+  "💜": ["фиолетовое", "purple"],
+  "🖤": ["чёрное", "black"],
+  "💔": ["разбитое", "broken"],
+  "💯": ["сто", "процентов", "hundred"],
+  "🐶": ["собака", "dog"],
+  "🐱": ["кошка", "cat"],
+  "🦊": ["лиса", "fox"],
+  "🐻": ["медведь", "bear"],
+  "🐼": ["панда", "panda"],
+  "🦁": ["лев", "lion"],
+  "🐸": ["жаба", "frog"],
+  "🐵": ["обезьяна", "monkey"],
+  "🍕": ["пицца", "pizza"],
+  "🍔": ["бургер", "burger"],
+  "🌮": ["тако", "taco"],
+  "🍣": ["суши", "sushi"],
+  "🍿": ["попкорн", "popcorn"],
+  "🍩": ["пончик", "donut"],
+  "🍎": ["яблоко", "apple"],
+  "🍺": ["пиво", "beer"],
+  "🔥": ["огонь", "fire"],
+  "✨": ["блеск", "sparkles"],
+  "🎉": ["праздник", "party"],
+  "🎬": ["кино", "movie"],
+  "🎵": ["музыка", "music"],
+  "⚡": ["молния", "lightning"],
+  "💫": ["звезда", "star"],
+  "✅": ["галочка", "check"],
+};
+
+export type EmojiPickerCategory = keyof typeof emojiPickerCategories;
+
+export const emojiPickerCategoryIds = [
+  "recent",
+  ...(Object.keys(emojiPickerCategories) as EmojiPickerCategory[]),
+] as const;
+
+export const roomSheetPanels = ["chat", "members", "queue"] as const;
+export type RoomSheetPanel = (typeof roomSheetPanels)[number];
+
+export function getNextRoomPanel(current: RoomSheetPanel, direction: 1 | -1 = 1): RoomSheetPanel {
+  const index = roomSheetPanels.indexOf(current);
+  const next = (index + direction + roomSheetPanels.length) % roomSheetPanels.length;
+  return roomSheetPanels[next] ?? "chat";
+}
+
+export function lastIncidents<T>(items: readonly T[], limit = 10): T[] {
+  return items.slice(0, limit);
+}
+
+export const recoveryActions = ["retry", "open", "replace"] as const;
+
+export function refreshKeepsPlayback(positionMs: number, playing: boolean): { positionMs: number; status: "playing" | "paused" } {
+  return { positionMs: Math.max(0, Math.round(positionMs)), status: playing ? "playing" : "paused" };
+}
+
+export function reportIssue(reason: string, targetId: string): "reason" | "target" | null {
+  if (!targetId.trim()) return "target";
+  const text = reason.trim();
+  if (text.length < 1 || text.length > 500) return "reason";
+  return null;
+}
+
+export function matchesBrowse(title: string, code: string, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  return needle.length === 0 || title.toLowerCase().includes(needle) || code.toLowerCase().includes(needle);
+}
+
+export function clampResumePosition(positionMs: number, durationMs = Number.POSITIVE_INFINITY): number {
+  const safe = Math.max(0, positionMs);
+  return Number.isFinite(durationMs) ? Math.min(safe, Math.max(0, durationMs)) : safe;
+}
+
+export function scheduledDeletion(nowMs: number): number {
+  return nowMs + 30 * 24 * 60 * 60 * 1000;
+}
+
+export function linkedLabel(accounts: { email: boolean; telegram: boolean }): string {
+  const parts = [accounts.email ? "почта" : null, accounts.telegram ? "Telegram" : null].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "нет";
+}
+
+export function unlinkAllowed(hasEmail: boolean): boolean {
+  return hasEmail;
+}
+
+export function magicTokenFromSearch(search: string): string | null {
+  const token = new URLSearchParams(search).get("magic");
+  return token && token.length >= 8 ? token : null;
+}
+
+export function registerAvailability(nodeEnv: string, redisConfigured: boolean): "ok" | "redis_unconfigured" {
+  return nodeEnv === "production" && !redisConfigured ? "redis_unconfigured" : "ok";
+}
+
+export function passwordIssue(password: string): "short" | "long" | "shape" | null {
+  if (password.length < 8) return "short";
+  if (password.length > 128) return "long";
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) return "shape";
+  return null;
+}
+
+export interface ResumeSnapshot {
+  title: string;
+  description: string;
+  isPublic: boolean;
+  maxMembers: number;
+  videoUrl: string | null;
+  positionMs: number;
+  queue: Array<{ url: string; title: string }>;
+  historyCount: number;
+}
+
+export function resumeCard(snapshot: ResumeSnapshot | null): {
+  title: string;
+  positionMs: number;
+  queueCount: number;
+  historyCount: number;
+} | null {
+  if (!snapshot?.videoUrl && snapshot?.queue.length === 0) {
+    return snapshot
+      ? { title: snapshot.title, positionMs: snapshot.positionMs, queueCount: 0, historyCount: snapshot.historyCount }
+      : null;
+  }
+  if (!snapshot) return null;
+  return {
+    title: snapshot.title,
+    positionMs: snapshot.positionMs,
+    queueCount: snapshot.queue.length,
+    historyCount: snapshot.historyCount,
+  };
+}
+
+export interface RateBucket {
+  hits: number[];
+}
+
+export function allowHit(bucket: RateBucket, nowMs: number, limit: number, windowMs: number): { ok: boolean; bucket: RateBucket } {
+  const hits = bucket.hits.filter((hit) => nowMs - hit < windowMs);
+  if (hits.length >= limit) {
+    return { ok: false, bucket: { hits } };
+  }
+  hits.push(nowMs);
+  return { ok: true, bucket: { hits } };
+}
+
+export function tempMuteExpiry(nowMs: number, seconds: number): number | null {
+  if (seconds < 30 || seconds > 24 * 60 * 60) {
+    return null;
+  }
+  return nowMs + seconds * 1000;
+}
+
+export function slowModeAllows(lastMessageAtMs: number | null, nowMs: number, intervalSeconds: number, host: boolean): boolean {
+  if (host || intervalSeconds <= 0 || lastMessageAtMs === null) {
+    return true;
+  }
+  return nowMs - lastMessageAtMs >= intervalSeconds * 1000;
+}

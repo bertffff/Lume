@@ -1,0 +1,35 @@
+
+{
+  "header": "Чат",
+  "placeholder": "Напишите сообщение...",
+  "sendButton": "Отправить",
+  "replyPreview": "Фото",
+  "emoji": {
+    "button": "Эмодзи",
+    "searchPlaceholder": "Поиск эмодзи...",
+    "noResults": "Ничего не найдено",
+    "noRecent": "Нет недавних эмодзи",
+    "categories": {
+      "smileys": "Смайлики",
+      "gestures": "Жесты",
+      "objects": "Объекты",
+      "symbols": "Символы",
+      "recent": "Недавние"
+    }
+  },
+  "reactions": {
+    "title": "Реакции"
+  },
+  "typing": "печатает...",
+  "photo": "📷 Фото",
+  "disabled": "Чат отключён хостом",
+  "replyPlaceholder": "Ответить...",
+  "messagePlaceholder": "Сообщение...",
+  "pinned": {
+    "title": "Закреплено"
+  },
+  "unread": "Новые",
+  "jumpToTimecode": "К таймкоду"
+}
+
+
