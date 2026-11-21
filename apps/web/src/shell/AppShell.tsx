@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useI18n } from "../i18n/context.js";
 
 /** One frame for every product surface: admin, room, home and pages. */
 export function AppShell({
@@ -14,10 +15,14 @@ export function AppShell({
   footer?: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <div className={`design-app app-shell ${className}`.trim()} data-view={view}>
+      <a className="skip-link" href="#app-main">
+        {t("a11y.skip")}
+      </a>
       {header}
-      <main className="app-shell-main">{children}</main>
+      <main id="app-main" className="app-shell-main">{children}</main>
       {footer}
     </div>
   );

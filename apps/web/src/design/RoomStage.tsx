@@ -2,6 +2,7 @@ import { emojiCategories, getNextRoomPanel, layoutAspectGroup, planPlayback, roo
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
+import type { MessageKey } from "../i18n/ru.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
 import { ResizeHandle } from "../layout/ResizeHandle.js";
 import { resolveFlow } from "../layout/reflow.js";
@@ -37,11 +38,11 @@ function quietly(request: Promise<unknown>): void {
   void request.catch(() => undefined);
 }
 
-function voiceErrorText(code: string): string {
-  if (code === "livekit_disabled") return "Голос не настроен на сервере";
-  if (code === "mic_denied") return "Нет доступа к микрофону";
-  if (code === "forbidden") return "Говорить в этой комнате нельзя";
-  return "Не удалось подключиться к голосу";
+function voiceErrorKey(code: string): MessageKey {
+  if (code === "livekit_disabled") return "voice.errorDisabled";
+  if (code === "mic_denied") return "voice.errorMic";
+  if (code === "forbidden") return "voice.errorForbidden";
+  return "voice.errorGeneric";
 }
 
 export function RoomStage({
@@ -189,7 +190,7 @@ export function RoomStage({
   const gruv = style === "gruvbox";
   const bufferingCount = live.state.viewers.filter((viewer) => viewer.phase === "buffering").length;
   const waiting = shouldHoldForReady(bufferingCount > 0, bufferingCount);
-  const status = waiting ? "Ждём готовности" : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
+  const status = waiting ? t("room.waitReady") : `${playing ? t("room.syncPlay") : t("room.syncPause")} ${clock(live.positionMs)}`;
   const sharedVoice = sharedVoiceSeconds(live.state.voice, voiceClock);
   const sharedVoiceStart = voiceSessionStartedAt(live.state.voice);
   const unread = Math.max(0, live.state.messages.length - seenCount);
@@ -324,7 +325,7 @@ export function RoomStage({
       });
       if (!response.ok) return;
       const payload = (await response.json()) as { url?: string };
-      if (payload.url) live.sendImage(payload.url);
+      if (payload.url) live.sendImage(payload.url, t("chat.photo"));
     } catch {
       // A failed upload leaves the composer unchanged.
     } finally {
@@ -351,30 +352,30 @@ export function RoomStage({
           </>
         ) : (
           <>
-            <button type="button" className="logo" onClick={onLeave} aria-label="Выйти на главную"><i />lume</button>
+            <button type="button" className="logo" onClick={onLeave} aria-label={t("room.leaveHome")}><i />lume</button>
             <div className="crumb"><b data-testid="room-title">{roomTitle ?? room.title}</b><span className="slate mono" data-testid="room-code">{room.code}</span><span className="room-viewers">{members.length} {viewersWord(members.length)}</span></div>
             <span className="spacer" />
             <div className="sync sync-pill">
               <span className="dot" />
-              <b>{synced ? "Синхронно" : "Подключение"}</b>
+              <b>{synced ? t("room.synced") : t("room.connecting")}</b>
               <span data-testid="playback-status">{status}</span>
-              <button type="button" data-testid="sync-incident" title="Сообщить о рассинхронизации" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) }))}>Сбой</button>
-              <button type="button" data-testid="report-buffering" title="Сообщить о буферизации" onClick={() => live.reportViewer("buffering")}>Буфер</button>
+              <button type="button" data-testid="sync-incident" title={t("room.syncIncidentHint")} onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/sync-incident`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ note: "player drift" }) }))}>{t("room.syncIncident")}</button>
+              <button type="button" data-testid="report-buffering" title={t("room.bufferingHint")} onClick={() => live.reportViewer("buffering")}>{t("room.buffering")}</button>
               <button type="button" data-testid="hide-other-reactions" onClick={() => {
                 const next = !hideOther;
                 quietly(fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ hideOtherReactions: next }) })
                   .then(() => fetch(`${apiUrl}/me`, { headers: { authorization: `Bearer ${live.accessToken}` } }))
                   .then((response) => response.json())
                   .then((payload: { hideOtherReactions?: boolean }) => setHideOther(Boolean(payload.hideOtherReactions))));
-              }}>{hideOther ? "Показать чужие" : "Скрыть чужие"}</button>
+              }}>{hideOther ? t("room.showOthers") : t("room.hideOthers")}</button>
               {live.state.self.role === "host" ? (
-                <button type="button" data-testid="room-settings-open" onClick={() => setSettingsOpen(true)}>Настройки</button>
+                <button type="button" data-testid="room-settings-open" onClick={() => setSettingsOpen(true)}>{t("room.settings")}</button>
               ) : null}
             </div>
-            <div className="layout-switch" role="group" aria-label="Раскладка комнаты">
-              <button type="button" className={layout.preset === "theater" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-theater" onClick={() => onLayout(withLayoutPreset(layout, "theater"))}>Обычный</button>
-              <button type="button" className={layout.preset === "enlarged" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-enlarged" onClick={() => onLayout(withLayoutPreset(layout, "enlarged"))}>Шире</button>
-              <button type="button" className={layout.preset === "immersive" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-immersive" onClick={() => onLayout(withLayoutPreset(layout, "immersive"))}>Погружение</button>
+            <div className="layout-switch" role="group" aria-label={t("room.layoutGroup")}>
+              <button type="button" className={layout.preset === "theater" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-theater" onClick={() => onLayout(withLayoutPreset(layout, "theater"))}>{t("layout.theater")}</button>
+              <button type="button" className={layout.preset === "enlarged" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-enlarged" onClick={() => onLayout(withLayoutPreset(layout, "enlarged"))}>{t("layout.enlarged")}</button>
+              <button type="button" className={layout.preset === "immersive" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-immersive" onClick={() => onLayout(withLayoutPreset(layout, "immersive"))}>{t("layout.immersive")}</button>
               <span style={{ width: 1, height: 20, background: "var(--line-2)", display: "inline-block", margin: "0 2px" }} />
               <button type="button" className={layoutAspectGroup(layout.videoAspect) === "horizontal" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-horizontal" onClick={() => onLayout(withVideoAspect(layout, 16 / 9))}>16:9</button>
               <button type="button" className={layoutAspectGroup(layout.videoAspect) === "vertical" ? "btn btn-outline on" : "btn btn-outline"} data-testid="layout-vertical" onClick={() => onLayout(withVideoAspect(layout, 9 / 16))}>9:16</button>
@@ -413,15 +414,15 @@ export function RoomStage({
             <PlayerPanel bare aspect={layout.videoAspect} synced={synced} onError={(url) => setPlayerError(url || "error")} onAspect={(videoAspect) => onLayout({ ...layout, videoAspect })} />
             {playerError ? (
               <div className="unavail" data-testid="player-error">
-                <h2>Видео недоступно</h2>
+                <h2>{t("room.videoUnavailable")}</h2>
                 <p>{playerError}</p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                  <button type="button" data-testid="player-retry" onClick={() => { if (extractors) void refreshStream(); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) })); }}>Обновить ссылку</button>
-                  <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) })); }}>Открыть на платформе</button>
+                  <button type="button" data-testid="player-retry" onClick={() => { if (extractors) void refreshStream(); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) })); }}>{t("room.refreshLink")}</button>
+                  <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) })); }}>{t("room.openPlatform")}</button>
                 </div>
                 <form onSubmit={(event) => { event.preventDefault(); const next = String(new FormData(event.currentTarget).get("url") ?? ""); if (!next) return; live.addQueue(next); setPlayerError(null); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "replace", url: next }) })); }}>
-                  <input data-testid="player-replace-url" name="url" placeholder="Новая ссылка" />
-                  <button type="submit" data-testid="player-replace">Заменить видео</button>
+                  <input data-testid="player-replace-url" name="url" placeholder={t("room.newLink")} />
+                  <button type="submit" data-testid="player-replace">{t("room.replaceVideo")}</button>
                 </form>
               </div>
             ) : null}
@@ -438,7 +439,7 @@ export function RoomStage({
                 className="play"
                 data-testid="playback-play"
                 onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)}
-                aria-label={playing ? "Пауза" : "Играть"}
+                aria-label={playing ? t("player.pause") : t("player.play")}
               >
                 {playing ? "II" : "▶"}
               </button>
@@ -460,20 +461,20 @@ export function RoomStage({
                 className="play"
                 data-testid="playback-play"
                 onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)}
-                aria-label={playing ? "Пауза" : "Играть"}
+                aria-label={playing ? t("player.pause") : t("player.play")}
               >
                 {playing ? "II" : "▶"}
               </button>
-              <span className="empty-title"><i />Плеер свободен</span>
-              <span className="ctl-empty-hint">Вставьте ссылку в сцене или добавьте видео в очередь</span>
+              <span className="empty-title"><i />{t("room.playerFree")}</span>
+              <span className="ctl-empty-hint">{t("room.playerFreeHint")}</span>
             </div>
           )}
           <div className={narrow ? "sheet" : "low"}>
-            {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>Открыть панели</button> : null}
+            {narrow ? <button type="button" className="sheet-tab" data-testid="mobile-sheet-toggle" onClick={() => setSheet((value) => !value)}>{t("room.openPanels")}</button> : null}
             <div className="card voice-card">
-              <div className="ct">Голос
-                {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{`в эфире ${sharedVoice}с`}</small> : voice.enabled === false ? <small data-testid="voice-disabled" data-stub={voice.stub ? "true" : "false"}>{t("voice.disabled")}</small> : null}
-                <small data-testid="voice-ice" data-count={iceUrls.length} title={iceUrls.join(" · ")}>{iceUrls.length > 0 ? iceUrls.join(" · ") : "STUN по умолчанию"}</small>
+              <div className="ct">{t("room.voiceTitle")}
+                {voice.joined ? <small data-testid="voice-session" data-seconds={sharedVoice} data-start={sharedVoiceStart ?? ""} data-local-seconds={voiceSeconds}>{t("room.onAir", { seconds: sharedVoice })}</small> : voice.enabled === false ? <small data-testid="voice-disabled" data-stub={voice.stub ? "true" : "false"}>{t("voice.disabled")}</small> : null}
+                <small data-testid="voice-ice" data-count={iceUrls.length} title={iceUrls.join(" · ")}>{iceUrls.length > 0 ? iceUrls.join(" · ") : t("room.stunDefault")}</small>
               </div>
               <div className="voice-body">
                 <ul className="voice-list" data-testid="member-list">
@@ -493,25 +494,25 @@ export function RoomStage({
                         >
                           <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
                           <span>{member.displayName}</span>
-                          {channel?.muted ? <em data-testid={`member-muted-${member.userId}`}>выкл</em> : null}
+                          {channel?.muted ? <em data-testid={`member-muted-${member.userId}`}>{t("room.mutedShort")}</em> : null}
                         </button>
                       </li>
                     );
                   })}
                 </ul>
                 <div className="voice-controls">
-                  <button type="button" className="vbtn" data-testid="voice-join" disabled={!voiceReady || voice.busy} onClick={() => void voice.join()}>Войти</button>
-                  <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? "Проверяем" : "Проверка"}</button>
+                  <button type="button" className="vbtn" data-testid="voice-join" disabled={!voiceReady || voice.busy} onClick={() => void voice.join()}>{t("room.voiceJoin")}</button>
+                  <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? t("room.voiceChecking") : t("room.voiceCheck")}</button>
                   <button type="button" className="vbtn" data-testid="voice-toggle" aria-pressed={!voice.muted} disabled={!voiceReady} onClick={() => void voice.toggleMute()}>{voice.muted ? t("room.micOn") : t("room.micOff")}</button>
                   <button type="button" className="vbtn" data-testid="voice-deafen" aria-pressed={voice.deafened} disabled={!voiceReady} onClick={() => void voice.toggleDeafen()}>{voice.deafened ? t("voice.undeafen") : t("voice.deafen")}</button>
-                  <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>Выйти</button>
+                  <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>{t("room.leave")}</button>
                 </div>
                 {voice.enabled === false || voice.error ? (
                   <div className="voice-banner" role="status" data-testid="voice-fallback" data-stub={voice.stub ? "true" : "false"}>
-                    {voice.enabled === false ? t("voice.disabledBanner") : voiceErrorText(voice.error ?? "")}
+                    {voice.enabled === false ? t("voice.disabledBanner") : t(voiceErrorKey(voice.error ?? ""))}
                   </div>
                 ) : null}
-                {voice.error ? <small className="voice-error" data-testid="voice-error" data-code={voice.error}>{voiceErrorText(voice.error)}</small> : null}
+                {voice.error ? <small className="voice-error" data-testid="voice-error" data-code={voice.error}>{t(voiceErrorKey(voice.error))}</small> : null}
                 <div
                   className="voice-preflight"
                   data-testid="voice-preflight"
@@ -522,25 +523,25 @@ export function RoomStage({
                 >
                   {preflight ? (
                     <>
-                      <span data-testid="voice-preflight-mic">Микрофон: {preflight.mic ? `уровень ${preflight.micLevel}%` : "нет доступа"}</span>
-                      <span data-testid="voice-preflight-speaker">Динамики: {preflight.speaker ? "слышно" : "не найдены"}</span>
-                      <span data-testid="voice-preflight-network" data-network={preflight.network}>Сеть: {preflight.network === "good" ? "хорошая" : preflight.network === "fair" ? "средняя" : "слабая"}</span>
+                      <span data-testid="voice-preflight-mic">{preflight.mic ? t("room.micLevel", { level: preflight.micLevel }) : t("room.micNoAccess")}</span>
+                      <span data-testid="voice-preflight-speaker">{preflight.speaker ? t("room.speakersOk") : t("room.speakersNone")}</span>
+                      <span data-testid="voice-preflight-network" data-network={preflight.network}>{t("room.network", { state: preflight.network === "good" ? t("room.networkGood") : preflight.network === "fair" ? t("room.networkFair") : t("room.networkWeak") })}</span>
                     </>
                   ) : (
-                    <span>Проверьте микрофон, динамики и сеть перед входом в голос.</span>
+                    <span>{t("room.preflightHint")}</span>
                   )}
                 </div>
               </div>
             </div>
             <div className="card queue-card">
-              <div className="ct">Очередь <small>{queue.length}</small>{live.skip.needed > 1 ? <span className="pill">Пропуск {live.skip.votes} из {live.skip.needed}</span> : null}</div>
+              <div className="ct">{t("room.queueTitle")} <small>{queue.length}</small>{live.skip.needed > 1 ? <span className="pill">{t("room.skipVotes", { votes: live.skip.votes, needed: live.skip.needed })}</span> : null}</div>
               <div className="queue-section">
-                <h4>Сейчас и далее <small>{queue.length + (room.nowPlaying ? 1 : 0)}</small></h4>
+                <h4>{t("room.upNext")} <small>{queue.length + (room.nowPlaying ? 1 : 0)}</small></h4>
                 <div className="q">
                   {room.nowPlaying ? (
                     <div className="queue-now" data-testid="queue-now" data-refresh-state={refreshState}>
                       <div className="im" style={posterStyle(room.nowPlaying.id, room.nowPlaying.thumbnailUrl)} />
-                      <div><small>в эфире</small><b>{room.nowPlaying.title}</b></div>
+                      <div><small>{t("room.onAirShort")}</small><b>{room.nowPlaying.title}</b></div>
                       <span className="pill mono">{clock(live.positionMs)}</span>
                       {extractors ? (
                         <button
@@ -550,7 +551,7 @@ export function RoomStage({
                           disabled={refreshState === "busy"}
                           onClick={() => void refreshStream()}
                         >
-                          {refreshState === "busy" ? "Обновляем" : refreshState === "error" ? "Не вышло" : "Обновить ссылку"}
+                          {refreshState === "busy" ? t("room.refreshing") : refreshState === "error" ? t("room.refreshFailed") : t("room.refreshLink")}
                         </button>
                       ) : null}
                     </div>
@@ -565,23 +566,23 @@ export function RoomStage({
                     ))}
                   </ol>
                   <form className="qi add" onSubmit={addUrl}>
-                    <input data-testid="queue-input" value={url} onChange={(event) => { setUrl(event.target.value); setPremiumBlocked(false); }} placeholder="Добавить ссылку" aria-label={t("queue.url")} />
+                    <input data-testid="queue-input" value={url} onChange={(event) => { setUrl(event.target.value); setPremiumBlocked(false); }} placeholder={t("queue.url")} aria-label={t("queue.url")} />
                     <button type="submit" data-testid="queue-add">{t("queue.add")}</button>
                     {detected ? <small>{detected}</small> : null}
-                    {premiumUrl ? <small data-testid="premium-gate">Нужен Premium для этой платформы</small> : null}
-                    {premiumBlocked ? <small data-testid="premium-blocked">Платформа доступна с Premium</small> : null}
+                    {premiumUrl ? <small data-testid="premium-gate">{t("room.premiumNeeded")}</small> : null}
+                    {premiumBlocked ? <small data-testid="premium-blocked">{t("room.premiumBlocked")}</small> : null}
                   </form>
                 </div>
               </div>
               <div className="queue-section" data-testid="queue-recommendations">
-                <h4>Рекомендации <small>{recommended.length}</small></h4>
-                {recommended.length === 0 ? <p className="empty-note">Пока пусто — рекомендации появятся после первых просмотров.</p> : (
+                <h4>{t("room.recommendations")} <small>{recommended.length}</small></h4>
+                {recommended.length === 0 ? <p className="empty-note">{t("room.recommendationsEmpty")}</p> : (
                   <ol className="recommendations-list">
                     {recommended.map((item) => (
                       <li key={item.url} data-testid="queue-recommendation" data-url={item.url} data-reason={item.reason}>
                         <b>{item.title ?? item.url}</b>
-                        <small>{item.reason === "favorite" ? "избранное" : "история"}</small>
-                        <button type="button" data-testid="queue-recommendation-add" onClick={() => live.addQueue(item.url, item.title ?? undefined)}>В очередь</button>
+                        <small>{item.reason === "favorite" ? t("room.favorite") : t("room.history")}</small>
+                        <button type="button" data-testid="queue-recommendation-add" onClick={() => live.addQueue(item.url, item.title ?? undefined)}>{t("room.toQueue")}</button>
                       </li>
                     ))}
                   </ol>
@@ -589,18 +590,18 @@ export function RoomStage({
               </div>
               <div className="queue-section queue-history" data-testid="queue-history">
                 <h4>
-                  История <small data-testid="queue-history-count">{history.length}</small>
+                  {t("room.historyTitle")} <small data-testid="queue-history-count">{history.length}</small>
                   {live.state.self.role === "host" && history.length > 0 ? (
-                    <button type="button" data-testid="history-clear" onClick={() => void clearHistory()}>Очистить</button>
+                    <button type="button" data-testid="history-clear" onClick={() => void clearHistory()}>{t("room.clear")}</button>
                   ) : null}
                 </h4>
-                {history.length === 0 ? <p className="empty-note">История пуста</p> : (
+                {history.length === 0 ? <p className="empty-note">{t("room.historyEmpty")}</p> : (
                   <ol className="queue-list history-list">
                     {history.map((item) => (
                       <li key={item.id} data-testid="queue-history-item" data-url={item.url}>
                         <b>{item.title ?? item.url}</b>
                         <small>{item.source}</small>
-                        <button type="button" data-testid="history-reload" onClick={() => live.reloadHistory(item.id)}>В очередь</button>
+                        <button type="button" data-testid="history-reload" onClick={() => live.reloadHistory(item.id)}>{t("room.toQueue")}</button>
                       </li>
                     ))}
                   </ol>
@@ -609,7 +610,7 @@ export function RoomStage({
               {live.canControl ? (
                 <>
                   <div className="queue-section">
-                    <h4>Права зрителей</h4>
+                    <h4>{t("room.viewerRights")}</h4>
                     <form className="perms" data-testid="room-defaults" onSubmit={(event) => {
                       event.preventDefault();
                       quietly(fetch(`${apiUrl}/rooms/${room.id}/defaults`, {
@@ -621,14 +622,14 @@ export function RoomStage({
                       {(Object.keys(permissions) as Array<keyof typeof permissions>).map((key) => (
                         <label key={key}>
                           <input data-testid={`perm-${key}`} type="checkbox" checked={permissions[key]} onChange={(event) => setPermissions((current) => ({ ...current, [key]: event.target.checked }))} />
-                          {permissionLabel(key)}
+                          {permissionLabel(key, t)}
                         </label>
                       ))}
-                      <button type="submit" data-testid="perm-save">Сохранить</button>
+                      <button type="submit" data-testid="perm-save">{t("room.save")}</button>
                     </form>
                   </div>
                   <div className="queue-section">
-                    <h4>Жалоба на участника</h4>
+                    <h4>{t("room.reportMember")}</h4>
                     <form className="report-form" data-testid="report-form" onSubmit={(event) => {
                       event.preventDefault();
                       const data = new FormData(event.currentTarget);
@@ -638,13 +639,13 @@ export function RoomStage({
                       quietly(fetch(`${apiUrl}/reports`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetKind: "user", targetId: target, roomId: room.id, reason }) }));
                       event.currentTarget.reset();
                     }}>
-                      <select data-testid="report-target" name="target" aria-label="На кого жалоба">
+                      <select data-testid="report-target" name="target" aria-label={t("room.reportTarget")}>
                         {members.filter((member) => member.userId !== live.selfId).map((member) => (
                           <option key={member.userId} value={member.userId}>{member.displayName}</option>
                         ))}
                       </select>
-                      <input data-testid="report-reason" name="reason" placeholder="Причина жалобы" aria-label="Причина жалобы" />
-                      <button type="submit" data-testid="report-send">Пожаловаться</button>
+                      <input data-testid="report-reason" name="reason" placeholder={t("room.reportReason")} aria-label={t("room.reportReason")} />
+                      <button type="submit" data-testid="report-send">{t("room.reportSend")}</button>
                     </form>
                   </div>
                   <div className="queue-actions">
@@ -671,27 +672,27 @@ export function RoomStage({
           className={gruv ? "pane irc" : "rail"}
           style={flow === "stack" ? undefined : { flexGrow: 1 - layout.playerRatio }}
         >
-          <div className="tabs" role="tablist" aria-label="Панели комнаты">
-            <button type="button" role="tab" aria-selected={railTab === "chat"} className={railTab === "chat" ? "tab on" : "tab"} onClick={() => setRailTab("chat")}>Чат <span className="n">{live.state.messages.length}</span></button>
-            <button type="button" role="tab" aria-selected={railTab === "people"} className={railTab === "people" ? "tab on" : "tab"} onClick={() => setRailTab("people")}>Люди <span className="n">{members.length}</span></button>
-            <button type="button" role="tab" aria-selected={railTab === "queue"} className={railTab === "queue" ? "tab on" : "tab"} onClick={() => setRailTab("queue")}>Очередь <span className="n">{queue.length}</span></button>
+          <div className="tabs" role="tablist" aria-label={t("room.panels")}>
+            <button type="button" role="tab" aria-selected={railTab === "chat"} className={railTab === "chat" ? "tab on" : "tab"} onClick={() => setRailTab("chat")}>{t("chat.title")} <span className="n">{live.state.messages.length}</span></button>
+            <button type="button" role="tab" aria-selected={railTab === "people"} className={railTab === "people" ? "tab on" : "tab"} onClick={() => setRailTab("people")}>{t("room.people")} <span className="n">{members.length}</span></button>
+            <button type="button" role="tab" aria-selected={railTab === "queue"} className={railTab === "queue" ? "tab on" : "tab"} onClick={() => setRailTab("queue")}>{t("room.queueTitle")} <span className="n">{queue.length}</span></button>
             {unread > 0 ? (
               <button type="button" className="unread-anchor" data-testid="unread-anchor" onClick={jumpToUnread}>
-                К новым · {unread}
+                {t("room.newMessagesShort", { count: unread })}
               </button>
             ) : null}
           </div>
           {railTab === "chat" ? (
             <>
               <div className="log" data-testid="chat-log" ref={chatRef} onScroll={chat.onScroll}>
-                {live.state.messages.length === 0 ? <p className="rail-empty">Пока тихо. Напишите первым.</p> : null}
+                {live.state.messages.length === 0 ? <p className="rail-empty">{t("room.chatEmpty")}</p> : null}
                 {live.state.messages.map((message, index) => {
                   const mine = message.userId === live.selfId;
                   const hue = personHue(message.userId);
                   return (
                     <Fragment key={message.id}>
                       {index === firstUnreadIndex && unread > 0 ? (
-                        <span className="unread-divider" data-testid="unread-divider">Непрочитанные</span>
+                        <span className="unread-divider" data-testid="unread-divider">{t("room.unreadTitle")}</span>
                       ) : null}
                       <div
                         className={mine ? "m mine" : "m"}
@@ -711,7 +712,7 @@ export function RoomStage({
                   );
                 })}
               </div>
-              <div className="quick">{Object.values(emojiCategories).flat().slice(0, 7).map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)} aria-label={`Реакция ${emoji}`}>{emoji}</button>)}</div>
+              <div className="quick">{Object.values(emojiCategories).flat().slice(0, 7).map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)} aria-label={t("room.reaction", { emoji })}>{emoji}</button>)}</div>
               {chat.newCount > 0 ? (
                 <button type="button" className="chat-new" data-testid="chat-new" onClick={jumpToLatest}>
                   {t("chat.new", { count: chat.newCount })}
@@ -732,7 +733,7 @@ export function RoomStage({
                   data-testid="emoji-picker-toggle"
                   ref={emojiButtonRef}
                   aria-expanded={emojiOpen}
-                  aria-label="Эмодзи"
+                  aria-label={t("room.emoji")}
                   onClick={() => setEmojiOpen((value) => !value)}
                 >
                   😊
@@ -748,7 +749,7 @@ export function RoomStage({
                   />
                   <span aria-hidden="true">{uploading ? "…" : "📎"}</span>
                 </label>
-                <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder="Написать в комнату…" aria-label="Сообщение" />
+                <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder={t("room.chatPlaceholder")} aria-label={t("room.message")} />
                 <button type="submit" className="send" data-testid="chat-send" aria-label={t("chat.send")}>➤</button>
               </form>
             </>
@@ -756,27 +757,27 @@ export function RoomStage({
           {railTab === "people" ? (
             <div className="log" data-testid="rail-people">
               <div className="rail-section">
-                <h4>Ведущий</h4>
+                <h4>{t("room.hostTitle")}</h4>
                 {members.filter((member) => member.role === "host").map((member) => {
                   const channel = live.state.voice.find((item) => item.userId === member.userId);
                   return (
                     <button key={member.userId} type="button" className="rail-member" onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}>
                       <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
-                      <div><b>{member.displayName}</b><small>{channel?.speaking ? "говорит" : channel ? "в голосе" : "в комнате"}</small></div>
-                      <span className="mini">Профиль</span>
+                      <div><b>{member.displayName}</b><small>{channel?.speaking ? t("room.speaking") : channel ? t("room.inVoice") : t("room.inRoom")}</small></div>
+                      <span className="mini">{t("room.profile")}</span>
                     </button>
                   );
                 })}
               </div>
               <div className="rail-section">
-                <h4>В комнате · {members.length}</h4>
+                <h4>{t("room.inRoomCount", { count: members.length })}</h4>
                 {members.map((member) => {
                   const channel = live.state.voice.find((item) => item.userId === member.userId);
                   return (
                     <button key={member.userId} type="button" className="rail-member" onClick={() => setProfile({ userId: member.userId, displayName: member.displayName, role: member.role })}>
                       <span className={`av p-${personHue(member.userId)}`}>{initials(member.displayName)}</span>
-                      <div><b>{member.displayName}{member.userId === live.selfId ? " · вы" : ""}</b><small>{channel ? (channel.muted ? "микрофон выкл" : "в голосе") : "смотрит"}</small></div>
-                      <span className="mini">Профиль</span>
+                      <div><b>{member.displayName}{member.userId === live.selfId ? t("room.you") : ""}</b><small>{channel ? (channel.muted ? t("room.micOff") : t("room.inVoice")) : t("room.viewing")}</small></div>
+                      <span className="mini">{t("room.profile")}</span>
                     </button>
                   );
                 })}
@@ -786,12 +787,12 @@ export function RoomStage({
           {railTab === "queue" ? (
             <div className="log" data-testid="rail-queue">
               <div className="rail-section">
-                <h4>Сейчас</h4>
-                {room.nowPlaying ? <div className="rail-queue-item"><b>{room.nowPlaying.title}</b><small>{clock(live.positionMs)} / {durationLabel(room.nowPlaying.durationMs)}</small></div> : <div className="rail-empty">Ничего не играет</div>}
+                <h4>{t("room.nowTitle")}</h4>
+                {room.nowPlaying ? <div className="rail-queue-item"><b>{room.nowPlaying.title}</b><small>{clock(live.positionMs)} / {durationLabel(room.nowPlaying.durationMs)}</small></div> : <div className="rail-empty">{t("room.nothingPlaying")}</div>}
               </div>
               <div className="rail-section">
-                <h4>Далее · {queue.length}</h4>
-                {queue.length === 0 ? <div className="rail-empty">Очередь пуста</div> : queue.map((item) => (
+                <h4>{t("room.nextTitle", { count: queue.length })}</h4>
+                {queue.length === 0 ? <div className="rail-empty">{t("room.queueEmpty")}</div> : queue.map((item) => (
                   <div key={item.id} className="rail-queue-item"><b>{item.title}</b><small>{durationLabel(item.durationMs)} · {item.provider}</small></div>
                 ))}
               </div>
@@ -829,7 +830,7 @@ export function RoomStage({
                   setSheet(true);
                 }}
               >
-                {panel === "chat" ? "Чат" : panel === "members" ? "Люди" : "Очередь"}
+                {panel === "chat" ? t("chat.title") : panel === "members" ? t("room.people") : t("room.queueTitle")}
               </button>
             ))}
             <button type="button" className="mobile-sheet-close" data-testid="mobile-sheet-close" onClick={() => setSheet(false)}>×</button>
@@ -838,7 +839,7 @@ export function RoomStage({
             <div className="mobile-sheet-panel" data-testid="mobile-sheet-panel" data-panel={mobilePanel}>
               {mobilePanel === "chat" ? (
                 <div className="log" data-testid="mobile-sheet-chat">
-                  {live.state.messages.length === 0 ? <p className="empty-note">Пока пусто</p> : null}
+                  {live.state.messages.length === 0 ? <p className="empty-note">{t("room.mobileEmpty")}</p> : null}
                   {live.state.messages.slice(-12).map((message) => (
                     <div key={message.id} className="m">
                       <div className="bu">
@@ -864,11 +865,11 @@ export function RoomStage({
               ) : null}
               {mobilePanel === "queue" ? (
                 <ol className="queue-list mobile-sheet-queue" data-testid="mobile-sheet-queue">
-                  {sheetItems.length === 0 ? <li className="empty">Очередь пуста</li> : null}
+                  {sheetItems.length === 0 ? <li className="empty">{t("room.queueEmpty")}</li> : null}
                   {sheetItems.map((item) => (
                     <li key={item.id}>
                       <b>{item.title}</b>
-                      <small>{item.id === room.nowPlaying?.id ? "сейчас" : item.provider}</small>
+                      <small>{item.id === room.nowPlaying?.id ? t("room.now") : item.provider}</small>
                     </li>
                   ))}
                 </ol>

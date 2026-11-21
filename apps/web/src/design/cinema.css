@@ -207,7 +207,7 @@ html[data-style="cinema"], html[data-style="cinema"] body{background:var(--bg);c
 .empty .ic{background:var(--s2);color:var(--text-2)}
 .empty p{color:var(--text-2)}
 .auth-card{background:var(--s1);border:1px solid var(--line);box-shadow:var(--shadow-float)}
-.tg-btn{background:#2AABEE;color:#fff;font-weight:600}
+.tg-btn{background:#0E6E9C;color:#fff;font-weight:600}
 .or{color:var(--text-3)}
 .or::before,.or::after{content:"";background:var(--line)}
 .npanel{background:var(--s1);border:1px solid var(--line);box-shadow:var(--shadow-float)}
@@ -260,10 +260,10 @@ html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-danger{background:c
 html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-danger:hover:not(:disabled){background:var(--danger);border-color:transparent;color:#fff}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-social{background:var(--social);border-color:transparent;color:var(--social-ink)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-social:hover:not(:disabled){background:color-mix(in srgb,var(--social) 84%,white);border-color:transparent;color:var(--social-ink)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-telegram{background:#2AABEE;border-color:transparent;color:#fff}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .tg-btn{background:#2AABEE;border:0;color:#fff;font-weight:600;box-shadow:none}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .tg-btn:hover{background:#3CB5F2;border:0;color:#fff}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-telegram:hover:not(:disabled){background:#3CB5F2;border-color:transparent;color:#fff}
+html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-telegram{background:#0E6E9C;border-color:transparent;color:#fff}
+html[data-style="cinema"] :is(.design-app,.cinema-room) .tg-btn{background:#0E6E9C;border:0;color:#fff;font-weight:600;box-shadow:none}
+html[data-style="cinema"] :is(.design-app,.cinema-room) .tg-btn:hover{background:#146C94;border:0;color:#fff}
+html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-telegram:hover:not(:disabled){background:#146C94;border-color:transparent;color:#fff}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .mini{background:transparent;border-color:var(--line-2);box-shadow:none}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .mini:hover:not(:disabled){background:var(--s2)}

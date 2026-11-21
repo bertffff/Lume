@@ -68,7 +68,7 @@ export function RoomScreen({
   if (!live.state) {
     return (
       <section className="app-room">
-        <p className="empty-note">{live.error === "kicked" ? "Вас удалили из комнаты" : live.error ? "Не удалось подключиться к комнате" : t("realtime.connecting")}</p>
+        <p className="empty-note">{live.error === "kicked" ? t("room.kicked") : live.error ? t("room.connectFailed") : t("realtime.connecting")}</p>
       </section>
     );
   }
@@ -130,7 +130,7 @@ export function RoomScreen({
         {warn ? <p className="app-banner">{t("room.warnSession")}</p> : null}
         {live.error ? (
           <p className="app-note" data-testid="room-error" data-code={live.error}>
-            {live.error === "kicked" ? "Вас удалили из комнаты" : "Соединение с комнатой прервано"}
+            {live.error === "kicked" ? t("room.kicked") : t("room.connectionLost")}
           </p>
         ) : null}
         <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} onRefreshed={setRefreshed} />

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { viewerPermissionKeys } from "@lume/contracts";
 import { apiUrl } from "../api/client.js";
-import { permissionLabel } from "./copy.js";
+import { permissionHint, permissionLabel } from "./copy.js";
+import { useI18n } from "../i18n/context.js";
+import { Modal } from "../ui/index.js";
 
 export interface RoomSettings {
   title: string;
@@ -32,18 +34,11 @@ export function RoomSettingsSheet({
   onClose: () => void;
   onSaved: (settings: RoomSettings) => void;
 }) {
+  const { t } = useI18n();
   const [settings, setSettings] = useState<RoomSettings>(fallback);
   const [defaults, setDefaults] = useState<Record<string, boolean>>(() => Object.fromEntries(viewerPermissionKeys.map((key) => [key, true])));
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   useEffect(() => {
     void fetch(`${apiUrl}/rooms/${roomId}/settings`, { headers: { authorization: `Bearer ${token}` } })
@@ -54,8 +49,8 @@ export function RoomSettingsSheet({
           setDefaults(Object.fromEntries(viewerPermissionKeys.map((key) => [key, payload.defaults?.[key] !== false])));
         }
       })
-      .catch(() => setNote("Не удалось загрузить настройки"));
-  }, [roomId, token]);
+      .catch(() => setNote(t("settings.loadFailed")));
+  }, [roomId, token, t]);
 
   function patch(patchValue: Partial<RoomSettings>) {
     setSettings((current) => ({ ...current, ...patchValue }));
@@ -78,76 +73,60 @@ export function RoomSettingsSheet({
       });
       const payload = (await response.json().catch(() => ({}))) as RoomSettings & { error?: string };
       if (!response.ok) {
-        setNote(payload.error ?? "Не удалось сохранить");
+        setNote(t("settings.saveFailed"));
         return;
       }
       onSaved({ ...payload, defaults });
       onClose();
     } catch {
-      setNote("Не удалось сохранить");
+      setNote(t("settings.saveFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="overlay docked" role="dialog" aria-modal="true" data-testid="room-settings-sheet">
+    <Modal
+      open
+      title={t("settings.roomTitle")}
+      onClose={onClose}
+      testId="room-settings-sheet"
+      closeTestId="room-settings-close"
+      lg
+    >
       <form
-        className="modal"
         onSubmit={(event) => {
           event.preventDefault();
           void save();
         }}
       >
-        <div className="mh">
-          <h2>Настройки комнаты</h2>
-          <span className="sp" />
-          <button type="button" data-testid="room-settings-close" onClick={onClose} aria-label="Закрыть">×</button>
-        </div>
-        <div className="mb">
+        <div className="set-grp">
           <label className="field">
-            Название
+            {t("create.roomName")}
             <input data-testid="settings-title" value={settings.title} onChange={(event) => patch({ title: event.target.value })} />
           </label>
           <label className="field">
-            Описание
+            {t("create.roomDescription")}
             <input data-testid="settings-description" value={settings.description} onChange={(event) => patch({ description: event.target.value })} />
           </label>
           <label className="set-row">
-            <div><b>Публичная комната</b><small>Показывать в открытых комнатах.</small></div>
-            <input
-              data-testid="settings-public"
-              type="checkbox"
-              checked={settings.isPublic}
-              onChange={(event) => patch({ isPublic: event.target.checked })}
-            />
+            <div><b>{t("settings.public")}</b><small>{t("settings.publicHint")}</small></div>
+            <input data-testid="settings-public" type="checkbox" checked={settings.isPublic} onChange={(event) => patch({ isPublic: event.target.checked })} />
           </label>
           <label className="set-row">
-            <div><b>Лимит участников</b><small>От 2 до 100 человек.</small></div>
-            <input
-              data-testid="settings-max-members"
-              type="number"
-              min={2}
-              max={100}
-              value={settings.maxMembers}
-              onChange={(event) => patch({ maxMembers: Number(event.target.value) })}
-            />
+            <div><b>{t("settings.maxMembers")}</b><small>{t("settings.maxMembersHint")}</small></div>
+            <input data-testid="settings-max-members" type="number" min={2} max={100} value={settings.maxMembers} onChange={(event) => patch({ maxMembers: Number(event.target.value) })} />
           </label>
           <label className="set-row">
-            <div><b>Скрывать чужие реакции</b><small>Для всех зрителей комнаты.</small></div>
-            <input
-              data-testid="settings-hide-reactions"
-              type="checkbox"
-              checked={settings.hideReactions}
-              onChange={(event) => patch({ hideReactions: event.target.checked })}
-            />
+            <div><b>{t("settings.hideReactions")}</b><small>{t("settings.hideReactionsHint")}</small></div>
+            <input data-testid="settings-hide-reactions" type="checkbox" checked={settings.hideReactions} onChange={(event) => patch({ hideReactions: event.target.checked })} />
           </label>
           <div className="set-row">
-            <div><b>Права зрителей</b><small>Для тех, у кого нет личных прав.</small></div>
+            <div><b>{t("settings.viewerRights")}</b><small>{t("settings.viewerRightsHint")}</small></div>
           </div>
           {viewerPermissionKeys.map((key) => (
             <label className="set-row" key={key}>
-              <div><b>{permissionLabel(key)}</b><small>{key === "canSeek" ? "Можно перематывать видео" : "Разрешено зрителям по умолчанию"}</small></div>
+              <div><b>{permissionLabel(key, t)}</b><small>{permissionHint(key, t)}</small></div>
               <input
                 data-testid={`settings-default-${key}`}
                 type="checkbox"
@@ -156,13 +135,17 @@ export function RoomSettingsSheet({
               />
             </label>
           ))}
-          {note ? <p data-testid="room-settings-note">{note}</p> : null}
+          {note ? <p data-testid="room-settings-note" role="status">{note}</p> : null}
         </div>
         <div className="mf">
-          <button type="button" className="btn btn-ghost" data-testid="room-settings-cancel" onClick={onClose}>Отмена</button>
-          <button type="submit" className="btn btn-primary" data-testid="room-settings-save" disabled={busy}>Сохранить</button>
+          <button type="button" className="btn btn-ghost" data-testid="room-settings-cancel" onClick={onClose}>
+            {t("common.cancel")}
+          </button>
+          <button type="submit" className="btn btn-primary" data-testid="room-settings-save" disabled={busy} aria-busy={busy || undefined}>
+            {t("common.save")}
+          </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

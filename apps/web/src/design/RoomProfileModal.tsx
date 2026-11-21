@@ -41,7 +41,7 @@ export function RoomProfileModal({
       if (response.ok) {
         setNote(payload.status === "accepted" ? t("profile.friendsNow") : t("profile.requestSent"));
       } else {
-        setNote(payload.error ?? t("profile.actionFailed"));
+        setNote(t("profile.actionFailed"));
       }
     } catch {
       setNote(t("profile.actionFailed"));
@@ -77,7 +77,7 @@ export function RoomProfileModal({
       const response = await fetch(`${apiUrl}/rooms/${roomId}/ban`, {
         method: "POST",
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-        body: JSON.stringify({ userId: member.userId, type: "blacklist", reason: "глобальная блокировка" }),
+        body: JSON.stringify({ userId: member.userId, type: "blacklist", reason: "global_block" }),
       });
       setNote(response.ok ? t("profile.blockedEverywhere") : t("profile.actionFailed"));
     } catch {
@@ -90,7 +90,7 @@ export function RoomProfileModal({
   const roleLabel = member.role === "host" ? t("profile.roleHost") : member.role === "mod" ? t("profile.roleMod") : t("profile.roleViewer");
 
   return (
-    <Modal open title={<span data-testid="profile-modal-name">{member.displayName}</span>} onClose={onClose} testId="profile-modal">
+    <Modal open title={<span data-testid="profile-modal-name">{member.displayName}</span>} onClose={onClose} testId="profile-modal" closeTestId="profile-modal-close">
       <p>{roleLabel}</p>
       {member.userId === selfId ? (
         <p data-testid="profile-modal-self">{t("profile.thisIsYou")}</p>

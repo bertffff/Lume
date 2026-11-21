@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AppShell } from "../shell/AppShell.js";
 import { roomPresetById, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
@@ -7,7 +7,10 @@ import type { ClientSession } from "../session.js";
 import { copy, viewersWord } from "./copy.js";
 import { AuthScreen, CodeInput, CreateScreen, EmptyScreen, JoinScreen, MobileHome, NotificationsScreen, OnboardingScreen, PremiumScreen, ProfileScreen, SettingsScreen } from "./pages.js";
 import { initials, personHue, type ModeId, type StyleId } from "./theme.js";
+import type { MessageKey } from "../i18n/ru.js";
 import { useAppearance } from "./useAppearance.js";
+import { bindBackButton } from "../telegram/adapter.js";
+import { readTelegramWebApp } from "../telegram/types.js";
 import { useGlobalStats } from "./useGlobalStats.js";
 
 type View =
@@ -26,13 +29,8 @@ type View =
   | "offline"
   | "unavailable";
 
-/** `?shot=` is the design-preview mode used by visual tests. Its data is fixed
-    so screenshots do not depend on rooms and stats created by other specs. */
-const shotRooms = [
-  { id: "shot-cinema", title: "Вечерний зал", code: "shotcine", memberCount: 4 },
-  { id: "shot-music", title: "Музыка до утра", code: "shotmusic", memberCount: 3 },
-  { id: "shot-serial", title: "Сериал в четыре глаза", code: "shotserial", memberCount: 2 },
-];
+import { shotRooms } from "./shot-fixtures.js";
+import { roomFilters } from "./copy.js";
 
 const views = new Set<View>([
   "home", "room", "search", "create", "join", "settings",
@@ -44,21 +42,21 @@ function viewFromPath(path: string): View {
   return views.has(name as View) ? (name as View) : "home";
 }
 
-function signInErrorText(code: string): string {
-  if (code === "unauthorized") return "Не удалось войти: проверьте данные.";
-  if (code === "jwt_unconfigured") return "Вход временно недоступен на сервере.";
-  if (code === "rate_limited") return "Слишком много попыток. Подождите немного.";
-  if (code === "invalid_body") return "Проверьте имя или адрес почты.";
-  return "Не удалось войти. Попробуйте ещё раз.";
+function signInErrorKey(code: string): MessageKey {
+  if (code === "unauthorized") return "auth.error.unauthorized";
+  if (code === "jwt_unconfigured") return "auth.error.jwt";
+  if (code === "rate_limited") return "auth.error.rateLimited";
+  if (code === "invalid_body") return "auth.error.invalidBody";
+  return "auth.error.generic";
 }
 
-function roomErrorText(code: string): string {
-  if (code === "room_full") return "В комнате нет свободных мест.";
-  if (code === "not_found") return "Комната с таким кодом не найдена.";
-  if (code === "unauthorized") return "Сессия истекла — войдите заново.";
-  if (code === "invalid_body") return "Проверьте название комнаты.";
-  if (code === "conflict") return "Комната уже занята — попробуйте ещё раз.";
-  return "Не удалось выполнить действие. Попробуйте ещё раз.";
+function roomErrorKey(code: string): MessageKey {
+  if (code === "room_full") return "room.error.full";
+  if (code === "not_found") return "room.error.notFound";
+  if (code === "unauthorized") return "room.error.expired";
+  if (code === "invalid_body") return "room.error.invalidBody";
+  if (code === "conflict") return "room.error.conflict";
+  return "room.error.generic";
 }
 
 export function DesignApp({
@@ -78,10 +76,11 @@ export function DesignApp({
   onLeave: () => void;
   room: ReactNode;
 }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const text = copy(locale);
   const [path, setPath] = useState(() => window.location.pathname);
   const [shot] = useState(() => new URLSearchParams(window.location.search).get("shot"));
+  const webApp = useMemo(() => readTelegramWebApp(), []);
   const { style, mode, setStyle, setMode, saveAppearance } = useAppearance(session);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
@@ -104,9 +103,9 @@ export function DesignApp({
   const [level, setLevel] = useState(1);
   const [resume, setResume] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "friends" | "film" | "music">("all");
-  const [narrow, setNarrow] = useState(() => window.innerWidth < 860);
+  const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth < 860);
+    const onResize = () => setNarrow(window.innerWidth < 800);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -203,10 +202,10 @@ export function DesignApp({
   async function signIn(event: FormEvent) {
     event.preventDefault();
     try {
-      const result = await api.devLogin(name.trim() || "Гость");
+      const result = await api.devLogin(name.trim() || t("auth.guest"));
       onSession({ accessToken: result.accessToken, ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}), user: result.user });
     } catch (caught) {
-      setError(caught instanceof ClientError ? signInErrorText(caught.code) : "Не удалось войти. Попробуйте ещё раз.");
+      setError(caught instanceof ClientError ? t(signInErrorKey(caught.code)) : t("auth.error.generic"));
     }
   }
 
@@ -214,7 +213,7 @@ export function DesignApp({
     event.preventDefault();
     if (creatingRef.current) return;
     if (!session) {
-      setError("Сначала войдите в аккаунт — тогда комнату можно создать.");
+      setError(t("auth.signInFirst"));
       go("/auth");
       return;
     }
@@ -225,14 +224,14 @@ export function DesignApp({
       const chosen = preset ? roomPresetById(preset) : null;
       const result = await api.createRoom(
         session.accessToken,
-        title.trim() || chosen?.title || "Кинозал",
+        title.trim() || chosen?.title || t("room.defaultTitle"),
         chosen?.isPublic ?? true,
         preset ?? undefined,
       );
       onOpen(result.room.id);
       go("/");
     } catch (caught) {
-      setError(caught instanceof ClientError ? roomErrorText(caught.code) : "Не удалось создать комнату. Попробуйте ещё раз.");
+      setError(caught instanceof ClientError ? t(roomErrorKey(caught.code)) : t("room.createFailed"));
     } finally {
       creatingRef.current = false;
       setCreating(false);
@@ -242,13 +241,13 @@ export function DesignApp({
   async function joinRoom(event: FormEvent) {
     event.preventDefault();
     if (!session) {
-      setError("Сначала войдите в аккаунт — тогда можно войти по коду.");
+      setError(t("auth.joinFirst"));
       go("/auth");
       return;
     }
     const value = code.trim();
     if (!value) {
-      setError("Введите код комнаты из приглашения.");
+      setError(t("room.joinCodeNeeded"));
       return;
     }
     setError(null);
@@ -257,11 +256,19 @@ export function DesignApp({
       onOpen(result.room.id);
       go("/");
     } catch (caught) {
-      setError(caught instanceof ClientError ? (caught.code === "not_found" ? "Комната с таким кодом не найдена." : "Не удалось войти в комнату.") : "Не удалось войти в комнату.");
+      setError(caught instanceof ClientError ? (caught.code === "not_found" ? t("room.error.notFound") : t("room.joinFailed")) : t("room.joinFailed"));
     }
   }
 
   const view: View = shot && views.has(shot as View) ? (shot as View) : offline ? "offline" : roomId ? "room" : viewFromPath(path);
+  useEffect(() => {
+    if (!webApp) return;
+    if (view === "home" || view === "room" || view === "auth") {
+      webApp.BackButton?.hide();
+      return;
+    }
+    return bindBackButton(webApp, () => go("/"));
+  }, [webApp, view]);
   const chosenPreset = preset ? roomPresetById(preset) : null;
   const reminders = notes.filter((note) => note.kind === "SYSTEM");
   useEffect(() => {
@@ -275,8 +282,8 @@ export function DesignApp({
   const shownRooms = rooms.filter((roomItem) => {
     const q = query.trim().toLowerCase();
     if (q && !roomItem.title.toLowerCase().includes(q) && !roomItem.code.includes(q)) return false;
-    if (filter === "film") return /кино|film/i.test(roomItem.title);
-    if (filter === "music") return /звук|music|концерт/i.test(roomItem.title);
+    if (filter === "film") return roomFilters.film.test(roomItem.title);
+    if (filter === "music") return roomFilters.music.test(roomItem.title);
     return true;
   });
 
@@ -341,28 +348,28 @@ export function DesignApp({
             <div className="home-hero">
               <div className="greet">
                 <h1>{text.evening}{session ? `, ${session.user.displayName}` : ""}</h1>
-                <p className="sub">{session ? "Комнаты друзей, ваши сеансы и открытые залы — всё на одном экране" : "Представьтесь, чтобы создать комнату или войти по коду"}</p>
+                <p className="sub">{session ? t("home.subtitleSigned") : t("home.subtitleGuest")}</p>
               </div>
             </div>
             <section className="global-stats" data-testid="global-stats" data-ready={statsReady ? "true" : "false"}>
-              <div className="stat"><small>Сейчас онлайн</small><b data-testid="stat-users-online" data-value={globalStats.usersOnline}>{globalStats.usersOnline}</b></div>
-              <div className="stat"><small>Активные комнаты</small><b data-testid="stat-active-rooms" data-value={globalStats.activeRooms}>{globalStats.activeRooms}</b></div>
-              <div className="stat"><small>Видео в истории</small><b data-testid="stat-total-videos" data-value={globalStats.totalVideos}>{globalStats.totalVideos}</b></div>
-              <div className="stat"><small>Часов вместе</small><b data-testid="stat-watch-hours" data-value={globalStats.totalWatchHours}>{globalStats.totalWatchHours}</b></div>
+              <div className="stat"><small>{t("stats.online")}</small><b data-testid="stat-users-online" data-value={globalStats.usersOnline}>{globalStats.usersOnline}</b></div>
+              <div className="stat"><small>{t("stats.activeRooms")}</small><b data-testid="stat-active-rooms" data-value={globalStats.activeRooms}>{globalStats.activeRooms}</b></div>
+              <div className="stat"><small>{t("stats.videos")}</small><b data-testid="stat-total-videos" data-value={globalStats.totalVideos}>{globalStats.totalVideos}</b></div>
+              <div className="stat"><small>{t("stats.hours")}</small><b data-testid="stat-watch-hours" data-value={globalStats.totalWatchHours}>{globalStats.totalWatchHours}</b></div>
             </section>
             {!session ? (
               <div className="acts">
                 <form className="tile auth" onSubmit={(event) => void signIn(event)}>
                   <div className="tile-head">
                     <span className="tile-ic"><Icon name="user" /></span>
-                    <div><h3>Вход в lume</h3><p>Как вас представить в комнате? Имя увидит только ваша компания.</p></div>
+                    <div><h3>{t("home.authTitle")}</h3><p>{t("home.authBody")}</p></div>
                   </div>
                   <label>
-                    Ваше имя
-                    <input data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Например, Аня" autoComplete="nickname" />
+                    {t("home.nameLabel")}
+                    <input data-testid="lobby-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("home.namePlaceholder")} autoComplete="nickname" />
                   </label>
                   <div className="actions">
-                    <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">Войти</button>
+                    <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">{t("auth.login")}</button>
                     <button type="button" className="btn btn-telegram" onClick={() => void signIn({ preventDefault() {} } as FormEvent)}>{text.telegram}</button>
                   </div>
                 </form>
@@ -371,10 +378,10 @@ export function DesignApp({
                     <span className="tile-ic"><Icon name="plus" /></span>
                     <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
                   </div>
-                  <p>Выберите пресет модерации, позовите друзей и включите первое видео.</p>
+                  <p>{t("home.createBody")}</p>
                   <div className="actions">
-                    <button type="button" className="btn btn-primary" data-testid="home-create-open" onClick={() => go("/auth")}>Открыть мастер</button>
-                    <span className="hint">Сначала нужно представиться</span>
+                    <button type="button" className="btn btn-primary" data-testid="home-create-open" onClick={() => go("/auth")}>{t("gruvbox.newAction")}</button>
+                    <span className="hint">{t("home.signInFirst")}</span>
                   </div>
                 </div>
                 <form className="tile join" onSubmit={(event) => { event.preventDefault(); if (!session) { go("/auth"); return; } void joinRoom(event); }}>
@@ -383,7 +390,7 @@ export function DesignApp({
                     <div><h3>{text.join}</h3><p>{text.joinHint}</p></div>
                   </div>
                   <label>
-                    Код комнаты
+                    {t("join.codeLabel")}
                     <CodeInput value={code} onChange={setCode} slots={8} />
                   </label>
                   <div className="actions">
@@ -402,7 +409,7 @@ export function DesignApp({
                   <div className="c">
                     <div className="eyebrow">{text.resume}</div>
                     <h2>{resume ?? text.empty}</h2>
-                    <div className="sub">{resume ? "Открыть последнюю комнату" : "Начните первый сеанс — он появится здесь"}</div>
+                    <div className="sub">{resume ? t("room.resumeHint") : t("room.resumeEmptyHint")}</div>
                   </div>
                 </button>
                 <form className="tile create" onSubmit={(event) => void createRoom(event)}>
@@ -410,7 +417,7 @@ export function DesignApp({
                     <span className="tile-ic"><Icon name="plus" /></span>
                     <div><h3>{text.create}</h3><p>{text.createHint}</p></div>
                   </div>
-                  <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Название комнаты" aria-label="Название комнаты" />
+                  <input data-testid="lobby-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("home.roomNamePlaceholder")} aria-label={t("home.roomNamePlaceholder")} />
                   <div className="chips" data-testid="lobby-presets">
                     {roomPresets.map((item) => (
                       <button
@@ -433,7 +440,7 @@ export function DesignApp({
                     </small>
                   ) : null}
                   <div className="actions">
-                    <button type="submit" className="btn btn-primary" data-testid="lobby-create" disabled={creating}>{creating ? "Создаём…" : text.create}</button>
+                    <button type="submit" className="btn btn-primary" data-testid="lobby-create" disabled={creating}>{creating ? t("create.creating") : text.create}</button>
                   </div>
                 </form>
                 <form className="tile join" onSubmit={(event) => { if (!session) { event.preventDefault(); go("/auth"); return; } void joinRoom(event); }}>
@@ -442,7 +449,7 @@ export function DesignApp({
                     <div><h3>{text.join}</h3><p>{text.joinHint}</p></div>
                   </div>
                   <label>
-                    Код комнаты
+                    {t("join.codeLabel")}
                     <CodeInput value={code} onChange={setCode} slots={8} />
                   </label>
                   <div className="actions">
@@ -473,36 +480,36 @@ export function DesignApp({
           </main>
           <aside className="side">
             <section className="card">
-              <h3>Друзья онлайн <span>{friends.filter((row) => row.roomId).length}</span></h3>
+              <h3>{t("home.friendsOnline")} <span>{friends.filter((row) => row.roomId).length}</span></h3>
               {session ? <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const q = String(data.get("q") ?? ""); if (!session || !q) return; void fetch(`${apiUrl}/users/search?q=${encodeURIComponent(q)}`, { headers: { authorization: `Bearer ${session.accessToken}` } }).then((response) => response.json()).then((payload: { users?: Array<{ id: string; displayName: string }> }) => setPeople(payload.users ?? [])).catch(() => setPeople([])); }}>
-                <input data-testid="friend-search" name="q" placeholder="Найти человека" aria-label="Поиск друзей" />
-                <button type="submit" data-testid="friend-search-go">Найти</button>
+                <input data-testid="friend-search" name="q" placeholder={t("home.friendSearch")} aria-label={t("profile.searchPeopleAria")} />
+                <button type="submit" data-testid="friend-search-go">{t("home.find")}</button>
               </form> : null}
-              {people.map((person) => <p key={person.id} className="friend-result" data-testid="friend-result"><span>{person.displayName}</span><span className="mini">Найден</span></p>)}
+              {people.map((person) => <p key={person.id} className="friend-result" data-testid="friend-result"><span>{person.displayName}</span><span className="mini">{t("home.found")}</span></p>)}
               {friends.length > 0 ? friends.map((row) => (
                 <div className="fr" key={row.id}>
                   <span className={`av lg p-${personHue(row.userId)}`}>{initials(row.displayName)}</span>
-                  <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? "не в комнате"}</small></div>
-                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } }).catch(() => undefined)}>Убрать</button>
+                  <div><div className={`n p-${personHue(row.userId)}`}>{row.displayName}</div><small>{row.roomTitle ?? t("home.notInRoom")}</small></div>
+                  <button type="button" className="mini" onClick={() => void fetch(`${apiUrl}/friends/${row.id}`, { method: "DELETE", headers: { authorization: `Bearer ${session?.accessToken ?? ""}` } }).catch(() => undefined)}>{t("home.remove")}</button>
                 </div>
-              )) : <p className="empty-note">{session ? "Пока никого нет в сети. Найдите друга по имени выше." : "Войдите, чтобы видеть друзей и их комнаты."}</p>}
+              )) : <p className="empty-note">{session ? t("home.noFriendsOnline") : t("home.signInForFriends")}</p>}
             </section>
             <section className="card">
-              <div className="lvl"><div className="mark">{level}</div><div><b>{text.level} {level}</b><small>Опыт растёт за сеансы, чат и голос</small></div></div>
-              <div className="actions" style={{ marginTop: 10 }}><button type="button" className="btn btn-ghost" onClick={() => go("/profile")}>Открыть профиль</button></div>
+              <div className="lvl"><div className="mark">{level}</div><div><b>{text.level} {level}</b><small>{t("home.xpHint")}</small></div></div>
+              <div className="actions" style={{ marginTop: 10 }}><button type="button" className="btn btn-ghost" onClick={() => go("/profile")}>{t("home.openProfile")}</button></div>
             </section>
             <section className="card">
-              <h3>Напоминания <span>{reminders.length}</span></h3>
+              <h3>{t("home.reminders")} <span>{reminders.length}</span></h3>
               {reminders.length > 0 ? reminders.slice(0, 3).map((note) => (
                 <div className="ev" key={note.id}><div className="d">lume<b>·</b></div><div><div className="t">{note.title}</div><div className="h">{note.body}</div></div></div>
-              )) : <p className="empty-note">Нет напоминаний.</p>}
+              )) : <p className="empty-note">{t("home.noReminders")}</p>}
             </section>
             <section className="card heat-wrap heat-compact" aria-label={text.season}>
               <div className="heat-top"><h3>{text.season}</h3></div>
               {heat.some((cell) => cell.score > 0) ? (
                 <div className="heat-grid">{heat.slice(-119).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div>
               ) : (
-                <p className="empty-note">Проведите первый сеанс — здесь появится карта сезона.</p>
+                <p className="empty-note">{t("gruvbox.seasonEmpty")}</p>
               )}
             </section>
           </aside>
@@ -519,17 +526,17 @@ export function DesignApp({
           {view === "create" ? <CreateScreen title={title} onTitle={setTitle} preset={preset} onPreset={setPreset} onSubmit={(event) => void createRoom(event)} onCancel={() => go("/")} busy={creating} /> : null}
           {view === "join" ? <JoinScreen code={code} onCode={setCode} onSubmit={(event) => void joinRoom(event)} onCancel={() => go("/")} /> : null}
           {view === "settings" ? <SettingsScreen style={style} mode={mode} onStyle={(next) => void saveAppearance(next, mode)} onMode={(next) => void saveAppearance(style, next)} token={session?.accessToken} apiUrl={apiUrl} blocked={blocked} onUnblock={(id) => { setBlocked((rows) => rows.filter((row) => row.id !== id)); if (!session) return; void fetch(`${apiUrl}/friends/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${session.accessToken}` } }).catch(() => undefined); }} globalBans={globalBans} onRemoveGlobalBan={(bannedUserId) => { if (!session) return; const previous = globalBans; setGlobalBans((rows) => rows.filter((row) => row.userId !== bannedUserId)); void fetch(`${apiUrl}/users/${session.user.id}/blacklist/remove`, { method: "POST", headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ bannedUserId }) }).then((response) => { if (!response.ok) setGlobalBans(previous); }).catch(() => setGlobalBans(previous)); }} /> : null}
-          {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} /> : <EmptyScreen title="Профиль" body="Войдите, чтобы увидеть свои достижения, историю, друзей и статистику." action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>Войти</button>} />) : null}
+          {view === "profile" ? (session ? <ProfileScreen token={session.accessToken} apiUrl={apiUrl} userId={session.user.id} displayName={session.user.displayName} /> : <EmptyScreen title={t("profile.signInTitle")} body={t("profile.signInBody")} action={<button type="button" className="btn btn-primary" onClick={() => go("/auth")}>{t("auth.login")}</button>} />) : null}
           {view === "premium" ? <PremiumScreen /> : null}
           {view === "notifications" ? <NotificationsScreen items={notes} /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}
           {view === "auth" ? (
-            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }).then(() => setNotice("Ссылка для входа отправлена на почту.")).catch(() => setError("Не удалось отправить ссылку.")); }} onRegister={(event) => {
+            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }).then(() => setNotice(t("auth.magicSent"))).catch(() => setError(t("auth.magicFailed"))); }} onRegister={(event) => {
               event.preventDefault();
               const data = new FormData(event.currentTarget);
               void fetch(`${apiUrl}/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name, password: String(data.get("password") ?? ""), displayName: String(data.get("displayName") ?? name) }) })
                 .then((response) => response.json())
-                .catch(() => setError("Не удалось создать аккаунт."))
+                .catch(() => setError(t("auth.registerFailed")))
                 .then((payload: { accessToken?: string; refreshToken?: string; user?: { id: string; displayName: string } } | undefined) => {
                   if (payload?.accessToken && payload.user) {
                     onSession({
@@ -541,16 +548,16 @@ export function DesignApp({
                 });
             }} />
           ) : null}
-          {view === "missing" ? <EmptyScreen title="Комната не найдена" body="Такого кода нет или сеанс уже закончился. Проверьте приглашение или создайте свою." action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>На главную</button><button type="button" className="btn btn-primary" onClick={() => go("/create")}>Создать комнату</button></>} /> : null}
-          {view === "offline" ? <EmptyScreen title="Нет соединения" body="Похоже, вы офлайн. Проверьте сеть — комната дождётся, когда вы вернётесь." action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Повторить</button>} /> : null}
+          {view === "missing" ? <EmptyScreen title={t("empty.notFoundTitle")} body={t("empty.notFoundBody")} action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>{t("empty.home")}</button><button type="button" className="btn btn-primary" onClick={() => go("/create")}>{t("create.submit")}</button></>} /> : null}
+          {view === "offline" ? <EmptyScreen title={t("empty.offlineTitle")} body={t("empty.offlineBody")} action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>{t("common.retry")}</button>} /> : null}
         </Page>
       ) : null}
       {narrow && view !== "room" ? (
-        <nav className="tabbar" aria-label="Основная навигация">
-          <button type="button" className={view === "home" ? "on" : ""} onClick={() => go("/")}><span className="tab-ic">⌂</span>Главная</button>
-          <button type="button" className={view === "search" ? "on" : ""} onClick={() => go("/search")}><span className="tab-ic">⌕</span>Поиск</button>
-          <button type="button" className={view === "notifications" ? "on" : ""} onClick={() => go("/notifications")}><span className="tab-ic">◔</span>События</button>
-          <button type="button" className={view === "profile" ? "on" : ""} onClick={() => go("/profile")}><span className="tab-ic">☺</span>Я</button>
+        <nav className="tabbar" aria-label={t("nav.main")}>
+          <button type="button" className={view === "home" ? "on" : ""} onClick={() => go("/")}><span className="tab-ic">⌂</span>{t("nav.home")}</button>
+          <button type="button" className={view === "search" ? "on" : ""} onClick={() => go("/search")}><span className="tab-ic">⌕</span>{t("nav.search")}</button>
+          <button type="button" className={view === "notifications" ? "on" : ""} onClick={() => go("/notifications")}><span className="tab-ic">◔</span>{t("nav.events")}</button>
+          <button type="button" className={view === "profile" ? "on" : ""} onClick={() => go("/profile")}><span className="tab-ic">☺</span>{t("nav.me")}</button>
         </nav>
       ) : null}
       {style === "gruvbox" ? (
@@ -568,15 +575,16 @@ export function DesignApp({
 }
 
 function RoomPreview({ unavailable = false, onGo }: { unavailable?: boolean; onGo: (path: string) => void }) {
+  const { t } = useI18n();
   return (
     <div className="wrap screen-scroll">
       <main>
         <EmptyScreen
-          title={unavailable ? "Видео недоступно" : "Комната не выбрана"}
+          title={unavailable ? t("room.previewUnavailable") : t("room.previewNone")}
           body={unavailable
-            ? "Источник не отвечает. Откройте комнату заново или замените ссылку в очереди."
-            : "Откройте комнату из списка или войдите по коду — здесь появятся её сцена, чат и очередь."}
-          action={<button type="button" className="btn btn-primary" onClick={() => onGo("/")}>На главную</button>}
+            ? t("room.previewUnavailableBody")
+            : t("room.previewNoneBody")}
+          action={<button type="button" className="btn btn-primary" onClick={() => onGo("/")}>{t("empty.home")}</button>}
         />
       </main>
     </div>
@@ -584,10 +592,11 @@ function RoomPreview({ unavailable = false, onGo }: { unavailable?: boolean; onG
 }
 
 function Page({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="screen-fill" data-page={title}>
       <div className="page-head">
-        <button type="button" className="page-back" onClick={onClose} aria-label="Назад на главную">← Назад</button>
+        <button type="button" className="page-back" onClick={onClose} aria-label={t("page.back")}>{t("page.backShort")}</button>
       </div>
       {children}
     </div>
@@ -620,6 +629,7 @@ function LiveRoomsCarousel({
   onCreate: () => void;
   onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
 }) {
+  const { t } = useI18n();
   const track = useRef<HTMLDivElement>(null);
   const scroll = (direction: -1 | 1) => {
     track.current?.scrollBy({ left: direction * 320, behavior: "smooth" });
@@ -627,8 +637,8 @@ function LiveRoomsCarousel({
   if (rooms.length === 0) {
     return (
       <div className="livestream-empty">
-        <div>Открытых комнат пока нет. Создайте свою — друзья подтянутся.</div>
-        <button type="button" className="btn btn-outline" onClick={onCreate}>Создать комнату</button>
+        <div>{t("home.noRoomsFriends")}</div>
+        <button type="button" className="btn btn-outline" onClick={onCreate}>{t("create.submit")}</button>
       </div>
     );
   }
@@ -645,12 +655,12 @@ function LiveRoomsCarousel({
             onClick={() => onOpen(item)}
           >
             <div className="th">
-              <span className="tag"><i className="d" />{item.memberCount && item.memberCount > 0 ? `${item.memberCount} ${viewersWord(item.memberCount)}` : "открыта"}</span>
+              <span className="tag"><i className="d" />{item.memberCount && item.memberCount > 0 ? `${item.memberCount} ${viewersWord(item.memberCount)}` : t("room.openTag")}</span>
             </div>
             <div className="bd">
               <b>{item.title}</b>
               <div className="meta">
-                <span className="viewers"><i />{(item.memberCount ?? 0) > 0 ? `${item.memberCount} в комнате` : "ждёт гостей"}</span>
+                <span className="viewers"><i />{(item.memberCount ?? 0) > 0 ? t("mobile.memberCount", { count: item.memberCount ?? 0 }) : t("room.waitingGuests")}</span>
                 <span className="code">{item.code}</span>
               </div>
             </div>
@@ -659,8 +669,8 @@ function LiveRoomsCarousel({
       </div>
       {rooms.length > 1 ? (
         <div className="carousel-nav">
-          <button type="button" data-testid="carousel-prev" onClick={() => scroll(-1)} aria-label="Предыдущие комнаты">‹</button>
-          <button type="button" data-testid="carousel-next" onClick={() => scroll(1)} aria-label="Следующие комнаты">›</button>
+          <button type="button" data-testid="carousel-prev" onClick={() => scroll(-1)} aria-label={t("carousel.prev")}>‹</button>
+          <button type="button" data-testid="carousel-next" onClick={() => scroll(1)} aria-label={t("carousel.next")}>›</button>
         </div>
       ) : null}
     </div>
@@ -694,12 +704,13 @@ function GruvboxHome({
   onJoin: (event: FormEvent) => void;
   onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
 }) {
+  const { t } = useI18n();
   const rows = rooms.slice(0, 7);
   return (
     <div className="g-home wrap">
       <section className="pane">
-        <div className="pt">#сессии <span className="dim">{rows.length}</span></div>
-        {rows.length === 0 ? <p className="lead">Открытых комнат пока нет.</p> : rows.map((item, index) => (
+        <div className="pt">{t("sessions.title")} <span className="dim">{rows.length}</span></div>
+        {rows.length === 0 ? <p className="lead">{t("home.noRooms")}</p> : rows.map((item, index) => (
           <button key={item.id} type="button" className={index === 0 ? "srow on" : "srow"} onClick={() => onOpen(item)}>
             <span>{index === 0 ? ">" : " "}</span>
             <b>{item.title}</b>
@@ -709,43 +720,43 @@ function GruvboxHome({
         ))}
       </section>
       <section className="pane">
-        <div className="pt">~продолжить</div>
-        <h2>{resume ?? "Пока нечего продолжать"}</h2>
-        <p>Ваши последние комнаты появятся здесь.</p>
-        <button type="button" className="go" onClick={() => onGo("/profile")}>Профиль</button>
+        <div className="pt">{t("gruvbox.resume")}</div>
+        <h2>{resume ?? t("resume.empty")}</h2>
+        <p>{t("gruvbox.resumeHint")}</p>
+        <button type="button" className="go" onClick={() => onGo("/profile")}>{t("profile.signInTitle")}</button>
       </section>
       <section className="pane">
-        <div className="pt">:new</div>
-        <h3>создать комнату</h3>
-        <p>Название, пресет модерации и приглашение друзьям.</p>
-        <button type="button" className="go" onClick={() => onGo(session ? "/create" : "/auth")}>Открыть мастер</button>
+        <div className="pt">{t("gruvbox.new")}</div>
+        <h3>{t("gruvbox.newTitle")}</h3>
+        <p>{t("gruvbox.newBody")}</p>
+        <button type="button" className="go" onClick={() => onGo(session ? "/create" : "/auth")}>{t("gruvbox.newAction")}</button>
       </section>
       <section className="pane">
-        <div className="pt">:join</div>
-        <h3>войти по коду</h3>
+        <div className="pt">{t("gruvbox.join")}</div>
+        <h3>{t("gruvbox.joinTitle")}</h3>
         <form onSubmit={onJoin}>
-          <input data-testid="lobby-code" className="mono" value={code} onChange={(event) => onCode(event.target.value)} placeholder="a7psyqm9" maxLength={12} aria-label="Код комнаты" />
-          <button type="submit" className="go" data-testid="lobby-join">Войти</button>
+          <input data-testid="lobby-code" className="mono" value={code} onChange={(event) => onCode(event.target.value)} placeholder={t("code.placeholder")} maxLength={12} aria-label={t("join.codePlaceholder")} />
+          <button type="submit" className="go" data-testid="lobby-join">{t("auth.login")}</button>
         </form>
       </section>
       {!session ? (
         <section className="pane">
-          <div className="pt">:login</div>
+          <div className="pt">{t("gruvbox.login")}</div>
           <form onSubmit={onSignIn}>
-            <label>Как вас представить<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder="Имя" /></label>
-            <button type="submit" className="go" data-testid="lobby-sign-in">Войти</button>
+            <label>{t("gruvbox.nameLabel")}<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder={t("name.placeholder")} /></label>
+            <button type="submit" className="go" data-testid="lobby-sign-in">{t("auth.login")}</button>
           </form>
         </section>
       ) : (
         <section className="pane">
-          <div className="pt">#сезон</div>
-          {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">Проведите первый сеанс — здесь появится карта сезона.</p>}
+          <div className="pt">{t("gruvbox.season")}</div>
+          {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">{t("gruvbox.seasonEmpty")}</p>}
         </section>
       )}
       <section className="pane">
-        <div className="pt">#афиша</div>
-        <p>{rows[0] ? `${rows[0].title} · ${rows[0].memberCount ?? 0}` : "Пока пусто"}</p>
-        <p className="dim">Открытые комнаты обновляются каждые 30 секунд.</p>
+        <div className="pt">{t("gruvbox.bill")}</div>
+        <p>{rows[0] ? `${rows[0].title} · ${rows[0].memberCount ?? 0}` : t("sessions.empty")}</p>
+        <p className="dim">{t("gruvbox.billHint")}</p>
       </section>
     </div>
   );

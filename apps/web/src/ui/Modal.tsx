@@ -1,5 +1,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
+
+const modalStack: symbol[] = [];
 import { createPortal } from "react-dom";
+import { useI18n } from "../i18n/context.js";
 
 export function Modal({
   open,
@@ -10,8 +13,9 @@ export function Modal({
   placement = "center",
   wide = false,
   lg = false,
-  closeLabel = "Закрыть",
+  closeLabel,
   testId,
+  closeTestId,
 }: {
   open: boolean;
   title: ReactNode;
@@ -23,14 +27,19 @@ export function Modal({
   lg?: boolean;
   closeLabel?: string;
   testId?: string;
+  closeTestId?: string;
 }) {
+  const { t } = useI18n();
   const panelRef = useRef<HTMLDivElement>(null);
+  const stackId = useRef(Symbol("modal"));
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const titleId = useRef(`modal-${Math.random().toString(36).slice(2, 9)}`).current;
 
   useEffect(() => {
     if (!open) return;
+    const id = stackId.current;
+    modalStack.push(id);
     const previous = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -44,8 +53,10 @@ export function Modal({
     (focusables()[0] ?? panel)?.focus({ preventScroll: true });
 
     const onKey = (event: KeyboardEvent) => {
+      if (modalStack[modalStack.length - 1] !== id) return;
       if (event.key === "Escape") {
         event.preventDefault();
+        event.stopPropagation();
         closeRef.current();
         return;
       }
@@ -58,16 +69,24 @@ export function Modal({
         panel.focus();
         return;
       }
-      if (event.shiftKey && document.activeElement === first) {
+      const active = document.activeElement;
+      if (!panel.contains(active)) {
+        event.preventDefault();
+        first.focus();
+        return;
+      }
+      if (event.shiftKey && active === first) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && active === last) {
         event.preventDefault();
         first.focus();
       }
     };
     document.addEventListener("keydown", onKey);
     return () => {
+      const index = modalStack.indexOf(id);
+      if (index >= 0) modalStack.splice(index, 1);
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
       previous?.focus?.({ preventScroll: true });
@@ -95,7 +114,7 @@ export function Modal({
         <div className="mh">
           <h2 id={titleId}>{title}</h2>
           <span className="sp" />
-          <button type="button" aria-label={closeLabel} onClick={onClose}>
+          <button type="button" data-testid={closeTestId} aria-label={closeLabel ?? t("common.close")} onClick={onClose}>
             ×
           </button>
         </div>
@@ -112,7 +131,7 @@ export function ConfirmDialog({
   title,
   body,
   confirmLabel,
-  cancelLabel = "Отмена",
+  cancelLabel,
   danger = false,
   busy = false,
   onConfirm,
@@ -128,6 +147,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <Modal
       open={open}
@@ -137,7 +157,7 @@ export function ConfirmDialog({
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            {cancelLabel}
+            {cancelLabel ?? t("common.cancel")}
           </button>
           <button
             type="button"

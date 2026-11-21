@@ -10,4 +10,9 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  build: {
+    // Explicit budget: the entry, hls.js and LiveKit chunks are lazy but still
+    // large. Anything above this limit is a real regression and warns again.
+    chunkSizeWarningLimit: 720,
+  },
 });

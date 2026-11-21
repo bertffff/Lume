@@ -46,6 +46,7 @@ export function useRoomMeta(roomId: string | undefined, token: string | undefine
   useEffect(() => {
     if (!roomId || !token) return;
     let stopped = false;
+    setPermissions(defaultPermissions);
     void fetch(`${apiUrl}/rooms/${roomId}/settings`, { headers: { authorization: `Bearer ${token}` } })
       .then((response) => response.json())
       .then((payload: { title: string; hideReactions?: boolean; defaults?: Record<string, boolean> | null }) => {

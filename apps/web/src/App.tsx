@@ -6,9 +6,10 @@ import { ToastProvider } from "./ui/Toast.js";
 import { useRoomChannel } from "./realtime/useRoomChannel.js";
 import { DesignApp } from "./design/DesignApp.js";
 import { AdminScreen } from "./screens/AdminScreen.js";
+import { copy } from "./design/copy.js";
 import { RoomScreen } from "./screens/RoomScreen.js";
 import { clearSession, loadSession, saveSession, type ClientSession } from "./session.js";
-import { bindBackButton, hapticImpact } from "./telegram/adapter.js";
+import { bindBackButton, hapticImpact, themeParamsToCssVars } from "./telegram/adapter.js";
 import { readTelegramWebApp } from "./telegram/types.js";
 
 const PENDING_JOIN_KEY = "lume-pending-room";
@@ -45,6 +46,23 @@ export function App() {
   const live = useRoomChannel(
     session && roomId ? { token: session.accessToken, roomId, selfId: session.user.id } : null,
   );
+
+  useEffect(() => {
+    if (!webApp) return;
+    document.documentElement.dataset.telegram = "true";
+    const applyTheme = () => {
+      const vars = themeParamsToCssVars(webApp.themeParams ?? {});
+      for (const [name, value] of Object.entries(vars)) {
+        document.documentElement.style.setProperty(name, value);
+      }
+    };
+    applyTheme();
+    webApp.onEvent?.("themeChanged", applyTheme);
+    return () => {
+      webApp.offEvent?.("themeChanged", applyTheme);
+      delete document.documentElement.dataset.telegram;
+    };
+  }, [webApp]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -126,7 +144,7 @@ export function App() {
       button.hide();
       return;
     }
-    button.setText(pendingJoin ? "Открыть комнату" : "Создать комнату");
+    button.setText(pendingJoin ? copy(locale).openRoom : copy(locale).create);
     button.show();
     const open = () => {
       const code = sessionStorage.getItem(PENDING_JOIN_KEY);
@@ -135,7 +153,7 @@ export function App() {
     };
     button.onClick(open);
     return () => button.offClick(open);
-  }, [roomId, pendingJoin, webApp]);
+  }, [roomId, pendingJoin, webApp, locale]);
 
   useEffect(() => {
     if (!inTelegram || !roomId) return;

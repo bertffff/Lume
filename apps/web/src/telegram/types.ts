@@ -35,6 +35,7 @@ export interface TelegramWebApp {
   ready?: () => void;
   expand?: () => void;
   onEvent?: (event: string, handler: () => void) => void;
+  offEvent?: (event: string, handler: () => void) => void;
   HapticFeedback?: TelegramHapticFeedback;
   BackButton?: TelegramBackButton;
   MainButton?: TelegramMainButton;

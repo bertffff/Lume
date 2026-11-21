@@ -20,6 +20,7 @@ export function useVoiceChannel(roomId: string | undefined) {
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(true);
   const [deafened, setDeafened] = useState(false);
+  const deafenedRef = useRef(false);
   const [devices, setDevices] = useState<Array<{ deviceId: string; label: string }>>([]);
   const [deviceId, setDeviceId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +91,8 @@ export function useVoiceChannel(roomId: string | undefined) {
     setError(null);
     if (stub) {
       setMuted(false);
+      setDeafened(false);
+      deafenedRef.current = false;
       setJoined(true);
       live.joinVoicePresence();
       live.reportVoice(false, false);
@@ -115,6 +118,11 @@ export function useVoiceChannel(roomId: string | undefined) {
         setMuted(nextMuted);
         live.reportVoice(nextMuted, speaking && !nextMuted);
       };
+      room.on(RoomEvent.TrackSubscribed, (_track, publication) => {
+        if (deafenedRef.current) {
+          publication.setSubscribed(false);
+        }
+      });
       room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
         report(speakers.some((speaker) => speaker.identity === live.selfId));
       });
@@ -134,18 +142,17 @@ export function useVoiceChannel(roomId: string | undefined) {
         },
         muted: () => !room.localParticipant.isMicrophoneEnabled,
         setDeafened: async (next) => {
+          deafenedRef.current = next;
           for (const participant of room.remoteParticipants.values()) {
             for (const publication of participant.audioTrackPublications.values()) {
-              if (next) {
-                publication.track?.detach();
-              } else if (publication.track) {
-                publication.track.attach();
-              }
+              publication.setSubscribed(!next);
             }
           }
         },
       };
       setMuted(false);
+      setDeafened(false);
+      deafenedRef.current = false;
       setJoined(true);
       live.joinVoicePresence();
       live.reportVoice(false, false);
@@ -163,9 +170,13 @@ export function useVoiceChannel(roomId: string | undefined) {
       hapticImpact(readTelegramWebApp(), "light");
       return;
     }
-    await handle.current?.setDeafened(next);
-    setDeafened(next);
-    hapticImpact(readTelegramWebApp(), "light");
+    try {
+      await handle.current?.setDeafened(next);
+      setDeafened(next);
+      hapticImpact(readTelegramWebApp(), "light");
+    } catch {
+      setError("voice_failed");
+    }
   }
 
   async function leave() {

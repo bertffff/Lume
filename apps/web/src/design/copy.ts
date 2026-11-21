@@ -1,4 +1,5 @@
 import type { Locale } from "@lume/contracts";
+import type { MessageKey } from "../i18n/ru.js";
 
 const ru = {
   search: "Найти видео или комнату",
@@ -6,6 +7,7 @@ const ru = {
   friendsWatching: "Друзья сейчас смотрят — можно зайти к ним",
   resume: "Продолжить",
   create: "Создать комнату",
+  openRoom: "Открыть комнату",
   createHint: "Ссылка, друзья — и смотрим",
   join: "Войти по коду",
   joinHint: "Код комнаты из приглашения",
@@ -57,6 +59,7 @@ const en: typeof ru = {
   friendsWatching: "Friends are watching — you can join them",
   resume: "Continue",
   create: "Create a room",
+  openRoom: "Open room",
   createHint: "A link, friends, and we watch",
   join: "Join with a code",
   joinHint: "The room code from your invitation",
@@ -102,21 +105,41 @@ const en: typeof ru = {
   empty: "Nothing here yet",
 };
 
+export const roomFilters = {
+  film: /кино|film/i,
+  music: /звук|music|концерт/i,
+};
+
 export function copy(locale: Locale) {
   return locale === "en" ? en : ru;
 }
 
-export const permissionLabels: Record<string, string> = {
-  canChat: "Чат",
-  canQueue: "Очередь",
-  canSpeak: "Голос",
-  canReact: "Реакции",
-  canSeek: "Перемотка",
-  canInvite: "Приглашения",
+const permissionKeys: Record<string, MessageKey> = {
+  canChat: "perm.canChat",
+  canQueue: "perm.canQueue",
+  canSpeak: "perm.canSpeak",
+  canReact: "perm.canReact",
+  canSeek: "perm.canSeek",
+  canInvite: "perm.canInvite",
 };
 
-export function permissionLabel(key: string): string {
-  return permissionLabels[key] ?? "Право";
+const permissionHintKeys: Record<string, MessageKey> = {
+  canChat: "perm.canChatHint",
+  canQueue: "perm.canQueueHint",
+  canSpeak: "perm.canSpeakHint",
+  canReact: "perm.canReactHint",
+  canSeek: "perm.canSeekHint",
+  canInvite: "perm.canInviteHint",
+};
+
+export function permissionLabel(key: string, t: (key: MessageKey) => string): string {
+  const message = permissionKeys[key];
+  return message ? t(message) : key;
+}
+
+export function permissionHint(key: string, t: (key: MessageKey) => string): string {
+  const message = permissionHintKeys[key];
+  return message ? t(message) : key;
 }
 
 export function viewersWord(count: number): string {

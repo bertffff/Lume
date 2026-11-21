@@ -9,7 +9,7 @@ export interface RoomActions {
   canControl: boolean;
   selfId: string;
   sendChat: (body: string, replyToId?: string | null) => void;
-  sendImage: (url: string) => void;
+  sendImage: (url: string, body: string) => void;
   react: (messageId: string, emoji: string) => void;
   addQueue: (url: string, title?: string) => void;
   reloadHistory: (historyId: string) => void;

@@ -235,8 +235,8 @@ html[data-style="cinema"] .design-app .inline-actions button{flex:none}
 .design-app .auth-card{width:100%;background:var(--s1);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;box-shadow:var(--shadow-float);display:flex;flex-direction:column;gap:14px}
 .design-app .auth-card .tabs2{align-self:stretch}
 .design-app .auth-card .tabs2 .tab{flex:1}
-.design-app .tg-btn{height:44px;min-height:44px;border-radius:var(--r-sm);background:#2AABEE;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border:0;width:100%}
-.design-app .tg-btn:hover{background:#3CB5F2}
+.design-app .tg-btn{height:44px;min-height:44px;border-radius:var(--r-sm);background:#0E6E9C;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;border:0;width:100%}
+.design-app .tg-btn:hover{background:#146C94}
 .design-app .or{display:flex;align-items:center;gap:10px;color:var(--text-3);font-size:12px}
 .design-app .or::before,.design-app .or::after{content:"";flex:1;height:1px;background:var(--line)}
 .design-app .auth-card .field{gap:7px}
@@ -780,4 +780,163 @@ html[data-style="gruvbox"] .design-app.is-narrow .status .sl-file{display:none}
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* Telegram Mini App: one scroll container, safe areas, dynamic viewport. */
+html[data-telegram="true"] body {
+  overscroll-behavior: none;
+}
+html[data-telegram="true"] .design-app {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-telegram="true"] .design-app > .wrap,
+html[data-telegram="true"] .design-app > .screen-fill,
+html[data-telegram="true"] .design-app > .screen-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.design-app .nav {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.design-app .tabbar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.ui-sheet {
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 200;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  transition: top 0.15s var(--ease-out);
+}
+.skip-link:focus-visible {
+  top: 8px;
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Portaled dialogs keep the control system: they live outside .design-app. */
+.ui-overlay .modal {
+  background: var(--s1);
+  color: var(--text);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-float);
+}
+.ui-overlay .mh {
+  border-bottom: 1px solid var(--line);
+}
+.ui-overlay .mf {
+  border-top: 1px solid var(--line);
+}
+.ui-overlay .mh h2 {
+  font: 600 18px/1.2 var(--font-display, var(--font-ui));
+}
+.ui-overlay .mh button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+}
+.ui-overlay .modal button {
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  color: var(--text);
+  font: 500 13px/1.2 var(--font-ui);
+}
+.ui-overlay .modal button:hover:not(:disabled) {
+  background: var(--s3);
+  border-color: color-mix(in srgb, var(--text) 32%, transparent);
+}
+.ui-overlay .modal .btn-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.ui-overlay .modal .btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-2);
+}
+.ui-overlay .modal .btn-danger {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 42%, transparent);
+  color: var(--danger);
+}
+.ui-overlay .modal input:not([type="checkbox"]):not([type="radio"]),
+.ui-overlay .modal select,
+.ui-overlay .modal textarea {
+  height: 38px;
+  min-width: 0;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--s2);
+  color: var(--text);
+  font: 400 13.5px/1.25 var(--font-ui);
+}
+.ui-overlay .modal textarea {
+  height: auto;
+  min-height: 88px;
+  padding: 10px 12px;
+}
+.ui-overlay .modal :is(button, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px var(--accent-soft));
+  border-color: var(--accent);
+}
+.ui-overlay .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ui-overlay .chips .pill {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--s2);
+  color: var(--text-2);
+}
+.ui-overlay .chips .pill.on {
+  background: var(--text);
+  border-color: transparent;
+  color: var(--bg);
+}
+.ui-overlay .choice {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--s2);
+  padding: 12px;
+  color: var(--text);
+}
+.ui-overlay .choice.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.ui-overlay .choice p {
+  color: var(--text-2);
+  font-size: 12px;
 }

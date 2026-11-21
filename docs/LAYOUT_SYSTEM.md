@@ -49,3 +49,13 @@ The room is a versioned layout document: player ratio, three side weights, colla
 `e2e/visual-baseline.spec.ts` compares `home`, `room`, `create`, `join` and `onboarding` across cinema/gruvbox, dark/light and desktop/mobile against committed PNGs in `e2e/baseline/` (2% pixel tolerance). Regenerate deliberately with `UPDATE_BASELINES=1 pnpm test:e2e`. `?shot=` is a deterministic design-preview mode: rooms and global stats there are fixed fixtures, so screenshots never depend on data created by other specs. Without `?shot=` the app keeps using live data.
 
 `e2e/helpers/identity.ts` gives every test its own display name, so parallel specs no longer share a dev user. Specs that touch global aggregates or the friend graph run with `test.describe.configure({ mode: "serial" })`. `pretest:e2e` runs `e2e/check-build.mjs` and fails when `src` is newer than the built bundle, preventing screenshots against a stale build.
+
+## Primitives, shell and accessibility
+
+`apps/web/src/ui/` is the one control layer: Button, Input/Textarea/Select, Toggle, Badge, Card, Modal/Sheet, ConfirmDialog, Toasts, Skeleton, EmptyState and ErrorState. The modal traps Tab, closes on Esc/backdrop, restores focus and locks body scroll; primitives are covered by jsdom tests through Testing Library. `AppShell` frames both the admin screen and the design app and provides a skip link.
+
+`i18n/hardcoded.test.ts` fails the suite if a Cyrillic string literal appears outside the dictionaries (plus the `copy.ts` design vocabulary and deterministic `shot-fixtures.ts`). `t(key, params)` interpolates `{name}` values for counts, durations and session labels. Error codes are mapped to message keys instead of branching on Russian sentences.
+
+Telegram: `themeParamsToCssVars` writes both the design tokens (`--bg`, `--s1`, `--text`, `--accent`, `--accent-ink`) and the legacy `--lume-*` names; `App` applies them on start and on `themeChanged`. Sub-screens bind `BackButton` back to home, and the Mini App uses `100dvh`, `env(safe-area-inset-*)` and one scroll container.
+
+`e2e/a11y.spec.ts` runs axe-core (WCAG 2 A/AA) on home, create, join and auth and fails on serious/critical findings. The Telegram button was darkened to `#0E6E9C` to clear 4.5:1 with white text.
