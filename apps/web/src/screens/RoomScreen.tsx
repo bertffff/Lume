@@ -96,6 +96,7 @@ export function RoomScreen({
         canControl: canControlPlayback(live.state.self.role),
         selfId,
         sendChat: live.sendChat,
+        sendImage: live.sendImage,
         react: live.react,
         addQueue: live.addQueue,
         reloadHistory: live.reloadHistory,
@@ -126,7 +127,11 @@ export function RoomScreen({
     >
       <>
         {warn ? <p className="tr-banner">{t("room.warnSession")}</p> : null}
-        {live.error ? <p className="tr-note">{live.error === "kicked" ? "Вас удалили из комнаты" : "Соединение с комнатой прервано"}</p> : null}
+        {live.error ? (
+          <p className="tr-note" data-testid="room-error" data-code={live.error}>
+            {live.error === "kicked" ? "Вас удалили из комнаты" : "Соединение с комнатой прервано"}
+          </p>
+        ) : null}
         <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} onRefreshed={setRefreshed} />
         {helpOpen ? (
           <div className="overlay docked" role="dialog" aria-modal="true" aria-label="Горячие клавиши">

@@ -49,10 +49,10 @@ export function createRoomApi(baseUrl: string) {
     session(token: string, roomId: string) {
       return request<RoomSession>(token, `/rooms/${roomId}`);
     },
-    sendMessage(token: string, roomId: string, body: string, replyToId?: string | null) {
+    sendMessage(token: string, roomId: string, body: string, replyToId?: string | null, imageUrl?: string) {
       return request<ChatMessage>(token, `/rooms/${roomId}/messages`, {
         method: "POST",
-        body: { body, replyToId: replyToId ?? null },
+        body: { body, replyToId: replyToId ?? null, ...(imageUrl ? { imageUrl } : {}) },
       });
     },
     react(token: string, roomId: string, messageId: string, emoji: string) {

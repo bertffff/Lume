@@ -265,7 +265,11 @@ export function registerRoomRoutes(
     }
     const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
     const body = z
-      .object({ body: z.string().trim().min(1).max(500), replyToId: z.string().min(1).nullable().optional() })
+      .object({
+        body: z.string().trim().min(1).max(500),
+        imageUrl: z.string().regex(/^(https?:\/\/|\/uploads\/)/).max(2000).optional(),
+        replyToId: z.string().min(1).nullable().optional(),
+      })
       .safeParse(request.body);
     if (!params.success || !body.success) {
       return reply.code(400).send({ error: "invalid_body" });
@@ -297,6 +301,7 @@ export function registerRoomRoutes(
         params.data.id,
         body.data.body,
         body.data.replyToId,
+        body.data.imageUrl ?? null,
       );
       if (prisma) {
         await trackStat(prisma, actor.userId, "totalMessages", 1, env.TELEGRAM_BOT_TOKEN);

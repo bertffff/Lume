@@ -42,6 +42,7 @@ export interface MessageRecord {
   userId: string;
   displayName: string;
   body: string;
+  imageUrl?: string | null;
   replyToId: string | null;
   createdAt: string;
   reactions: { emoji: string; userId: string }[];

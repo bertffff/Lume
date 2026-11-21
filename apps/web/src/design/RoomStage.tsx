@@ -82,6 +82,7 @@ export function RoomStage({
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [command, setCommand] = useState("");
   const [sheet, setSheet] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<RoomSheetPanel>("chat");
@@ -89,6 +90,9 @@ export function RoomStage({
   const [seenCount, setSeenCount] = useState(0);
   const seenReady = useRef(false);
   const chatRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const chatPinned = useRef(true);
+  const [chatNew, setChatNew] = useState(0);
   const [profile, setProfile] = useState<InRoomProfile | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [roomTitle, setRoomTitle] = useState<string | null>(null);
@@ -247,6 +251,15 @@ export function RoomStage({
     };
   }, [live?.accessToken, live?.state.room.id, live?.state.room.nowPlaying?.id]);
   useEffect(() => {
+    const element = chatRef.current;
+    if (!element) return;
+    if (chatPinned.current) {
+      element.scrollTop = element.scrollHeight;
+    } else {
+      setChatNew((count) => count + 1);
+    }
+  }, [messageCount]);
+  useEffect(() => {
     if (!hasLive || seenReady.current) return;
     seenReady.current = true;
     setSeenCount(messageCount);
@@ -284,6 +297,22 @@ export function RoomStage({
   const progress = room.nowPlaying?.durationMs && room.nowPlaying.durationMs > 0
     ? Math.min(100, Math.max(0, (live.positionMs / room.nowPlaying.durationMs) * 100))
     : 0;
+
+  function onChatScroll() {
+    const element = chatRef.current;
+    if (!element) return;
+    const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 40;
+    chatPinned.current = atBottom;
+    if (atBottom) setChatNew(0);
+  }
+
+  function jumpToLatest() {
+    const element = chatRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+    chatPinned.current = true;
+    setChatNew(0);
+    setSeenCount(live?.state.messages.length ?? 0);
+  }
 
   function jumpToUnread() {
     const anchor = chatRef.current?.querySelector<HTMLElement>('[data-unread="true"]');
@@ -396,6 +425,32 @@ export function RoomStage({
     }
   }
 
+  async function attachImage(file: File | undefined) {
+    if (!file || !live) return;
+    if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) return;
+    setUploading(true);
+    try {
+      const dataBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? "").split(",")[1] ?? "");
+        reader.onerror = () => reject(new Error("read_failed"));
+        reader.readAsDataURL(file);
+      });
+      const response = await fetch(`${apiUrl}/uploads`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" },
+        body: JSON.stringify({ dataBase64 }),
+      });
+      if (!response.ok) return;
+      const payload = (await response.json()) as { url?: string };
+      if (payload.url) live.sendImage(payload.url);
+    } catch {
+      // A failed upload leaves the composer unchanged.
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function sendChat(event: FormEvent) {
     event.preventDefault();
     const body = draft.trim();
@@ -454,7 +509,10 @@ export function RoomStage({
         voiceEnabled={voice.enabled === true}
         voiceJoined={voice.joined}
         voiceMuted={voice.muted}
+        unread={unread}
+        narrow={narrow}
         canSettings={live.state.self.role === "host"}
+        onJumpUnread={jumpToLatest}
         onVoiceJoin={() => void voice.join()}
         onVoiceLeave={() => void voice.leave()}
         onVoiceMute={() => void voice.toggleMute()}
@@ -563,9 +621,15 @@ export function RoomStage({
                 <div className="voice-controls">
                   <button type="button" className="vbtn" data-testid="voice-join" disabled={!voiceReady || voice.busy} onClick={() => void voice.join()}>Войти</button>
                   <button type="button" className="vbtn" data-testid="voice-preflight-run" disabled={preflightBusy} onClick={() => void testVoice()}>{preflightBusy ? "Проверяем" : "Проверка"}</button>
-                  <button type="button" className="vbtn" data-testid="voice-toggle" disabled={!voiceReady} onClick={() => void voice.toggleMute()}>{voice.muted ? "Микрофон: вкл" : "Микрофон: выкл"}</button>
+                  <button type="button" className="vbtn" data-testid="voice-toggle" aria-pressed={!voice.muted} disabled={!voiceReady} onClick={() => void voice.toggleMute()}>{voice.muted ? t("room.micOn") : t("room.micOff")}</button>
+                  <button type="button" className="vbtn" data-testid="voice-deafen" aria-pressed={voice.deafened} disabled={!voiceReady} onClick={() => void voice.toggleDeafen()}>{voice.deafened ? t("voice.undeafen") : t("voice.deafen")}</button>
                   <button type="button" className="vbtn leave" data-testid="voice-leave" onClick={() => void voice.leave()}>Выйти</button>
                 </div>
+                {voice.enabled === false || voice.error ? (
+                  <div className="voice-banner" role="status" data-testid="voice-fallback" data-stub={voice.stub ? "true" : "false"}>
+                    {voice.enabled === false ? t("voice.disabledBanner") : voiceErrorText(voice.error ?? "")}
+                  </div>
+                ) : null}
                 {voice.error ? <small className="voice-error" data-testid="voice-error" data-code={voice.error}>{voiceErrorText(voice.error)}</small> : null}
                 <div
                   className="voice-preflight"
@@ -738,7 +802,7 @@ export function RoomStage({
           </div>
           {railTab === "chat" ? (
             <>
-              <div className="log" data-testid="chat-log" ref={chatRef}>
+              <div className="log" data-testid="chat-log" ref={chatRef} onScroll={onChatScroll}>
                 {live.state.messages.length === 0 ? <p className="rail-empty">Пока тихо. Напишите первым.</p> : null}
                 {live.state.messages.map((message, index) => {
                   const mine = message.userId === live.selfId;
@@ -757,6 +821,9 @@ export function RoomStage({
                         <div className="bu">
                           {mine ? null : <div className={`n p-${hue}`}>{message.displayName}</div>}
                           {message.body}
+                          {message.imageUrl ? (
+                            <img className="chat-attach" src={message.imageUrl} alt={t("chat.photo")} loading="lazy" />
+                          ) : null}
                         </div>
                       </div>
                     </Fragment>
@@ -764,18 +831,42 @@ export function RoomStage({
                 })}
               </div>
               <div className="quick">{Object.values(emojiCategories).flat().slice(0, 7).map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)} aria-label={`Реакция ${emoji}`}>{emoji}</button>)}</div>
-              {emojiOpen ? <EmojiPicker recent={recentEmojis} onPick={pickEmoji} /> : null}
+              {chatNew > 0 ? (
+                <button type="button" className="chat-new" data-testid="chat-new" onClick={jumpToLatest}>
+                  {t("chat.new", { count: chatNew })}
+                </button>
+              ) : null}
+              {emojiOpen ? (
+                <EmojiPicker
+                  recent={recentEmojis}
+                  anchor={emojiButtonRef.current}
+                  onPick={pickEmoji}
+                  onClose={() => setEmojiOpen(false)}
+                />
+              ) : null}
               <form className="comp" onSubmit={sendChat}>
                 <button
                   type="button"
                   className="emoji-toggle"
                   data-testid="emoji-picker-toggle"
+                  ref={emojiButtonRef}
                   aria-expanded={emojiOpen}
                   aria-label="Эмодзи"
                   onClick={() => setEmojiOpen((value) => !value)}
                 >
                   😊
                 </button>
+                <label className="attach" title={t("chat.attach")}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    data-testid="chat-attach"
+                    aria-label={t("chat.attach")}
+                    disabled={uploading}
+                    onChange={(event) => void attachImage(event.target.files?.[0])}
+                  />
+                  <span aria-hidden="true">{uploading ? "…" : "📎"}</span>
+                </label>
                 <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder="Написать в комнату…" aria-label="Сообщение" />
                 <button type="submit" className="send" data-testid="chat-send" aria-label={t("chat.send")}>➤</button>
               </form>
@@ -868,7 +959,13 @@ export function RoomStage({
                 <div className="log" data-testid="mobile-sheet-chat">
                   {live.state.messages.length === 0 ? <p className="tr-empty">Пока пусто</p> : null}
                   {live.state.messages.slice(-12).map((message) => (
-                    <div key={message.id} className="m"><div className="bu"><div className="n">{message.displayName}</div>{message.body}</div></div>
+                    <div key={message.id} className="m">
+                      <div className="bu">
+                        <div className="n">{message.displayName}</div>
+                        {message.body}
+                        {message.imageUrl ? <img className="chat-attach" src={message.imageUrl} alt={t("chat.photo")} loading="lazy" /> : null}
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : null}

@@ -85,6 +85,7 @@ function toMessage(message: MessageRecord): ChatMessage {
     userId: message.userId,
     displayName: message.displayName,
     body: message.body,
+    imageUrl: message.imageUrl ?? null,
     replyToId: message.replyToId,
     createdAt: message.createdAt,
     reactions: message.reactions,
@@ -318,6 +319,7 @@ export class RoomService {
     roomId: string,
     body: string,
     replyToId?: string | null,
+    imageUrl?: string | null,
   ): Promise<ChatMessage> {
     const { member } = await this.requireActive(roomId, actor.userId);
     if (member.muted) {
@@ -335,6 +337,7 @@ export class RoomService {
       userId: actor.userId,
       displayName: member.displayName,
       body: body.trim(),
+      imageUrl: imageUrl ?? null,
       replyToId: replyToId ?? null,
       createdAt: this.now().toISOString(),
       reactions: [],

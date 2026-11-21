@@ -300,6 +300,12 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       }
       emit("chat:react", { roomId, messageId, emoji });
     },
+    sendImage(url: string) {
+      if (!roomId) {
+        return;
+      }
+      emit("chat:send", { roomId, body: "фото", imageUrl: url });
+    },
     addQueue(url: string, title?: string) {
       if (!roomId) {
         return;

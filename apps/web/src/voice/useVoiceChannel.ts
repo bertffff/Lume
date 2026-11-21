@@ -9,6 +9,7 @@ interface LiveKitHandle {
   setMuted: (muted: boolean) => Promise<void>;
   switchMic: (deviceId: string) => Promise<void>;
   muted: () => boolean;
+  setDeafened: (deafened: boolean) => Promise<void>;
 }
 
 export function useVoiceChannel(roomId: string | undefined) {
@@ -18,6 +19,7 @@ export function useVoiceChannel(roomId: string | undefined) {
   const [stub, setStub] = useState(false);
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [deafened, setDeafened] = useState(false);
   const [devices, setDevices] = useState<Array<{ deviceId: string; label: string }>>([]);
   const [deviceId, setDeviceId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +133,17 @@ export function useVoiceChannel(roomId: string | undefined) {
           await room.switchActiveDevice("audioinput", nextDevice);
         },
         muted: () => !room.localParticipant.isMicrophoneEnabled,
+        setDeafened: async (next) => {
+          for (const participant of room.remoteParticipants.values()) {
+            for (const publication of participant.audioTrackPublications.values()) {
+              if (next) {
+                publication.track?.detach();
+              } else if (publication.track) {
+                publication.track.attach();
+              }
+            }
+          }
+        },
       };
       setMuted(false);
       setJoined(true);
@@ -141,6 +154,18 @@ export function useVoiceChannel(roomId: string | undefined) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function toggleDeafen() {
+    const next = !deafened;
+    if (stub) {
+      setDeafened(next);
+      hapticImpact(readTelegramWebApp(), "light");
+      return;
+    }
+    await handle.current?.setDeafened(next);
+    setDeafened(next);
+    hapticImpact(readTelegramWebApp(), "light");
   }
 
   async function leave() {
@@ -154,6 +179,7 @@ export function useVoiceChannel(roomId: string | undefined) {
     handle.current = null;
     setJoined(false);
     setMuted(true);
+    setDeafened(false);
     live?.leaveVoicePresence();
   }
 
@@ -185,6 +211,7 @@ export function useVoiceChannel(roomId: string | undefined) {
     stub,
     joined,
     muted,
+    deafened,
     devices,
     deviceId,
     error,
@@ -192,6 +219,7 @@ export function useVoiceChannel(roomId: string | undefined) {
     join,
     leave,
     toggleMute,
+    toggleDeafen,
     pickDevice,
   };
 }

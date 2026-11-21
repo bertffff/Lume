@@ -180,6 +180,8 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
           roomId: message.roomId,
           userId: message.userId,
           body: message.body,
+          type: message.imageUrl ? "image" : "text",
+          imageUrl: message.imageUrl ?? null,
           replyToId: message.replyToId,
           createdAt: new Date(message.createdAt),
         },
@@ -245,6 +247,7 @@ function mapMessage(row: {
   roomId: string;
   userId: string;
   body: string;
+  imageUrl: string | null;
   replyToId: string | null;
   createdAt: Date;
   user: { displayName: string };
@@ -256,6 +259,7 @@ function mapMessage(row: {
     userId: row.userId,
     displayName: row.user.displayName,
     body: row.body,
+    imageUrl: row.imageUrl,
     replyToId: row.replyToId,
     createdAt: row.createdAt.toISOString(),
     reactions: row.reactions.map((reaction) => ({ emoji: reaction.emoji, userId: reaction.userId })),

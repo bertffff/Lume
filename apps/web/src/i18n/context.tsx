@@ -5,12 +5,21 @@ import { ru, type MessageKey } from "./ru.js";
 
 const dictionaries: Record<Locale, Record<MessageKey, string>> = { ru, en };
 
+export type TranslateParams = Record<string, string | number>;
+
+function interpolate(value: string, params?: TranslateParams): string {
+  if (!params) return value;
+  return value.replace(/\{(\w+)\}/g, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match,
+  );
+}
+
 const I18nContext = createContext<{
   locale: Locale;
-  t: (key: MessageKey) => string;
+  t: (key: MessageKey, params?: TranslateParams) => string;
 }>({
   locale: "ru",
-  t: (key) => ru[key],
+  t: (key, params) => interpolate(ru[key], params),
 });
 
 export function I18nProvider({
@@ -23,7 +32,7 @@ export function I18nProvider({
   const value = useMemo(
     () => ({
       locale,
-      t: (key: MessageKey) => dictionaries[locale][key],
+      t: (key: MessageKey, params?: TranslateParams) => interpolate(dictionaries[locale][key], params),
     }),
     [locale],
   );

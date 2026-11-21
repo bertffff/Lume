@@ -528,3 +528,221 @@
 .bu {
   overflow-wrap: anywhere;
 }
+
+/* ============ Session rail (narrow), chat follow, emoji popover, voice ============ */
+.session-rail {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+  background: var(--s1);
+  border-top: 1px solid var(--line-2);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28);
+}
+.session-rail button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.session-rail button:hover:not(:disabled) {
+  background: var(--s3);
+  border-color: var(--line-2);
+}
+.session-rail button:disabled {
+  opacity: 0.45;
+}
+.session-rail button.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 38%, transparent);
+}
+.session-rail svg {
+  width: 20px;
+  height: 20px;
+}
+.session-rail-time {
+  margin-left: auto;
+  font: 600 11px/1 var(--font-mono);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.dock-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--social);
+  color: var(--social-ink);
+  font: 600 9.5px/16px var(--font-mono);
+  text-align: center;
+  border: 2px solid var(--s1);
+}
+.session-rail-note {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--s2);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.chat-new {
+  align-self: center;
+  margin: 2px 0;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid transparent;
+  font: 600 11.5px/1 var(--font-ui);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.emoji-picker {
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--s1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-float);
+  overflow: auto;
+}
+.emoji-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.emoji-tabs button {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--s2);
+  color: var(--text-2);
+  font: 500 11px/1 var(--font-ui);
+}
+.emoji-tabs button.on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.emoji-picker input {
+  height: 32px;
+  min-height: 32px;
+}
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 4px;
+}
+.emoji-grid button {
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 19px;
+  line-height: 1;
+}
+.emoji-grid button:hover {
+  background: var(--s2);
+}
+.emoji-grid .empty-note {
+  grid-column: 1 / -1;
+}
+
+.cinema-room .voice-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+.cinema-room .voice-list > li {
+  min-width: 0;
+}
+.cinema-room .voice-list .vp {
+  width: 100%;
+  min-height: 76px;
+  transition: box-shadow 0.16s var(--ease-out);
+}
+.cinema-room .voice-list .vp[data-speaking="true"] {
+  box-shadow: 0 0 0 2px var(--s1), 0 0 0 4px var(--accent), 0 0 14px var(--accent-soft);
+}
+.voice-banner {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--line-2);
+  background: var(--s2);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.g-room .voice-banner {
+  border-radius: 0;
+  border-color: var(--bg2);
+}
+
+.cinema-room .comp .attach,
+.g-room .comp .attach {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--s2);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 16px;
+}
+.cinema-room .comp .attach input,
+.g-room .comp .attach input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.cinema-room .comp .attach:hover,
+.g-room .comp .attach:hover {
+  border-color: var(--line-2);
+  color: var(--text);
+}
+.chat-attach {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  margin-top: 5px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--s3);
+}

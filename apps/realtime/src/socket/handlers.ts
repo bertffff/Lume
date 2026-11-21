@@ -398,7 +398,13 @@ async function chatSend(io: Server, api: RoomApi, socket: Socket, payload: unkno
     return;
   }
   try {
-    const message = await api.sendMessage(actor.token, parsed.data.roomId, parsed.data.body, parsed.data.replyToId);
+    const message = await api.sendMessage(
+      actor.token,
+      parsed.data.roomId,
+      parsed.data.body,
+      parsed.data.replyToId,
+      parsed.data.imageUrl,
+    );
     io.to(parsed.data.roomId).emit("chat:message", message);
   } catch (error) {
     fail(socket, { code: mapFailure(error), message: "chat:send" });
