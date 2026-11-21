@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("the mobile room sheet switches chat, members, and the live queue", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("lobby-name").fill("Аня");
+  await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
   await page.getByTestId("lobby-title").fill("Мобильный зал");
   await page.getByTestId("lobby-create").click();
@@ -25,7 +26,7 @@ test("the mobile room sheet switches chat, members, and the live queue", async (
 
   await page.getByTestId("mobile-sheet-tab-members").click();
   await expect(panel).toHaveAttribute("data-panel", "members");
-  await expect(page.getByTestId("mobile-sheet-members")).toContainText("Аня");
+  await expect(page.getByTestId("mobile-sheet-members")).toContainText(uniqueName("Аня"));
 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("mobile-sheet-panel")).toHaveCount(0);

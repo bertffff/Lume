@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 const apiUrl = process.env.API_URL ?? "http://127.0.0.1:3001";
 
 test("the live profile engagement widget aggregates watch, voice, and chat activity", async ({ browser }) => {

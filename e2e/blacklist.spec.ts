@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 const apiUrl = process.env.API_URL ?? "http://127.0.0.1:3001";
 
 test("a host manages the global blacklist from the live profile and settings screens", async ({ browser }) => {

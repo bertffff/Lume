@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("layout presets and aspect change the live player frame and persist per aspect", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("lobby-name").fill("Аня");
+  await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
   await page.getByTestId("lobby-title").fill("Кадр");
   await page.getByTestId("lobby-create").click();

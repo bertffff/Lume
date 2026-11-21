@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 test("the home carousel lists live rooms and the global counters track new rooms", async ({ page }) => {
   await page.setViewportSize({ width: 820, height: 800 });
   await page.goto("/");

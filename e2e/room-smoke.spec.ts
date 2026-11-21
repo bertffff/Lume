@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("two guests create a room, sync playback, and chat", async ({ browser }) => {
   const hostContext = await browser.newContext();
@@ -7,7 +8,7 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   const guest = await guestContext.newPage();
 
   await host.goto("/");
-  await host.getByTestId("lobby-name").fill("Аня");
+  await host.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await host.getByTestId("lobby-sign-in").click();
   await host.getByTestId("lobby-title").fill("Вечерний зал");
   await host.getByTestId("lobby-create").click();
@@ -15,12 +16,12 @@ test("two guests create a room, sync playback, and chat", async ({ browser }) =>
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
-  await guest.getByTestId("lobby-name").fill("Марк");
+  await guest.getByTestId("lobby-name").fill(uniqueName("Марк"));
   await guest.getByTestId("lobby-sign-in").click();
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText("Вечерний зал", { timeout: 20_000 });
-  await expect(guest.getByTestId("member-list")).toContainText("Аня");
+  await expect(guest.getByTestId("member-list")).toContainText(uniqueName("Аня"));
 
   await host.getByTestId("queue-input").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   await host.getByTestId("queue-add").click();

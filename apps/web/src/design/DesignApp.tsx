@@ -26,6 +26,15 @@ type View =
   | "offline"
   | "unavailable";
 
+/** `?shot=` is the design-preview mode used by visual tests. Its data is fixed
+    so screenshots do not depend on rooms and stats created by other specs. */
+const shotRooms = [
+  { id: "shot-cinema", title: "Вечерний зал", code: "shotcine", memberCount: 4 },
+  { id: "shot-music", title: "Музыка до утра", code: "shotmusic", memberCount: 3 },
+  { id: "shot-serial", title: "Сериал в четыре глаза", code: "shotserial", memberCount: 2 },
+];
+const shotStats = { usersOnline: 12, activeRooms: 3, totalVideos: 148, totalWatchHours: 42.5 };
+
 const views = new Set<View>([
   "home", "room", "search", "create", "join", "settings", "room-settings", "members", "queue",
   "profile", "premium", "auth", "onboarding", "notifications", "missing", "offline", "unavailable",
@@ -141,6 +150,10 @@ export function DesignApp({
 
   const accessToken = session?.accessToken;
   useEffect(() => {
+    if (shot) {
+      setRooms(shotRooms);
+      return;
+    }
     void api.listRooms(query).then((payload) => setRooms(payload.rooms)).catch(() => setRooms([]));
     if (!accessToken) {
       setIce(null);
@@ -153,9 +166,14 @@ export function DesignApp({
         setIce(urls.length > 0 ? urls.join(" · ") : null);
       })
       .catch(() => setIce(null));
-  }, [query, path, roomId, accessToken]);
+  }, [query, path, roomId, accessToken, shot]);
 
   useEffect(() => {
+    if (shot) {
+      setGlobalStats(shotStats);
+      setStatsReady(true);
+      return;
+    }
     let stopped = false;
     const load = () => {
       void fetch(`${apiUrl}/stats/global`)
@@ -179,7 +197,7 @@ export function DesignApp({
       stopped = true;
       window.clearInterval(timer);
     };
-  }, [path, roomId]);
+  }, [path, roomId, shot]);
 
   useEffect(() => {
     if (!session) return;

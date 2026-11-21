@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 test("a fresh account sees honest empty states instead of demo content", async ({ page }) => {
   const stockRequests: string[] = [];
   page.on("request", (request) => {

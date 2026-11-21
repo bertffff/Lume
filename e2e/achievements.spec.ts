@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 test("the live profile derives achievements, xp, and level from persisted state", async ({ page }) => {
   const stamp = Date.now().toString(36);
   await page.goto("/");

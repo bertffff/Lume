@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("the live room settings sheet saves description, cap, visibility, and hide-reactions", async ({ page, browser }) => {
   await page.goto("/");
-  await page.getByTestId("lobby-name").fill("Аня");
+  await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
   await page.getByTestId("lobby-title").fill("Настройки");
   await page.getByTestId("lobby-create").click();
@@ -50,7 +51,7 @@ test("the live room settings sheet saves description, cap, visibility, and hide-
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
   await guest.goto("/");
-  await guest.getByTestId("lobby-name").fill("Марк");
+  await guest.getByTestId("lobby-name").fill(uniqueName("Марк"));
   await guest.getByTestId("lobby-sign-in").click();
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();

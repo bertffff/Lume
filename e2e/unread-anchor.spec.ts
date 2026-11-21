@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("the live chat anchors the first unread message and jumps to it", async ({ browser }) => {
   const hostContext = await browser.newContext();
@@ -7,7 +8,7 @@ test("the live chat anchors the first unread message and jumps to it", async ({ 
   const guest = await guestContext.newPage();
 
   await host.goto("/");
-  await host.getByTestId("lobby-name").fill("Аня");
+  await host.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await host.getByTestId("lobby-sign-in").click();
   await host.getByTestId("lobby-title").fill("Непрочитанные");
   await host.getByTestId("lobby-create").click();
@@ -15,7 +16,7 @@ test("the live chat anchors the first unread message and jumps to it", async ({ 
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
-  await guest.getByTestId("lobby-name").fill("Марк");
+  await guest.getByTestId("lobby-name").fill(uniqueName("Марк"));
   await guest.getByTestId("lobby-sign-in").click();
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();

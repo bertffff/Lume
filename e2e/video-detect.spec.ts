@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("the live queue shows the detected source for the signed-in user", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("lobby-name").fill("Аня");
+  await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
   await page.getByTestId("lobby-title").fill("Детект");
   await page.getByTestId("lobby-create").click();

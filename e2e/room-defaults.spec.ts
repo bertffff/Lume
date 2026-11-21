@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("the host saves all six viewer permissions from the live room", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("lobby-name").fill("Аня");
+  await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
   await page.getByTestId("lobby-title").fill("Права");
   await page.getByTestId("lobby-create").click();

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { uniqueName } from "./helpers/identity";
 
 test("the host reports the guest who is actually in the room", async ({ browser }) => {
   const hostContext = await browser.newContext();
@@ -7,7 +8,7 @@ test("the host reports the guest who is actually in the room", async ({ browser 
   const guest = await guestContext.newPage();
 
   await host.goto("/");
-  await host.getByTestId("lobby-name").fill("Аня");
+  await host.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await host.getByTestId("lobby-sign-in").click();
   await host.getByTestId("lobby-title").fill("Жалоба");
   await host.getByTestId("lobby-create").click();
@@ -15,13 +16,13 @@ test("the host reports the guest who is actually in the room", async ({ browser 
   const code = (await host.getByTestId("room-code").innerText()).trim();
 
   await guest.goto("/");
-  await guest.getByTestId("lobby-name").fill("Марк");
+  await guest.getByTestId("lobby-name").fill(uniqueName("Марк"));
   await guest.getByTestId("lobby-sign-in").click();
   await guest.getByTestId("lobby-code").fill(code);
   await guest.getByTestId("lobby-join").click();
   await expect(guest.getByTestId("room-title")).toHaveText("Жалоба", { timeout: 20_000 });
 
-  await expect(host.getByTestId("report-target")).toContainText("Марк", { timeout: 15_000 });
+  await expect(host.getByTestId("report-target")).toContainText(uniqueName("Марк"), { timeout: 15_000 });
   const reported = host.waitForResponse((response) => response.url().includes("/reports") && response.request().method() === "POST");
   await host.getByTestId("report-reason").fill("спам в чате");
   await host.getByTestId("report-send").click();

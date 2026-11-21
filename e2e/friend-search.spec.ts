@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 test("a signed-in person sees the name search results", async ({ browser }) => {
   const stamp = Date.now().toString(36);
   const targetName = `Искомый${stamp}`;
