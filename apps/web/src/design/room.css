@@ -395,3 +395,136 @@
 .g-room .qrow{display:grid;grid-template-columns:28px 72px 1fr;gap:10px;align-items:center;padding:8px 4px}
 .g-room .qrow .th{width:72px;height:42px;background:linear-gradient(135deg,var(--s2),var(--s1));display:block}
 .g-room .msg{display:grid;grid-template-columns:48px 80px 1fr;gap:8px;padding:2px 8px;font-family:var(--font)}
+
+/* ============ Layout flow: side / below / stack, with a real resize handle ============ */
+.body,
+.player-col,
+.rail,
+.low,
+.stage-card {
+  min-width: 0;
+  min-height: 0;
+}
+
+.body.flow-side {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow: hidden;
+}
+.body.flow-below {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+}
+.body.flow-stack {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.body.flow-side > .player-col,
+.body.flow-below > .player-col,
+.body.flow-side > .rail,
+.body.flow-below > .rail {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+.body.flow-side > .player-col {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--s3) transparent;
+}
+.body.flow-below > .player-col {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--s3) transparent;
+}
+.body.flow-below .stage-card[data-aspect="vertical"] {
+  height: clamp(220px, 46vh, 520px);
+  width: auto;
+  max-width: 100%;
+  align-self: center;
+}
+.body.flow-side > .rail {
+  border-left: 1px solid var(--line);
+}
+.body.flow-below > .rail {
+  border-left: 0;
+  border-top: 1px solid var(--line);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Resize handle: visible affordance, pointer + keyboard. */
+.tr-handle {
+  flex: none;
+  position: relative;
+  z-index: 6;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  touch-action: none;
+  user-select: none;
+}
+.tr-handle-x {
+  width: 10px;
+  cursor: col-resize;
+}
+.tr-handle-y {
+  height: 10px;
+  cursor: row-resize;
+}
+.tr-handle::after {
+  content: "";
+  position: absolute;
+  background: var(--line-2);
+  border-radius: 2px;
+  transition: background 0.15s var(--ease-out);
+}
+.tr-handle-x::after {
+  top: 50%;
+  left: 4px;
+  width: 2px;
+  height: 44px;
+  transform: translateY(-50%);
+}
+.tr-handle-y::after {
+  left: 50%;
+  top: 4px;
+  width: 44px;
+  height: 2px;
+  transform: translateX(-50%);
+}
+.tr-handle:hover::after,
+.tr-handle:focus-visible::after {
+  background: var(--accent);
+}
+.tr-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Queue: active track keeps a refresh action when extractors are enabled. */
+.cinema-room .queue-now {
+  grid-template-columns: 54px minmax(0, 1fr) auto auto;
+}
+.cinema-room .queue-now .refresh-link {
+  grid-column: 4;
+  grid-row: 1;
+}
+.queue-now .refresh-link {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Long words in chat must wrap instead of widening the rail. */
+.bu {
+  overflow-wrap: anywhere;
+}

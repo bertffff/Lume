@@ -1,8 +1,11 @@
 import { emojiCategories, getNextRoomPanel, layoutAspectGroup, planPlayback, roomSheetPanels, sharedVoiceSeconds, shouldHoldForReady, voiceSessionStartedAt, withLayoutPreset, withVideoAspect, type RoomLayout, type RoomSheetPanel } from "@lume/contracts";
-import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { PlayerPanel } from "../layout/panels/PlayerPanel.js";
+import { ResizeHandle } from "../layout/ResizeHandle.js";
+import { resolveFlow } from "../layout/reflow.js";
+import { clamp } from "../layout/weights.js";
 import { useRoomActions } from "../room/live.js";
 import { runVoicePreflight, saveVoicePreflight, type VoicePreflightResult } from "../voice/preflight.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
@@ -12,7 +15,7 @@ import { posterStyle } from "./posters.js";
 import { RoomProfileModal, type InRoomProfile } from "./RoomProfileModal.js";
 import { RoomSettingsSheet, type RoomSettings } from "./RoomSettingsSheet.js";
 import { SessionDock } from "./SessionDock.js";
-import { initials, personHue } from "./theme.js";
+import { currentStyle, initials, personHue, subscribeAppearance } from "./theme.js";
 
 function clock(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -44,17 +47,23 @@ export function RoomStage({
   synced,
   onLayout,
   onLeave,
+  onRefreshed,
 }: {
   layout: RoomLayout;
   synced: boolean;
   onLayout: (next: RoomLayout) => void;
   onLeave: () => void;
+  onRefreshed?: (next: { id: string; url: string }) => void;
 }) {
   const { t } = useI18n();
   const live = useRoomActions();
   const voice = useVoiceChannel(live?.state.room.id);
-  const [style, setStyle] = useState(() => (document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema"));
-  const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
+  const style = useSyncExternalStore(subscribeAppearance, currentStyle, () => "cinema" as const);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ axis: "x" | "y"; origin: number; size: number } | null>(null);
+  const [bodyWidth, setBodyWidth] = useState(1200);
+  const [extractors, setExtractors] = useState(false);
+  const [refreshState, setRefreshState] = useState<"idle" | "busy" | "error">("idle");
   const [url, setUrl] = useState("");
   const [detected, setDetected] = useState<string | null>(null);
   const [history, setHistory] = useState<Array<{ id: string; title: string | null; url: string; source: string; watchedAt: string }>>([]);
@@ -89,16 +98,21 @@ export function RoomStage({
   const hasLive = Boolean(live);
   const messageCount = live?.state.messages.length ?? 0;
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth < 800);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setStyle(document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema");
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-style"] });
+    const element = bodyRef.current;
+    if (!element) {
+      return;
+    }
+    const measure = () => setBodyWidth(element.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
     return () => observer.disconnect();
+  }, [hasLive]);
+  useEffect(() => {
+    void fetch(`${apiUrl}/flags`)
+      .then((response) => response.json())
+      .then((payload: { extractors?: boolean }) => setExtractors(Boolean(payload.extractors)))
+      .catch(() => setExtractors(false));
   }, []);
   useEffect(() => {
     if (!liveRoomId || !accessToken) return;
@@ -246,6 +260,8 @@ export function RoomStage({
     return () => window.removeEventListener("keydown", onKey);
   }, [sheet]);
   if (!live) return null;
+  const flow = resolveFlow({ viewportWidth: bodyWidth, videoAspect: layout.videoAspect });
+  const narrow = flow === "stack";
   const room = live.state.room;
   const members = live.state.members;
   const playing = live.state.playback.status === "playing";
@@ -273,6 +289,51 @@ export function RoomStage({
     const anchor = chatRef.current?.querySelector<HTMLElement>('[data-unread="true"]');
     anchor?.scrollIntoView({ block: "center" });
     setSeenCount(live?.state.messages.length ?? 0);
+  }
+
+  function beginResize(client: number) {
+    const rect = bodyRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const axis = flow === "side" ? "x" : "y";
+    dragRef.current = {
+      axis,
+      origin: axis === "x" ? rect.left : rect.top,
+      size: axis === "x" ? rect.width : rect.height,
+    };
+    applyResize(client);
+  }
+
+  function applyResize(client: number) {
+    const session = dragRef.current;
+    if (!session || session.size <= 0) return;
+    const ratio = clamp((client - session.origin) / session.size, 0.35, 0.8);
+    onLayout({ ...layout, playerRatio: ratio, preset: "custom" });
+  }
+
+  async function refreshStream() {
+    const playing = room.nowPlaying;
+    if (!playing || !extractors || !live || refreshState === "busy") return;
+    setRefreshState("busy");
+    try {
+      const response = await fetch(`${apiUrl}/video/refresh`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${live.accessToken}` },
+        body: JSON.stringify({
+          url: playing.url,
+          roomId: room.id,
+          positionMs: live.positionMs,
+          playing: live.state.playback.status === "playing",
+        }),
+      });
+      if (!response.ok) throw new Error("refresh_failed");
+      const payload = (await response.json()) as { url?: string };
+      if (!payload.url) throw new Error("refresh_failed");
+      onRefreshed?.({ id: playing.id, url: payload.url });
+      setRefreshState("idle");
+      setPlayerError(null);
+    } catch {
+      setRefreshState("error");
+    }
   }
 
   function addUrl(event: FormEvent) {
@@ -344,7 +405,7 @@ export function RoomStage({
   }
 
   return (
-    <div className={`${gruv ? "g-room" : "cinema-room"}${narrow ? " is-narrow" : ""}`}>
+    <div className={`${gruv ? "g-room" : "cinema-room"}${narrow ? " is-narrow" : ""}`} data-flow={flow}>
       <header className={gruv ? "tabline" : "top"}>
         {gruv ? (
           <>
@@ -400,8 +461,8 @@ export function RoomStage({
         onSettings={() => setSettingsOpen(true)}
         onLeave={onLeave}
       />
-      <div className="body">
-        <section className="player-col">
+      <div className={`body flow-${flow}`} ref={bodyRef} data-flow={flow}>
+        <section className="player-col" style={flow === "stack" ? undefined : { flexGrow: layout.playerRatio }}>
           <div
             className="stage-card stage-root"
             data-testid="player-frame"
@@ -416,7 +477,7 @@ export function RoomStage({
                 <h2>Видео недоступно</h2>
                 <p>{playerError}</p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                  <button type="button" data-testid="player-retry" onClick={() => quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) }))}>Обновить ссылку</button>
+                  <button type="button" data-testid="player-retry" onClick={() => { if (extractors) void refreshStream(); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "retry", url: playerError }) })); }}>Обновить ссылку</button>
                   <button type="button" data-testid="player-open" onClick={() => { window.open(playerError, "_blank", "noopener"); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "open", url: playerError }) })); }}>Открыть на платформе</button>
                 </div>
                 <form onSubmit={(event) => { event.preventDefault(); const next = String(new FormData(event.currentTarget).get("url") ?? ""); if (!next) return; live.addQueue(next); setPlayerError(null); quietly(fetch(`${apiUrl}/rooms/${room.id}/recovery`, { method: "POST", headers: { authorization: `Bearer ${live.accessToken}`, "content-type": "application/json" }, body: JSON.stringify({ action: "replace", url: next }) })); }}>
@@ -532,10 +593,21 @@ export function RoomStage({
                 <h4>Сейчас и далее <small>{queue.length + (room.nowPlaying ? 1 : 0)}</small></h4>
                 <div className="q">
                   {room.nowPlaying ? (
-                    <div className="queue-now">
+                    <div className="queue-now" data-testid="queue-now" data-refresh-state={refreshState}>
                       <div className="im" style={posterStyle(room.nowPlaying.id, room.nowPlaying.thumbnailUrl)} />
                       <div><small>в эфире</small><b>{room.nowPlaying.title}</b></div>
                       <span className="pill mono">{clock(live.positionMs)}</span>
+                      {extractors ? (
+                        <button
+                          type="button"
+                          className="mini refresh-link"
+                          data-testid="queue-refresh"
+                          disabled={refreshState === "busy"}
+                          onClick={() => void refreshStream()}
+                        >
+                          {refreshState === "busy" ? "Обновляем" : refreshState === "error" ? "Не вышло" : "Обновить ссылку"}
+                        </button>
+                      ) : null}
                     </div>
                   ) : null}
                   <ol className="tr-queue q">
@@ -638,7 +710,22 @@ export function RoomStage({
             </div>
           </div>
         </section>
-        <aside className={gruv ? "pane irc" : "rail"}>
+        {flow === "stack" ? null : (
+          <ResizeHandle
+            axis={flow === "side" ? "x" : "y"}
+            label={t("layout.resize")}
+            onPointerDown={beginResize}
+            onDrag={applyResize}
+            onEnd={() => {
+              dragRef.current = null;
+            }}
+            onKey={(delta) => onLayout({ ...layout, playerRatio: clamp(layout.playerRatio + delta, 0.35, 0.8), preset: "custom" })}
+          />
+        )}
+        <aside
+          className={gruv ? "pane irc" : "rail"}
+          style={flow === "stack" ? undefined : { flexGrow: 1 - layout.playerRatio }}
+        >
           <div className="tabs" role="tablist" aria-label="Панели комнаты">
             <button type="button" role="tab" aria-selected={railTab === "chat"} className={railTab === "chat" ? "tab on" : "tab"} onClick={() => setRailTab("chat")}>Чат <span className="n">{live.state.messages.length}</span></button>
             <button type="button" role="tab" aria-selected={railTab === "people"} className={railTab === "people" ? "tab on" : "tab"} onClick={() => setRailTab("people")}>Люди <span className="n">{members.length}</span></button>

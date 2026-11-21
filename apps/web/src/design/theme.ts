@@ -18,6 +18,17 @@ export function readStoredMode(): ModeId {
   return modes.has(raw as ModeId) ? (raw as ModeId) : "dark";
 }
 
+const STYLE_EVENT = "lume:appearance";
+
+export function currentStyle(): StyleId {
+  return document.documentElement.dataset.style === "gruvbox" ? "gruvbox" : "cinema";
+}
+
+export function subscribeAppearance(listener: () => void): () => void {
+  window.addEventListener(STYLE_EVENT, listener);
+  return () => window.removeEventListener(STYLE_EVENT, listener);
+}
+
 export function applyAppearance(style: StyleId, mode: ModeId, prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches): void {
   const theme = resolveMode(mode, prefersLight);
   document.documentElement.dataset.style = style;
@@ -25,6 +36,7 @@ export function applyAppearance(style: StyleId, mode: ModeId, prefersLight = win
   document.documentElement.dataset.mode = mode;
   window.localStorage.setItem("lume.style", style);
   window.localStorage.setItem("lume.mode", mode);
+  window.dispatchEvent(new Event(STYLE_EVENT));
 }
 
 const hues = ["lisa", "me", "artem", "mark", "dasha", "sonya", "nick", "katya"] as const;

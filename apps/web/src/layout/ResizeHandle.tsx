@@ -16,6 +16,13 @@ export function ResizeHandle({
   onKey: (delta: number) => void;
 }) {
   const dragging = useRef(false);
+  const previousUserSelect = useRef("");
+
+  function stop() {
+    dragging.current = false;
+    document.body.style.userSelect = previousUserSelect.current;
+    onEnd();
+  }
   const coordinate = (event: ReactPointerEvent<HTMLDivElement>) =>
     axis === "x" ? event.clientX : event.clientY;
 
@@ -42,6 +49,8 @@ export function ResizeHandle({
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
         dragging.current = true;
+        previousUserSelect.current = document.body.style.userSelect;
+        document.body.style.userSelect = "none";
         onPointerDown(coordinate(event));
       }}
       onPointerMove={(event) => {
@@ -50,14 +59,9 @@ export function ResizeHandle({
         }
         onDrag(coordinate(event));
       }}
-      onPointerUp={() => {
-        dragging.current = false;
-        onEnd();
-      }}
-      onPointerCancel={() => {
-        dragging.current = false;
-        onEnd();
-      }}
+      onPointerUp={stop}
+      onPointerCancel={stop}
+      onLostPointerCapture={stop}
       onKeyDown={onKeyDown}
     />
   );

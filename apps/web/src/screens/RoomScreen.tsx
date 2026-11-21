@@ -24,6 +24,7 @@ export function RoomScreen({
   const [helpOpen, setHelpOpen] = useState(false);
   const clock = live.clockOffset || offset;
   const playback = live.state?.playback;
+  const [refreshed, setRefreshed] = useState<{ id: string; url: string } | null>(null);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -80,11 +81,16 @@ export function RoomScreen({
   };
   const positionMs = Math.max(0, Math.round(positionAt(anchor, tick + offset)));
   const warn = sessionSoftWarn(Date.parse(live.state.room.createdAt), Date.now());
+  const nowPlaying = live.state.room.nowPlaying;
+  const state =
+    refreshed && nowPlaying?.id === refreshed.id
+      ? { ...live.state, room: { ...live.state.room, nowPlaying: { ...nowPlaying, url: refreshed.url } } }
+      : live.state;
 
   return (
     <RoomProvider
       value={{
-        state: live.state,
+        state,
         positionMs,
         offsetMs: clock,
         canControl: canControlPlayback(live.state.self.role),
@@ -121,7 +127,7 @@ export function RoomScreen({
       <>
         {warn ? <p className="tr-banner">{t("room.warnSession")}</p> : null}
         {live.error ? <p className="tr-note">{live.error === "kicked" ? "Вас удалили из комнаты" : "Соединение с комнатой прервано"}</p> : null}
-        <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} />
+        <RoomStage layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave} onRefreshed={setRefreshed} />
         {helpOpen ? (
           <div className="overlay docked" role="dialog" aria-modal="true" aria-label="Горячие клавиши">
             <div className="modal">
