@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@lume/contracts": "workspace:*",
     "grammy": "1.46.0",
     "zod": "catalog:"
   },

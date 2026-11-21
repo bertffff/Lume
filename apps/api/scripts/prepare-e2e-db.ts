@@ -1,34 +1,31 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createPrismaClient } from "@lume/db";
+import { safeTargetLabel, validateDatabaseTarget } from "./e2e-target";
 
 /**
- * Playwright E2E must never write into the developer database `lume`.
- * Every run recreates the test database and applies the real migrations, so
- * rooms, users and watch history created by the specs stay out of `lume`.
+ * Playwright E2E must never write into the developer database `lume`, nor the
+ * API integration suite's `lume_test`. An explicit, positively disposable
+ * E2E_DATABASE_URL on a non-default cluster port is mandatory; validation runs
+ * before any connection, so a refused target cannot touch a shared database.
  */
-const testDatabaseUrl =
-  process.env.E2E_DATABASE_URL ?? "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
-const testUrl = new URL(testDatabaseUrl);
-const databaseName = testUrl.pathname.replace(/^\//, "");
-if (!/^[A-Za-z0-9_]+$/.test(databaseName)) {
-  throw new Error(`E2E_DATABASE_URL must point at a simple database name, got ${databaseName || "(empty)"}`);
-}
-const maintenanceUrl = new URL(testDatabaseUrl);
-maintenanceUrl.pathname = "/postgres";
+const target = validateDatabaseTarget(process.env.E2E_DATABASE_URL);
+console.log(`Preparing disposable E2E database ${target.name} on ${safeTargetLabel(target)}`);
+
+const maintenanceUrl = target.maintenanceUrl;
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
-process.env.DATABASE_URL = maintenanceUrl.toString();
+process.env.DATABASE_URL = maintenanceUrl;
 const prisma = createPrismaClient();
 try {
-  await prisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${databaseName}" WITH (FORCE)`);
-  await prisma.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
+  await prisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${target.name}" WITH (FORCE)`);
+  await prisma.$executeRawUnsafe(`CREATE DATABASE "${target.name}"`);
 } finally {
   await prisma.$disconnect();
 }
 
 execFileSync("pnpm", ["--filter", "@lume/db", "exec", "prisma", "migrate", "deploy"], {
   cwd: repositoryRoot,
-  env: { ...process.env, DATABASE_URL: testDatabaseUrl },
+  env: { ...process.env, DATABASE_URL: target.url },
   stdio: "inherit",
 });

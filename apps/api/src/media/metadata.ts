@@ -1,10 +1,13 @@
 import { dnsPinned, oEmbedEndpoint, urlBlocked, type ParsedEmbed } from "@lume/contracts";
 import { lookup } from "node:dns/promises";
+import { roomCategorySchema, type RoomCategory } from "@lume/contracts";
 
 export interface ResolvedMetadata {
   title: string | null;
   thumbnailUrl: string | null;
   durationMs: number | null;
+  category?: RoomCategory;
+  channel?: string;
 }
 
 export interface MetadataOptions {
@@ -103,12 +106,16 @@ function cleanImage(value: unknown): string | null {
 
 function merge(base: ResolvedMetadata | null, next: ResolvedMetadata | null): ResolvedMetadata | null {
   if (!base && !next) return null;
+  const category = base?.category ?? next?.category;
+  const channel = base?.channel ?? next?.channel;
   const merged: ResolvedMetadata = {
     title: base?.title ?? next?.title ?? null,
     thumbnailUrl: base?.thumbnailUrl ?? next?.thumbnailUrl ?? null,
     durationMs: base?.durationMs ?? next?.durationMs ?? null,
+    ...(category === undefined ? {} : { category }),
+    ...(channel === undefined ? {} : { channel }),
   };
-  return merged.title || merged.thumbnailUrl || merged.durationMs ? merged : null;
+  return merged.title || merged.thumbnailUrl || merged.durationMs || channel || category ? merged : null;
 }
 
 function oEmbedUrl(item: ParsedEmbed, baseUrl?: string): string | null {
@@ -181,10 +188,14 @@ export async function resolveMetadata(item: ParsedEmbed, options: MetadataOption
   if (endpoint) {
     const body = await fetchJson(endpoint, timeoutMs);
     if (body) {
+      const category = roomCategorySchema.safeParse(body.category);
+      const channel = cleanTitle(body.author_name);
       resolved = merge(resolved, {
         title: cleanTitle(body.title),
         thumbnailUrl: cleanImage(body.thumbnail_url ?? body.thumbnailUrl),
         durationMs: durationFromJson(body),
+        ...(category.success ? { category: category.data } : {}),
+        ...(channel ? { channel } : {}),
       });
     }
   }

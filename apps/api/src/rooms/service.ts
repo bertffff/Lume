@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import {
   canActOnMember,
   canAssignRole,
@@ -8,28 +9,31 @@ import {
   nextHost,
   mediaFallbackTitle,
   parseEmbedInput,
+  parseRoomCode,
   roomOverMemberCap,
   roomPresetById,
   FREE_ROOM_MEMBER_CAP,
+  ROOM_CODE_ALPHABET,
   type RoomPresetId,
   type ChatMessage,
   type MemberPermissionFlags,
   type MemberRole,
   type ParsedEmbed,
   type QueueItem,
+  type RoomCategory,
+  type RoomCategorySelection,
   type RoomSummary,
+  type ViewerDefaultFlags,
 } from "@lume/contracts";
 import type { MemberRecord, MessageRecord, QueueRecord, RoomRecord, RoomRepository } from "./types.js";
 import { RoomFailure } from "./types.js";
+import { classifyRoomCategory, mediaCategorySource, resolveEffectiveCategory, type CategoryMetadata } from "./category.js";
+import { catalogFetchSize, catalogResponse, type CatalogPageInput } from "./catalog.js";
 
-const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+const MAX_ROOM_CODE_ATTEMPTS = 8;
 
-export function createRoomCode(random: () => number = Math.random): string {
-  let code = "";
-  for (let index = 0; index < 8; index += 1) {
-    code += alphabet[Math.floor(random() * alphabet.length)] ?? "a";
-  }
-  return code;
+export function createRoomCode(): string {
+  return Array.from({ length: 6 }, () => ROOM_CODE_ALPHABET.charAt(randomInt(ROOM_CODE_ALPHABET.length))).join("");
 }
 
 export interface Actor {
@@ -38,7 +42,7 @@ export interface Actor {
 }
 
 export interface RoomDetail {
-  room: RoomSummary & { nowPlaying: QueueItem | null };
+  room: RoomSummary & { nowPlaying: QueueItem | null; category: RoomCategory; categorySelection: RoomCategorySelection };
   self: { role: MemberRole; muted: boolean; permissions: MemberPermissionFlags };
   members: Array<{
     userId: string;
@@ -54,6 +58,8 @@ export interface ResolvedMeta {
   title: string | null;
   thumbnailUrl: string | null;
   durationMs: number | null;
+  category?: RoomCategory;
+  channel?: string;
 }
 
 export type TitleResolver = (item: ParsedEmbed) => Promise<ResolvedMeta | null>;
@@ -117,32 +123,33 @@ export class RoomService {
     ids?: () => string,
     now?: () => Date,
     titles?: TitleResolver,
+    private readonly generateCode: () => string = createRoomCode,
   ) {
     this.ids = ids ?? (() => crypto.randomUUID());
     this.now = now ?? (() => new Date());
     this.titles = titles ?? (async () => null);
   }
 
-  async createRoom(actor: Actor, input: { title: string; isPublic?: boolean; preset?: RoomPresetId }): Promise<RoomDetail> {
-    const code = await this.freshCode();
+  async createRoom(actor: Actor, input: { title: string; isPublic?: boolean; preset?: RoomPresetId; categorySelection?: RoomCategorySelection; defaults?: ViewerDefaultFlags }): Promise<RoomDetail> {
     const createdAt = this.now().toISOString();
     const preset = input.preset ? roomPresetById(input.preset) : null;
-    const room: RoomRecord = {
+    const room = {
       id: this.ids(),
-      code,
       title: input.title.trim(),
       hostId: actor.userId,
       ownerId: actor.userId,
       status: "open",
-      isPublic: preset?.isPublic ?? input.isPublic ?? false,
+      isPublic: (input.defaults ? input.isPublic : preset?.isPublic) ?? preset?.isPublic ?? input.isPublic ?? false,
+      categorySelection: input.categorySelection ?? "auto",
+      category: resolveEffectiveCategory(input.categorySelection),
       maxMembers: preset?.maxMembers ?? FREE_ROOM_MEMBER_CAP,
       hideReactions: preset?.hideReactions ?? false,
       slowModeSeconds: preset?.slowModeSeconds ?? 0,
-      defaultPermissions: preset ? { ...preset.defaults } : null,
+      defaultPermissions: input.defaults ? { ...input.defaults } : preset ? { ...preset.defaults } : null,
       createdAt,
       nowPlayingId: null,
-    };
-    await this.repo.insertRoom(room);
+    } satisfies Omit<RoomRecord, "code">;
+    await this.insertWithFreshCode(room);
     await this.repo.saveMember({
       roomId: room.id,
       userId: actor.userId,
@@ -166,8 +173,21 @@ export class RoomService {
     return summaries;
   }
 
+  async catalog(input: Omit<CatalogPageInput, "take" | "now">) {
+    return catalogResponse(await this.repo.listCatalog({ ...input, take: catalogFetchSize, now: this.now() }));
+  }
+
+  async setCategory(actor: Actor, roomId: string, selection: RoomCategorySelection): Promise<RoomDetail> {
+    const { member } = await this.requireActive(roomId, actor.userId);
+    if (member.role !== "host") throw new RoomFailure("forbidden");
+    await this.repo.setCategory(roomId, actor.userId, selection);
+    return this.detailFor(actor.userId, roomId);
+  }
+
   async joinByCode(actor: Actor, code: string): Promise<RoomDetail> {
-    const room = await this.repo.findRoomByCode(code.trim().toLowerCase());
+    const canonical = parseRoomCode(code);
+    if (!canonical) throw new RoomFailure("not_found");
+    const room = await this.repo.findRoomByCode(canonical);
     if (!room || room.status === "ended") {
       throw new RoomFailure("not_found");
     }
@@ -377,15 +397,34 @@ export class RoomService {
     if (!parsed) {
       throw new RoomFailure("invalid_media");
     }
-    const meta = await this.titles(parsed);
-    const title = titleHint?.trim() || meta?.title?.trim() || mediaFallbackTitle(parsed.url);
     const queue = await this.repo.listQueue(roomId);
     if (duplicateQueue(queue.filter((item) => !item.played).map((item) => item.url), parsed.url)) {
       throw new RoomFailure("conflict");
     }
+    await this.enqueue(actor, roomId, parsed, queue, titleHint);
+    return this.detailFor(actor.userId, roomId);
+  }
+
+  async replacePlaying(actor: Actor, roomId: string, url: string, restoredCategory?: RoomCategory): Promise<RoomDetail> {
+    const { room, member } = await this.requireActive(roomId, actor.userId);
+    if (!canControlPlayback(member.role) || member.muted) throw new RoomFailure("forbidden");
+    const parsed = parseEmbedInput(url);
+    if (!parsed) throw new RoomFailure("invalid_media");
+    const queue = await this.repo.listQueue(roomId);
+    const item = queue.find((entry) => entry.url === parsed.url && (!entry.played || entry.id === room.nowPlayingId));
+    const id = item?.id ?? await this.enqueue(actor, roomId, parsed, queue, undefined, restoredCategory);
+    await this.repo.startPlaying(roomId, id);
+    return this.detailFor(actor.userId, roomId);
+  }
+
+  private async enqueue(actor: Actor, roomId: string, parsed: ParsedEmbed, queue: QueueRecord[], titleHint?: string, restoredCategory?: RoomCategory): Promise<string> {
+    const meta = await this.titles(parsed);
+    const evidence: CategoryMetadata = { ...meta, source: mediaCategorySource(parsed.url, parsed.provider) };
+    const title = titleHint?.trim() || meta?.title?.trim() || mediaFallbackTitle(parsed.url);
     const last = queue[queue.length - 1];
+    const id = this.ids();
     await this.repo.insertQueueItem({
-      id: this.ids(),
+      id,
       roomId,
       url: parsed.url,
       provider: parsed.provider,
@@ -396,8 +435,9 @@ export class RoomService {
       position: (last?.position ?? 0) + 1,
       addedById: actor.userId,
       played: false,
+      inferredCategory: restoredCategory ?? classifyRoomCategory(evidence),
     });
-    return this.detailFor(actor.userId, roomId);
+    return id;
   }
 
   async playNext(actor: Actor, roomId: string): Promise<RoomDetail> {
@@ -406,17 +446,11 @@ export class RoomService {
       throw new RoomFailure("forbidden");
     }
     const queue = await this.repo.listQueue(roomId);
-    const current = queue.find((item) => item.id === room.nowPlayingId) ?? null;
-    const currentPosition = current?.position ?? -1;
-    const next = queue.find((item) => item.position > currentPosition);
+    const next = queue.find((item) => !item.played && item.id !== room.nowPlayingId);
     if (!next) {
       throw new RoomFailure("empty_queue");
     }
-    if (current) {
-      await this.repo.saveQueueItem({ ...current, played: true });
-    }
-    await this.repo.saveQueueItem({ ...next, played: true });
-    await this.repo.patchRoom(room.id, { status: "live", nowPlayingId: next.id });
+    await this.repo.startPlaying(room.id, next.id);
     return this.detailFor(actor.userId, roomId);
   }
 
@@ -435,7 +469,8 @@ export class RoomService {
     const messages = await this.repo.listMessages(roomId, 50);
     const nowPlaying = queue.find((item) => item.id === room.nowPlayingId) ?? null;
     return {
-      room: { ...this.summarize(room, present.length), nowPlaying: nowPlaying ? toQueueItem(nowPlaying) : null },
+      room: { ...this.summarize(room, present.length), category: room.category, categorySelection: room.categorySelection,
+        nowPlaying: nowPlaying ? toQueueItem(nowPlaying) : null },
       self: { role: self.role, muted: self.muted, permissions: memberPermissions(self) },
       members: present.map((member) => ({
         userId: member.userId,
@@ -461,13 +496,9 @@ export class RoomService {
     };
   }
 
-  private async freshCode(): Promise<string> {
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const code = createRoomCode();
-      const existing = await this.repo.findRoomByCode(code);
-      if (!existing) {
-        return code;
-      }
+  private async insertWithFreshCode(room: Omit<RoomRecord, "code">): Promise<void> {
+    for (let attempt = 0; attempt < MAX_ROOM_CODE_ATTEMPTS; attempt += 1) {
+      if (await this.repo.insertRoom({ ...room, code: this.generateCode() })) return;
     }
     throw new RoomFailure("conflict");
   }
@@ -492,4 +523,3 @@ export class RoomService {
     return member;
   }
 }
-

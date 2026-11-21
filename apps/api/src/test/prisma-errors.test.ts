@@ -4,7 +4,9 @@ import { buildApp, prismaFailure } from "../app.js";
 import { loadApiEnv } from "../env.js";
 import { seedPartyAchievements } from "../account/awards.js";
 
-const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
+import { apiTestDatabaseUrl } from "./api-test-database.js";
+
+const databaseUrl = apiTestDatabaseUrl();
 
 describe("prisma failure mapping", () => {
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;

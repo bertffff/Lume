@@ -3,7 +3,9 @@ import { createPrismaClient } from "@lume/db";
 import { buildApp } from "../app.js";
 import { loadApiEnv } from "../env.js";
 
-const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
+import { apiTestDatabaseUrl } from "./api-test-database.js";
+
+const databaseUrl = apiTestDatabaseUrl();
 const png = Buffer.concat([
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
   Buffer.alloc(32, 1),
@@ -81,7 +83,7 @@ describe("uploads", () => {
     const env = loadApiEnv({
       NODE_ENV: "production",
       DATABASE_URL: databaseUrl,
-      REDIS_URL: "redis://127.0.0.1:6379",
+      REDIS_URL: process.env.API_TEST_REDIS_URL,
       JWT_SECRET: "upload-test-secret",
       ALLOW_STUB_AUTH: "true",
     });

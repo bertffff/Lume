@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export const styleIds = ["cinema", "gruvbox", "telerave"] as const;
+export const themeModes = ["dark", "light", "system"] as const;
+export const styleIdSchema = z.enum(styleIds);
+export const themeModeSchema = z.enum(themeModes);
+export type StyleId = z.infer<typeof styleIdSchema>;
+export type ThemeMode = z.infer<typeof themeModeSchema>;
+
 export const themeSchema = z.object({
   id: z.string().min(1),
   name: z.object({

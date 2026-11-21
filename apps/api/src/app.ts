@@ -3,7 +3,7 @@ import type { PrismaClient } from "@lume/db";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { ApiEnv } from "./env.js";
 import { createAuthStores, type AuthStores } from "./auth/stores.js";
-import { limitFor, takeMemoryLimit, takeRedisLimit } from "./http/limit.js";
+import { createRoomJoinLimiter, limitFor, roomJoinPath, takeMemoryLimit, takeRedisLimit } from "./http/limit.js";
 import {
   createCachedMetadataResolver,
   createCircuitBreaker,
@@ -91,12 +91,17 @@ export async function buildApp(
   options?: BuildAppOptions,
 ): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: env.NODE_ENV !== "test",
+    logger: env.NODE_ENV === "test" ? false : {
+      serializers: {
+        req: (request) => ({ method: request.method, url: request.routeOptions?.url ?? "unmatched" }),
+      },
+    },
     bodyLimit: API_BODY_LIMIT_BYTES,
   });
   const ownedClient = options?.redis ? null : env.REDIS_URL ? createRedis(env.REDIS_URL) : null;
   const redis: RedisLike | null = options?.redis ?? (ownedClient ? redisAdapter(ownedClient) : null);
   const keyPrefix = env.NODE_ENV === "test" ? `${env.REDIS_KEY_PREFIX}:test:api` : env.REDIS_KEY_PREFIX;
+  const joinLimiter = createRoomJoinLimiter(redis, keyPrefix, env.NODE_ENV === "production");
   const stores = options?.stores ?? createAuthStores({ redis, keyPrefix });
   const storage = options?.storage ?? createMediaStorage({ env });
   const service = options?.prisma
@@ -121,6 +126,7 @@ export async function buildApp(
     exposedHeaders: ["content-range", "accept-ranges", "content-length", "x-lume-retry"],
   });
   app.addHook("onRequest", async (request, reply) => {
+    if (request.method === "POST" && request.routeOptions.url === roomJoinPath) return;
     const path = request.url.split("?")[0] ?? request.url;
     const rule = limitFor(request.method, path);
     if (!rule) return;
@@ -141,23 +147,28 @@ export async function buildApp(
   });
   registerHealthRoutes(app, env, { prisma: options?.prisma ?? null, redis });
   registerAuthRoutes(app, env, options?.prisma, stores);
-  registerRoomRoutes(app, env, service, options?.prisma ?? null);
+  registerRoomRoutes(app, env, service, options?.prisma ?? null, joinLimiter, redis);
   registerVoiceRoutes(app, env, service, options?.prisma ?? null);
-  registerSocialRoutes(app, env, options?.prisma ?? null, service, stores);
+  registerSocialRoutes(app, env, options?.prisma ?? null, service, stores, redis);
   registerVideoRoutes(app, env, options?.prisma ?? null, { redis });
   registerExtraRoutes(app, env, options?.prisma ?? null, { stores, storage, redis });
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     if (reply.sent) {
       return reply;
     }
     const mapped = prismaFailure(error);
+    const inviteRoute = request.method === "POST" && [roomJoinPath, "/rooms", "/rooms/resume-last"].includes(request.routeOptions.url ?? "");
+    const logError = () => {
+      if (inviteRoute) request.log.error("Room invite operation failed");
+      else request.log.error(error);
+    };
     if (mapped) {
       if (mapped.status >= 500) {
-        app.log.error(error);
+        logError();
       }
       return reply.code(mapped.status).send(mapped.body);
     }
-    app.log.error(error);
+    logError();
     return reply.code(500).send({ error: "internal" });
   });
 

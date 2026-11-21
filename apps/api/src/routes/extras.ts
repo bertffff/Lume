@@ -6,6 +6,7 @@ import {
   levelFromXp,
   memberFlagsFromDefaults,
   planPlayback,
+  roomCategorySelectionSchema,
   roomLayoutSchema,
   yearHeatmap,
 } from "@lume/contracts";
@@ -16,6 +17,7 @@ import { randomBytes } from "node:crypto";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { publicRoomPresenceWhere } from "../access/presence.js";
 import { requireUser } from "../auth/guard.js";
 import type { AuthStores } from "../auth/stores.js";
 import { StorageUnconfiguredError, type MediaStorage } from "../media/storage.js";
@@ -23,6 +25,7 @@ import { mintAccessToken } from "../auth/jwt.js";
 import type { ApiEnv } from "../env.js";
 import type { RedisLike } from "../redis.js";
 import { notifyUser } from "../account/notify.js";
+import { lockCategoryRoom } from "../rooms/prisma-category.js";
 
 export interface ExtraRouteOptions {
   stores: AuthStores;
@@ -80,7 +83,7 @@ export function registerExtraRoutes(
     if (!prisma) return { watchers: [], parties: [] };
     const users = await prisma.user.findMany({ orderBy: { xp: "desc" }, take: 10, select: { id: true, displayName: true, xp: true } });
     const rooms = await prisma.room.findMany({
-      where: { status: { not: "ended" }, members: { some: { leftAt: null } } },
+      where: { ...publicRoomPresenceWhere, members: { some: { leftAt: null } } },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: { id: true, title: true },
@@ -298,6 +301,8 @@ export function registerExtraRoutes(
       maxMembers: room.maxMembers,
       hideReactions: room.hideReactions,
       defaults: room.defaultPermissions ?? null,
+      category: room.category,
+      categorySelection: room.categorySelection,
     });
   });
 
@@ -314,6 +319,7 @@ export function registerExtraRoutes(
       description: z.string().trim().max(280).optional(),
       isPublic: z.boolean().optional(),
       maxMembers: z.number().int().min(2).max(100).optional(),
+      categorySelection: roomCategorySelectionSchema.optional(),
       defaults: z.object({
         canChat: z.boolean(),
         canQueue: z.boolean(),
@@ -324,25 +330,32 @@ export function registerExtraRoutes(
       }).optional(),
     }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const self = await prisma.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
-    if (!self || self.role !== "host" || self.leftAt) return reply.code(403).send({ error: "forbidden" });
-    const room = await prisma.room.update({
-      where: { id: params.id },
-      data: {
+    const selection = body.data.categorySelection;
+    const room = await prisma.$transaction(async (tx) => {
+      if (selection !== undefined) await lockCategoryRoom(tx, params.id);
+      const self = await tx.roomMember.findUnique({ where: { roomId_userId: { roomId: params.id, userId: actor.userId } } });
+      if (!self || self.role !== "host" || self.leftAt) return null;
+      const current = selection === "auto" ? await tx.room.findUnique({
+        where: { id: params.id }, select: { nowPlaying: { select: { inferredCategory: true } } },
+      }) : null;
+      const updated = await tx.room.update({ where: { id: params.id }, data: {
         ...(body.data.title === undefined ? {} : { title: body.data.title }),
         ...(body.data.description === undefined ? {} : { description: body.data.description || null }),
         ...(body.data.isPublic === undefined ? {} : { isPublic: body.data.isPublic }),
         ...(body.data.maxMembers === undefined ? {} : { maxMembers: body.data.maxMembers }),
         ...(body.data.hideReactions === undefined ? {} : { hideReactions: body.data.hideReactions }),
         ...(body.data.defaults === undefined ? {} : { defaultPermissions: body.data.defaults }),
-      },
+        ...(selection === undefined ? {} : { categorySelection: selection, category: selection === "auto" ? current?.nowPlaying?.inferredCategory ?? "other" : selection }),
+      } });
+      if (body.data.defaults !== undefined) {
+        await tx.roomMember.updateMany({
+          where: { roomId: params.id, permissionsOverridden: false },
+          data: memberFlagsFromDefaults(body.data.defaults),
+        });
+      }
+      return updated;
     });
-    if (body.data.defaults !== undefined) {
-      await prisma.roomMember.updateMany({
-        where: { roomId: params.id, permissionsOverridden: false },
-        data: memberFlagsFromDefaults(body.data.defaults),
-      });
-    }
+    if (!room) return reply.code(403).send({ error: "forbidden" });
     return reply.send({
       title: room.title,
       description: room.description ?? "",
@@ -350,6 +363,8 @@ export function registerExtraRoutes(
       maxMembers: room.maxMembers,
       hideReactions: room.hideReactions,
       defaults: room.defaultPermissions ?? null,
+      category: room.category,
+      categorySelection: room.categorySelection,
     });
   });
 
@@ -459,24 +474,30 @@ export function registerExtraRoutes(
       bySource.set(source, (bySource.get(source) ?? 0) + item.watchCount);
     }
     const sessions = await prisma.watchSession.groupBy({ by: ["partnerId"], where: { userId: user.id }, _sum: { watchDuration: true }, orderBy: { _sum: { watchDuration: "desc" } }, take: 5 });
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const todaySessions = await prisma.watchSession.findMany({
-      where: { userId: user.id, sessionDate: { gte: today } },
+    const now = new Date();
+    const seasonStart = new Date(now);
+    seasonStart.setUTCHours(0, 0, 0, 0);
+    seasonStart.setUTCDate(seasonStart.getUTCDate() - 364);
+    const seasonSessions = await prisma.watchSession.findMany({
+      where: { userId: user.id, sessionDate: { gte: seasonStart, lte: now } },
       select: { roomId: true, sessionDate: true, watchDuration: true },
     });
-    const todayBuckets = new Map<string, number>();
-    for (const row of todaySessions) {
+    const bucketsByDay = new Map<string, Map<string, number>>();
+    for (const row of seasonSessions) {
+      const day = row.sessionDate.toISOString().slice(0, 10);
+      const buckets = bucketsByDay.get(day) ?? new Map<string, number>();
       const key = `${row.roomId ?? "none"}:${Math.floor(row.sessionDate.getTime() / 60_000)}`;
-      todayBuckets.set(key, Math.max(todayBuckets.get(key) ?? 0, row.watchDuration));
+      // A group session can contain one record per partner, not one watch per record.
+      buckets.set(key, Math.max(buckets.get(key) ?? 0, row.watchDuration));
+      bucketsByDay.set(day, buckets);
     }
-    const watchedToday = [...todayBuckets.values()].reduce((sum, seconds) => sum + seconds, 0);
+    const scores = Object.fromEntries([...bucketsByDay].map(([day, buckets]) => [
+      day, dayScore([...buckets.values()].reduce((sum, seconds) => sum + seconds, 0), 0, 0),
+    ]));
     return reply.send({
       level: levelFromXp(user.xp),
       bio: user.bio,
-      heatmap: yearHeatmap(new Date(), {
-        [new Date().toISOString().slice(0, 10)]: dayScore(watchedToday, messages, user.totalReactions),
-      }),
+      heatmap: yearHeatmap(now, scores),
       platforms: [...bySource.entries()].map(([source, count]) => ({ source, count })).slice(0, 8),
       host: { roomsHosted: user.hostedRooms.length, messages },
       pins: user.achievements.filter((row) => row.pinSlot !== null).map((row) => ({ key: row.achievement.key, slot: row.pinSlot, title: row.achievement.titleRu })),

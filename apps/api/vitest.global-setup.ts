@@ -1,30 +1,35 @@
 import { execFileSync } from "node:child_process";
 import { createPrismaClient } from "@lume/db";
+import { getApiTestDatabaseTarget } from "./src/test/api-test-database.js";
 
 /**
  * API integration tests mutate global tables (leaderboards, global stats,
  * watch history). They must not share the developer or E2E database, otherwise
  * leftover rows make the leaderboard's top-50 assertions flaky.
  *
- * Each run recreates `lume_test` and applies the real migrations, so the tests
- * still exercise Postgres and Prisma rather than mocks.
+ * CREATE DATABASE also acts as the ownership check: if a database by that
+ * name already exists, fail without dropping, migrating or reusing it.
  */
-const testDatabaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
-const maintenanceDatabaseUrl = "postgresql://lume:lume@127.0.0.1:5432/postgres?schema=public";
-
 export default async function setup(): Promise<void> {
-  process.env.DATABASE_URL = maintenanceDatabaseUrl;
-  const prisma = createPrismaClient();
+  const target = getApiTestDatabaseTarget();
+  const previousDatabaseUrl = process.env.DATABASE_URL;
   try {
-    await prisma.$executeRawUnsafe('DROP DATABASE IF EXISTS "lume_test" WITH (FORCE)');
-    await prisma.$executeRawUnsafe('CREATE DATABASE "lume_test"');
+    process.env.DATABASE_URL = target.maintenanceUrl;
+    const prisma = createPrismaClient();
+    try {
+      // PostgreSQL cannot bind an identifier, so interpolate only the validated name.
+      await prisma.$executeRawUnsafe(`CREATE DATABASE "${target.name}" TEMPLATE template0`);
+    } finally {
+      await prisma.$disconnect();
+    }
   } finally {
-    await prisma.$disconnect();
+    if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previousDatabaseUrl;
   }
 
   execFileSync("pnpm", ["--filter", "@lume/db", "exec", "prisma", "migrate", "deploy"], {
     cwd: process.cwd(),
-    env: { ...process.env, DATABASE_URL: testDatabaseUrl },
+    env: { ...process.env, DATABASE_URL: target.url },
     stdio: "inherit",
   });
 }

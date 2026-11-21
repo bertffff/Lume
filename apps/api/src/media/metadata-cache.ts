@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { ParsedEmbed } from "@lume/contracts";
+import { roomCategorySchema, type ParsedEmbed } from "@lume/contracts";
 import type { RedisLike } from "../redis.js";
 import { resolveMetadata, type MetadataOptions, type ResolvedMetadata } from "./metadata.js";
 
@@ -27,10 +27,13 @@ function parse(raw: string | null): ResolvedMetadata | null {
     ) {
       return null;
     }
+    const category = roomCategorySchema.safeParse(value.category);
     return {
       title: value.title ?? null,
       thumbnailUrl: value.thumbnailUrl ?? null,
       durationMs: value.durationMs ?? null,
+      ...(category.success ? { category: category.data } : {}),
+      ...(typeof value.channel === "string" ? { channel: value.channel } : {}),
     };
   } catch {
     return null;

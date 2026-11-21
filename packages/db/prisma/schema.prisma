@@ -18,6 +18,21 @@ enum RoomStatus {
   ended
 }
 
+enum RoomCategory {
+  film
+  music
+  vlog
+  other
+}
+
+enum RoomCategorySelection {
+  auto
+  film
+  music
+  vlog
+  other
+}
+
 enum MemberRole {
   host
   mod
@@ -146,6 +161,7 @@ model Session {
 
 model Room {
   id          String     @id @default(cuid())
+  /// Canonical six-character invite. The database migration also enforces its alphabet via CHECK.
   slug        String     @unique
   title       String
   hostId      String
@@ -157,6 +173,8 @@ model Room {
   layout      Json
   videoAspect  Float      @default(1.777777)
   isPublic     Boolean    @default(false)
+  category     RoomCategory          @default(other)
+  categorySelection RoomCategorySelection @default(auto)
   maxMembers   Int        @default(25)
   hideReactions Boolean   @default(false)
   defaultPermissions Json?
@@ -178,6 +196,8 @@ model Room {
 
   @@index([hostId])
   @@index([isPublic, createdAt])
+  @@index([isPublic, createdAt, id])
+  @@index([isPublic, category, createdAt, id])
 }
 
 model RoomMember {
@@ -250,6 +270,7 @@ model QueueItem {
   position       Int
   addedById      String
   played         Boolean  @default(false)
+  inferredCategory RoomCategory @default(other)
   /** When the provider stream URL stops working; null means stable or unknown. */
   expiresAt      DateTime?
   createdAt      DateTime @default(now())

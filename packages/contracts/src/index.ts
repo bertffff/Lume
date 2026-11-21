@@ -33,6 +33,12 @@ export {
   type RoomStatus,
   type RoomSummary,
 } from "./room.js";
+export * from "./room-catalog.js";
+export {
+  formatRoomCode,
+  parseRoomCode,
+  ROOM_CODE_ALPHABET,
+} from "./room-code.js";
 export {
   roomPresetById,
   roomPresetIds,
@@ -40,7 +46,7 @@ export {
   type RoomPreset,
   type RoomPresetId,
 } from "./room-presets.js";
-export { themeSchema, type Theme } from "./theme.js";
+export { styleIds, styleIdSchema, themeModes, themeModeSchema, themeSchema, type StyleId, type ThemeMode, type Theme } from "./theme.js";
 export {
   capabilityAllowed,
   entitlementKindSchema,

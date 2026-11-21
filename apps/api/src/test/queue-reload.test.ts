@@ -3,7 +3,9 @@ import { createPrismaClient } from "@lume/db";
 import { buildApp } from "../app.js";
 import { loadApiEnv } from "../env.js";
 
-const databaseUrl = "postgresql://lume:lume@127.0.0.1:5432/lume_test?schema=public";
+import { apiTestDatabaseUrl } from "./api-test-database.js";
+
+const databaseUrl = apiTestDatabaseUrl();
 
 describe("queue reload from persisted history", () => {
   let app: Awaited<ReturnType<typeof buildApp>> | undefined;

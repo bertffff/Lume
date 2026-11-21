@@ -1,3 +1,4 @@
+import { formatRoomCode } from "@lume/contracts";
 import { Bot } from "grammy";
 import { miniAppBase, type BotEnv } from "./env.js";
 import { miniAppUrl, roomCodeFromStartPayload } from "./links.js";
@@ -12,28 +13,37 @@ export function createBot(env: BotEnv): Bot {
   const appBase = miniAppBase(env);
 
   bot.command("start", async (ctx) => {
-    const code = roomCodeFromStartPayload(ctx.match);
+    const payload = ctx.match.trim();
+    const code = roomCodeFromStartPayload(payload);
+    const displayCode = code ? formatRoomCode(code) : null;
+    const unavailable = payload && !code && !payload.startsWith("user_");
+    const message = displayCode
+      ? `Откройте приглашение в комнату ${displayCode}.`
+      : unavailable
+        ? "Комната не найдена. Откройте приложение или попросите новую ссылку."
+        : "TeleRave — совместный просмотр. Откройте приложение.";
     if (!appBase) {
-      const roomLine = code ? `\nКомната: ${code}` : "";
+      const url = code ? new URL(`/join/${code}`, web).toString() : web;
       await ctx.reply(
-        `TeleRave — совместный просмотр.\nВеб: ${web}${roomLine}\nMini App не настроен: задайте WEBAPP_URL.`,
+        `${message}\nВеб: ${url}\nMini App не настроен: задайте WEBAPP_URL.`,
       );
       return;
     }
     const url = miniAppUrl(appBase, code);
     await ctx.reply(
-      code
-        ? `Комната ${code} готова. Откройте её в приложении.`
-        : "TeleRave — совместный просмотр. Откройте приложение.",
+      message,
       {
         reply_markup: {
           inline_keyboard: [
-            [{ text: code ? `Открыть зал ${code}` : "Открыть Lume", web_app: { url } }],
+            [{ text: displayCode ? `Открыть зал ${displayCode}` : "Открыть Lume", web_app: { url } }],
           ],
         },
       },
     );
   });
+
+  // Telegram API errors may embed the reply payload and its invite URL.
+  bot.catch(() => { process.stderr.write("Telegram bot update failed\n"); });
 
   bot.command("help", async (ctx) => {
     await ctx.reply("Команды: /start, /help. Голос, очередь и синхронизация живут в приложении, не в чате бота.");

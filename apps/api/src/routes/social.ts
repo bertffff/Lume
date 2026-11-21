@@ -7,17 +7,26 @@ import {
   partyAchievements,
   passwordIssue,
   registerAvailability,
-  resumeCard,
+  roomCategorySchema,
+  roomCategorySelectionSchema,
   clampResumePosition,
   scheduledDeletion,
+  styleIdSchema,
   tempMuteExpiry,
+  themeModeSchema,
   type RateBucket,
-  type ResumeSnapshot,
 } from "@lume/contracts";
 import { verifyAccessToken } from "@lume/contracts/node";
 import type { PrismaClient } from "@lume/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import type {
+  NotificationListResponse,
+  NotificationReadAllResponse,
+  NotificationReadResponse,
+} from "../../../../packages/contracts/src/notifications.js";
+import type { ResumeSnapshotInput } from "../../../../packages/contracts/src/resume.js";
+import { activePresenceViewer, profilePresenceFor, publicPresenceForAuthorizedSubjects } from "../access/presence.js";
 import { exportZip } from "../account/archive.js";
 import { awardNew, seedPartyAchievements } from "../account/awards.js";
 import { deliveryReadiness, notifyUser } from "../account/notify.js";
@@ -26,6 +35,8 @@ import { mintAccessToken } from "../auth/jwt.js";
 import { requireUser } from "../auth/guard.js";
 import type { AuthStores } from "../auth/stores.js";
 import type { ApiEnv } from "../env.js";
+import type { RedisLike } from "../redis.js";
+import { resumeCardFor, writePausedPlayback } from "../rooms/resume.js";
 import type { RoomService } from "../rooms/service.js";
 
 const searches = new Map<string, RateBucket>();
@@ -204,6 +215,7 @@ export function registerSocialRoutes(
   prisma: PrismaClient | null,
   service: RoomService | null,
   stores: AuthStores,
+  redis: RedisLike | null,
 ): void {
   app.post("/auth/register", async (request, reply) => {
     if (registerAvailability(env.NODE_ENV, Boolean(env.REDIS_URL)) === "redis_unconfigured") {
@@ -321,8 +333,8 @@ export function registerSocialRoutes(
       bio: z.string().max(100).nullable().optional(),
       avatarUrl: z.string().url().nullable().optional(),
       themeId: z.enum(["ember", "aurora"]).optional(),
-      uiStyle: z.enum(["cinema", "gruvbox"]).optional(),
-      uiMode: z.enum(["dark", "light", "system"]).optional(),
+      uiStyle: styleIdSchema.optional(),
+      uiMode: themeModeSchema.optional(),
       locale: z.enum(["ru", "en"]).optional(),
       displayName: z.string().trim().min(1).max(100).optional(),
       timezone: z.string().min(1).max(80).optional(),
@@ -404,12 +416,8 @@ export function registerSocialRoutes(
     const showHistory = isOwner || target.isWatchHistoryPublic;
     const showFavourites = isOwner || target.isFavoriteVideosPublic;
     const showTopFriends = isOwner || target.isTopFriendsPublic;
-    const [seat, friends, watchHistory, favourites, topFriends] = await Promise.all([
-      prisma.roomMember.findFirst({
-        where: { userId: target.id, leftAt: null },
-        include: { room: true },
-        orderBy: { joinedAt: "desc" },
-      }),
+    const [currentActivity, friends, watchHistory, favourites, topFriends] = await Promise.all([
+      profilePresenceFor(prisma, viewerId, target),
       showFriends ? friendsOf(prisma, target.id) : Promise.resolve(null),
       showHistory ? watchHistoryOf(prisma, target.id) : Promise.resolve(null),
       showFavourites ? favouritesOf(prisma, target.id) : Promise.resolve(null),
@@ -433,9 +441,7 @@ export function registerSocialRoutes(
         isWatchHistoryPublic: target.isWatchHistoryPublic,
         showUsername: target.showUsername,
       },
-      currentActivity: seat && seat.room.status !== "ended"
-        ? { roomId: seat.roomId, roomTitle: seat.room.title }
-        : null,
+      currentActivity,
       achievements: target.achievements.map((row) => ({
         key: row.achievement.key,
         title: row.achievement.titleRu,
@@ -491,11 +497,7 @@ export function registerSocialRoutes(
     if (!prisma) return reply.code(503).send({ error: "database_unconfigured" });
     const user = await prisma.user.findFirst({ where: { id: params.id, deletedAt: null } });
     if (!user) return reply.code(404).send({ error: "not_found" });
-    const seat = await prisma.roomMember.findFirst({
-      where: { userId: user.id, leftAt: null },
-      include: { room: true },
-      orderBy: { joinedAt: "desc" },
-    });
+    const activity = await profilePresenceFor(prisma, await optionalViewer(request, env), user);
     return reply.send({
       id: user.id,
       displayName: user.displayName,
@@ -503,8 +505,8 @@ export function registerSocialRoutes(
       bio: user.bio,
       avatarUrl: user.avatarUrl,
       level: levelFromXp(user.xp),
-      roomId: seat && seat.room.status !== "ended" ? seat.roomId : null,
-      roomTitle: seat && seat.room.status !== "ended" ? seat.room.title : null,
+      roomId: activity?.roomId ?? null,
+      roomTitle: activity?.roomTitle ?? null,
       privacy: {
         isFriendsPublic: user.isFriendsPublic,
         isFavoriteVideosPublic: user.isFavoriteVideosPublic,
@@ -533,31 +535,40 @@ export function registerSocialRoutes(
       if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
       return;
     }
-    const rows = await prisma.friendship.findMany({
-      where: { OR: [{ requesterId: actor.userId }, { addresseeId: actor.userId }] },
-      include: { requester: true, addressee: true },
-    });
-    const mapRow = async (row: (typeof rows)[number]) => {
-      const other = row.requesterId === actor.userId ? row.addressee : row.requester;
-      const seat = await prisma.roomMember.findFirst({
-        where: { userId: other.id, leftAt: null },
-        include: { room: true },
-        orderBy: { joinedAt: "desc" },
-      });
+    const friendSelect = { id: true, displayName: true, deletedAt: true, isFriendsPublic: true } as const;
+    const [rows, canViewPresence] = await Promise.all([
+      prisma.friendship.findMany({
+        where: { OR: [{ requesterId: actor.userId }, { addresseeId: actor.userId }] },
+        include: { requester: { select: friendSelect }, addressee: { select: friendSelect } },
+      }),
+      activePresenceViewer(prisma, actor.userId),
+    ]);
+    const entries = rows.map((row) => ({
+      row,
+      other: row.requesterId === actor.userId ? row.addressee : row.requester,
+    }));
+    const disallowed = new Set(entries.filter(({ row }) => row.status !== "accepted").map(({ other }) => other.id));
+    const authorizedSubjectIds = canViewPresence
+      ? [...new Set(entries.filter(({ row, other }) => row.status === "accepted" && !disallowed.has(other.id)
+        && other.deletedAt === null && other.isFriendsPublic).map(({ other }) => other.id))]
+      : [];
+    const presenceByUser = await publicPresenceForAuthorizedSubjects(prisma, actor.userId, authorizedSubjectIds);
+    const mapRow = ({ row, other }: (typeof entries)[number]) => {
+      const activity = row.status === "accepted" ? presenceByUser.get(other.id) : null;
       return {
         id: row.id,
         status: row.status,
         userId: other.id,
         displayName: other.displayName,
-        roomId: seat && seat.room.status !== "ended" ? seat.roomId : null,
-        roomTitle: seat && seat.room.status !== "ended" ? seat.room.title : null,
+        roomId: activity?.roomId ?? null,
+        roomTitle: activity?.roomTitle ?? null,
       };
     };
     return reply.send({
-      friends: await Promise.all(rows.filter((row) => row.status === "accepted").map(mapRow)),
-      incoming: await Promise.all(rows.filter((row) => row.status === "pending" && row.addresseeId === actor.userId).map(mapRow)),
-      outgoing: await Promise.all(rows.filter((row) => row.status === "pending" && row.requesterId === actor.userId).map(mapRow)),
-      blocked: await Promise.all(rows.filter((row) => row.status === "blocked" && row.requesterId === actor.userId).map(mapRow)),
+      friends: entries.filter(({ row }) => row.status === "accepted").map(mapRow),
+      incoming: entries.filter(({ row }) => row.status === "pending" && row.addresseeId === actor.userId).map(mapRow),
+      outgoing: entries.filter(({ row }) => row.status === "pending" && row.requesterId === actor.userId).map(mapRow),
+      blocked: entries.filter(({ row }) => row.status === "blocked" && row.requesterId === actor.userId).map(mapRow),
     });
   });
 
@@ -720,11 +731,25 @@ export function registerSocialRoutes(
       if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
       return;
     }
-    const items = await prisma.notification.findMany({ where: { userId: actor.userId }, orderBy: { createdAt: "desc" }, take: 50 });
-    return reply.send({
-      unread: items.filter((item) => item.readAt === null).length,
-      notifications: items.map((item) => ({ id: item.id, kind: item.kind, title: item.title, body: item.body, read: item.readAt !== null, createdAt: item.createdAt.toISOString() })),
-    });
+    const where = { userId: actor.userId };
+    const [items, unread] = await prisma.$transaction([
+      prisma.notification.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 50,
+        select: { id: true, kind: true, title: true, body: true, readAt: true, createdAt: true },
+      }),
+      prisma.notification.count({ where: { ...where, readAt: null } }),
+    ], { isolationLevel: "RepeatableRead" });
+    const response: NotificationListResponse = {
+      unread,
+      notifications: items.map(({ id, kind, title, body, readAt, createdAt }) => ({
+        id, kind, title, body, read: readAt !== null, createdAt: createdAt.toISOString(),
+        // Friend activity supports one known in-app destination; never use stored payload URLs.
+        target: kind === "FRIEND_REQUEST" || kind === "FRIEND_ACCEPTED" ? "/profile" : null,
+      })),
+    };
+    return reply.send(response);
   });
 
   app.post("/notifications/:id/read", async (request, reply) => {
@@ -733,9 +758,35 @@ export function registerSocialRoutes(
       if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
       return;
     }
-    const params = z.object({ id: z.string() }).parse(request.params);
-    await prisma.notification.updateMany({ where: { id: params.id, userId: actor.userId }, data: { readAt: new Date() } });
-    return reply.send({ ok: true });
+    const params = z.object({ id: z.string().min(1).max(128) }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_params" });
+    const unreadWhere = { userId: actor.userId, readAt: null };
+    const response = await prisma.$transaction(async (tx): Promise<NotificationReadResponse | null> => {
+      const { count } = await tx.notification.updateMany({
+        where: { ...unreadWhere, id: params.data.id }, data: { readAt: new Date() },
+      });
+      if (count === 0 && !await tx.notification.findFirst({
+        where: { id: params.data.id, userId: actor.userId }, select: { id: true },
+      })) return null;
+      return { ok: true, unread: await tx.notification.count({ where: unreadWhere }) };
+    });
+    if (!response) return reply.code(404).send({ error: "not_found" });
+    return reply.send(response);
+  });
+
+  app.post("/notifications/read-all", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const where = { userId: actor.userId, readAt: null };
+    const [, unread] = await prisma.$transaction([
+      prisma.notification.updateMany({ where, data: { readAt: new Date() } }),
+      prisma.notification.count({ where }),
+    ]);
+    const response: NotificationReadAllResponse = { unread };
+    return reply.send(response);
   });
 
   app.put("/me/notification-preferences", async (request, reply) => {
@@ -888,8 +939,8 @@ export function registerSocialRoutes(
       return;
     }
     const user = await prisma.user.findUnique({ where: { id: actor.userId } });
-    const snapshot = (user?.lastRoomSnapshot ?? null) as ResumeSnapshot | null;
-    return reply.send({ resume: resumeCard(snapshot) });
+    const snapshot = (user?.lastRoomSnapshot ?? null) as ResumeSnapshotInput | null;
+    return reply.send({ resume: resumeCardFor(snapshot) });
   });
 
   app.get("/me/favourites", async (request, reply) => {
@@ -908,18 +959,39 @@ export function registerSocialRoutes(
       return;
     }
     const user = await prisma.user.findUnique({ where: { id: actor.userId } });
-    const snapshot = user?.lastRoomSnapshot as { title?: string; isPublic?: boolean; positionMs?: number; queue?: Array<{ url: string; title?: string }> } | null;
+    const snapshot = (user?.lastRoomSnapshot ?? null) as ResumeSnapshotInput | null;
     if (!snapshot?.title) return reply.code(404).send({ error: "not_found" });
+    const card = resumeCardFor(snapshot);
+    const durationMs = card?.durationMs ?? null;
+    const knownPosition = card?.positionMs ?? null;
+    // Restore a saved position, clamped to the known duration. No client value
+    // and no seek/pause applied to the room this snapshot came from.
+    const positionMs = knownPosition === null
+      ? null
+      : clampResumePosition(knownPosition, durationMs ?? Number.POSITIVE_INFINITY);
+    const selection = roomCategorySelectionSchema.safeParse(snapshot.categorySelection);
+    const inferred = roomCategorySchema.safeParse(snapshot.inferredCategory);
+    const member = { userId: actor.userId, displayName: actor.displayName };
     const created = await service.createRoom(
-      { userId: actor.userId, displayName: actor.displayName },
-      { title: snapshot.title, isPublic: snapshot.isPublic === true },
+      member,
+      { title: snapshot.title, isPublic: snapshot.isPublic === true, ...(selection.success ? { categorySelection: selection.data } : {}) },
     );
+    const roomId = created.room.id;
+    if (snapshot.videoUrl) await service.replacePlaying(member, roomId, snapshot.videoUrl, inferred.data);
     for (const item of snapshot.queue ?? []) {
-      if (item.url) {
-        await service.addQueueItem({ userId: actor.userId, displayName: actor.displayName }, created.room.id, item.url);
+      if (item.url && item.url !== snapshot.videoUrl) {
+        await service.addQueueItem(member, roomId, item.url, item.title);
       }
     }
-    return reply.send({ ...created, positionMs: clampResumePosition(snapshot.positionMs ?? 0), paused: true });
+    const playback = await writePausedPlayback(redis, roomId, actor.userId, positionMs, Date.now());
+    return reply.send({
+      ...await service.detailFor(actor.userId, roomId),
+      positionMs,
+      durationMs,
+      posterUrl: card?.posterUrl ?? null,
+      playback,
+      paused: true,
+    });
   });
 
   app.post("/me/export", async (request, reply) => {

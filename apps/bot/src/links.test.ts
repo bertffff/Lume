@@ -4,9 +4,14 @@ import { miniAppUrl, roomCodeFromStartPayload } from "./links.js";
 
 describe("telegram start payloads", () => {
   it("reads room_<code> and bare codes", () => {
-    expect(roomCodeFromStartPayload("room_abc123")).toBe("abc123");
-    expect(roomCodeFromStartPayload("abc123")).toBe("abc123");
-    expect(roomCodeFromStartPayload(" room_abc123 ")).toBe("abc123");
+    expect(roomCodeFromStartPayload("room_7kq2mx")).toBe("7kq2mx");
+    expect(roomCodeFromStartPayload("7KQ2MX")).toBe("7kq2mx");
+    expect(roomCodeFromStartPayload(" room_7KQ-2MX ")).toBe("7kq2mx");
+  });
+
+  it.each(["7kq2m", "7kq2mxz", "7kq2mxzz", "7KQ-2M0", "7K-Q2MX"])("rejects %s in both invite shapes", (input) => {
+    expect(roomCodeFromStartPayload(input)).toBeNull();
+    expect(roomCodeFromStartPayload(`room_${input}`)).toBeNull();
   });
 
   it("rejects user ids and malformed codes", () => {
@@ -20,18 +25,24 @@ describe("telegram start payloads", () => {
 
 describe("mini app url", () => {
   it("carries the room code into tgWebAppStartParam", () => {
-    const url = new URL(miniAppUrl("https://app.example/", "abc123"));
-    expect(url.searchParams.get("tgWebAppStartParam")).toBe("room_abc123");
+    const url = new URL(miniAppUrl("https://app.example/", "7KQ-2MX"));
+    expect(url.searchParams.get("tgWebAppStartParam")).toBe("room_7kq2mx");
   });
 
   it("keeps an existing query string", () => {
-    const url = new URL(miniAppUrl("https://app.example/?theme=dark", "abc123"));
+    const url = new URL(miniAppUrl("https://app.example/?theme=dark", "7kq2mx"));
     expect(url.searchParams.get("theme")).toBe("dark");
-    expect(url.searchParams.get("tgWebAppStartParam")).toBe("room_abc123");
+    expect(url.searchParams.get("tgWebAppStartParam")).toBe("room_7kq2mx");
   });
 
   it("adds no start param for a plain start", () => {
     expect(new URL(miniAppUrl("https://app.example/", null)).search).toBe("");
+  });
+
+  it("does not propagate a room payload already present in the base on invalid start", () => {
+    const base = "https://app.example/?tgWebAppStartParam=room_7kq2mxzz";
+    expect(new URL(miniAppUrl(base, null)).search).toBe("");
+    expect(new URL(miniAppUrl(base, "7kq2mxzz")).search).toBe("");
   });
 });
 

@@ -1,7 +1,7 @@
-import { FREE_ROOM_MEMBER_CAP } from "@lume/contracts";
-import { describe, expect, it } from "vitest";
+import { formatRoomCode, FREE_ROOM_MEMBER_CAP, parseRoomCode } from "@lume/contracts";
+import { describe, expect, it, vi } from "vitest";
 import { createMemoryRepository } from "./memory.js";
-import { RoomService } from "./service.js";
+import { createRoomCode, RoomService } from "./service.js";
 import { RoomFailure } from "./types.js";
 
 function harness() {
@@ -22,16 +22,53 @@ describe("room service", () => {
       { title: "Вечерний зал", isPublic: true },
     );
     expect(created.self.role).toBe("host");
-    expect(created.room.code).toHaveLength(8);
+    expect(parseRoomCode(created.room.code)).toBe(created.room.code);
     expect(created.room.memberCount).toBe(1);
 
     const joined = await service.joinByCode(
       { userId: "mark", displayName: "Марк" },
-      created.room.code,
+      ` ${formatRoomCode(created.room.code)} `,
     );
     expect(joined.self.role).toBe("viewer");
     expect(joined.members.map((member) => member.displayName)).toEqual(["Аня", "Марк"]);
     expect((await service.listPublic()).map((room) => room.code)).toEqual([created.room.code]);
+  });
+
+  it("retries an insert-time code collision without pre-checking or changing the room ID", async () => {
+    const repo = createMemoryRepository();
+    const lookup = vi.spyOn(repo, "findRoomByCode");
+    const insert = vi.spyOn(repo, "insertRoom").mockResolvedValueOnce(false);
+    const code = vi.fn().mockReturnValueOnce("aaaaaa").mockReturnValueOnce("bbbbbb");
+    const service = new RoomService(repo, () => "stable-id", undefined, undefined, code);
+    const created = await service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Зал" });
+    expect(lookup).not.toHaveBeenCalled();
+    expect(insert.mock.calls.map(([room]) => [room.id, room.code])).toEqual([
+      ["stable-id", "aaaaaa"], ["stable-id", "bbbbbb"],
+    ]);
+    expect(created.room).toMatchObject({ id: "stable-id", code: "bbbbbb" });
+  });
+
+  it("bounds collision retries and never adds a member to a failed room", async () => {
+    const repo = createMemoryRepository();
+    const insert = vi.spyOn(repo, "insertRoom").mockResolvedValue(false);
+    const member = vi.spyOn(repo, "saveMember");
+    const service = new RoomService(repo, undefined, undefined, undefined, () => "aaaaaa");
+    await expect(service.createRoom({ userId: "host", displayName: "Хост" }, { title: "Зал" })).rejects.toMatchObject({ code: "conflict" });
+    expect(insert).toHaveBeenCalledTimes(8);
+    expect(member).not.toHaveBeenCalled();
+  });
+
+  it("rejects a legacy code without a lookup or truncation", async () => {
+    const repo = createMemoryRepository();
+    const lookup = vi.spyOn(repo, "findRoomByCode");
+    const service = new RoomService(repo);
+    await expect(service.joinByCode({ userId: "guest", displayName: "Гость" }, "7kq2mxzz")).rejects.toMatchObject({ code: "not_found" });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it("generates canonical codes", () => {
+    const codes = Array.from({ length: 20 }, () => createRoomCode());
+    expect(codes.every((code) => parseRoomCode(code) === code)).toBe(true);
   });
 
   it("hides a public room from the open list once everyone has left", async () => {

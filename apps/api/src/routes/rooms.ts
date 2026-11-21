@@ -1,15 +1,21 @@
-import { createRoomSchema, detectSource, joinRoomSchema, lastIncidents, matchesBrowse, parseEmbedInput, planPlayback } from "@lume/contracts";
+import { createRoomSchema, detectSource, joinRoomSchema, lastIncidents, matchesBrowse, parseEmbedInput, planPlayback, roomCatalogQuerySchema } from "@lume/contracts";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { allowsModeration, memberFlagsFromDefaults, slowModeAllows, tempMuteExpiry } from "@lume/contracts";
 import type { PrismaClient } from "@lume/db";
 import { banBlocksJoin } from "../access/gates.js";
+import { activePresenceViewer } from "../access/presence.js";
 import { trackStat } from "../account/awards.js";
 import { shouldRecordWatch } from "@lume/contracts";
 import { requireUser } from "../auth/guard.js";
 import type { ApiEnv } from "../env.js";
+import { roomJoinPath, type RoomJoinLimiter } from "../http/limit.js";
+import type { RedisLike } from "../redis.js";
+import { readPlaybackPositionMs, resumeMediaFields } from "../rooms/resume.js";
 import { RoomService } from "../rooms/service.js";
 import { RoomFailure } from "../rooms/types.js";
+import { catalogCursor } from "../rooms/catalog.js";
+import { classifyRoomCategory } from "../rooms/category.js";
 
 const kickSchema = z.object({ userId: z.string().min(1) });
 const muteSchema = kickSchema.extend({ muted: z.boolean() });
@@ -49,7 +55,9 @@ export function registerRoomRoutes(
   app: FastifyInstance,
   env: ApiEnv,
   service: RoomService | null,
-  prisma: PrismaClient | null = null,
+  prisma: PrismaClient | null,
+  joinLimiter: RoomJoinLimiter,
+  redis: RedisLike | null,
 ): void {
   app.get("/rooms", async (request, reply) => {
     if (!service) {
@@ -61,6 +69,26 @@ export function registerRoomRoutes(
     if (q) rooms = rooms.filter((room) => matchesBrowse(room.title, room.code, q));
     if (query.success && query.data.sort === "title") rooms = [...rooms].sort((left, right) => left.title.localeCompare(right.title, "ru"));
     return { rooms };
+  });
+
+  app.get("/rooms/catalog", async (request, reply) => {
+    reply.header("Cache-Control", "private, no-store");
+    const query = roomCatalogQuerySchema.safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: "invalid_query" });
+    const { filter, cursor } = query.data;
+    const after = catalogCursor(cursor);
+    if (cursor !== undefined && !after) return reply.code(400).send({ error: "invalid_cursor" });
+    if (!service) return reply.code(503).send({ error: "database_unconfigured" });
+    let viewerId = null;
+    if (filter === "friends" || request.headers.authorization !== undefined) {
+      const viewer = await requireUser(request, reply, env);
+      if (!viewer) return;
+      if (prisma && !(await activePresenceViewer(prisma, viewer.userId))) {
+        return reply.code(401).send({ error: "unauthorized" });
+      }
+      viewerId = viewer.userId;
+    }
+    return service.catalog({ viewerId, filter, after });
   });
 
   app.post("/rooms", async (request, reply) => {
@@ -82,6 +110,8 @@ export function registerRoomRoutes(
           title: body.data.title,
           ...(body.data.isPublic === undefined ? {} : { isPublic: body.data.isPublic }),
           ...(body.data.preset ? { preset: body.data.preset } : {}),
+          ...(body.data.categorySelection === undefined ? {} : { categorySelection: body.data.categorySelection }),
+          ...(body.data.defaults ? { defaults: body.data.defaults } : {}),
         },
       );
       if (prisma) {
@@ -92,11 +122,14 @@ export function registerRoomRoutes(
     });
   });
 
-  app.post("/rooms/join", async (request, reply) => {
+  app.post(roomJoinPath, {
+    onRequest: async (request, reply) => { await joinLimiter(reply, "ip", request.ip); },
+  }, async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor) {
       return;
     }
+    if (!await joinLimiter(reply, "account", actor.userId)) return;
     if (!service) {
       return reply.code(503).send({ error: "database_unconfigured" });
     }
@@ -105,7 +138,7 @@ export function registerRoomRoutes(
       return reply.code(400).send({ error: "invalid_body" });
     }
     if (prisma) {
-      const room = await prisma.room.findUnique({ where: { slug: body.data.code.trim().toLowerCase() } });
+      const room = await prisma.room.findUnique({ where: { slug: body.data.code } });
       if (room) {
         const bans = await prisma.ban.findMany({ where: { userId: actor.userId, liftedAt: null } });
         if (banBlocksJoin(bans, room, new Date())) {
@@ -206,23 +239,35 @@ export function registerRoomRoutes(
             include: { queue: { orderBy: { position: "asc" } }, nowPlaying: true },
           });
           if (room) {
-            const historyCount = await prisma.roomHistoryItem.count({ where: { roomId: room.id } });
-            await prisma.user.update({
-              where: { id: room.ownerId },
-              data: {
-                lastRoomSnapshot: {
-                  title: room.title,
-                  description: room.description ?? "",
-                  isPublic: room.isPublic,
-                  maxMembers: room.maxMembers,
-                  videoUrl: room.nowPlaying?.url ?? null,
-                  positionMs: 0,
-                  queue: room.queue.map((item) => ({ url: item.url, title: item.title })),
-                  historyCount,
+            // Only the owner's own resume snapshot may be written: a departing
+            // non-owner must not replace it with a room they do not own.
+            if (room.ownerId === actor.userId) {
+              const positionMs = await readPlaybackPositionMs(redis, room.id, Date.now());
+              const media = resumeMediaFields(room.nowPlaying);
+              const historyCount = await prisma.roomHistoryItem.count({ where: { roomId: room.id } });
+              await prisma.user.update({
+                where: { id: room.ownerId },
+                data: {
+                  lastRoomSnapshot: {
+                    title: room.title,
+                    description: room.description ?? "",
+                    isPublic: room.isPublic,
+                    maxMembers: room.maxMembers,
+                    categorySelection: room.categorySelection,
+                    videoUrl: room.nowPlaying?.url ?? null,
+                    inferredCategory: room.nowPlaying?.inferredCategory ?? null,
+                    // Authoritative server playback position; null means unknown.
+                    positionMs,
+                    // Trusted media metadata only; null when not actually known.
+                    ...media,
+                    queue: room.queue.filter((item) => !item.played && item.id !== room.nowPlayingId)
+                      .map((item) => ({ url: item.url, title: item.title })),
+                    historyCount,
+                  },
+                  lastRoomSnapshotAt: new Date(),
                 },
-                lastRoomSnapshotAt: new Date(),
-              },
-            });
+              });
+            }
             await prisma.room.update({ where: { id: room.id }, data: { emptySince: new Date() } });
           }
         }
@@ -419,6 +464,8 @@ export function registerRoomRoutes(
         durationMs: history.durationMs,
         position: (last?.position ?? 0) + 1,
         addedById: actor.userId,
+        inferredCategory: [...existing].reverse().find((item) => item.url === history.url)?.inferredCategory
+          ?? classifyRoomCategory({ title: history.title, source: history.source }),
       },
     });
     const detail = await service.detailFor(actor.userId, params.data.id);
@@ -652,12 +699,25 @@ export function registerRoomRoutes(
       return;
     }
     const params = z.object({ id: z.string() }).parse(request.params);
-    const body = z.object({ action: z.enum(["retry", "open", "replace"]), url: z.string().min(1) }).safeParse(request.body);
+    const body = z.object({ action: z.enum(["retry", "open", "replace"]), url: z.string().trim().min(1).max(2000) }).safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "invalid_body" });
-    const row = await prisma.moderationAction.create({
-      data: { roomId: params.id, actorId: actor.userId, action: `recovery:${body.data.action}`, detail: body.data.url },
+    const { action, url } = body.data;
+    return run(reply, async () => {
+      let detail;
+      if (action === "replace") {
+        if (!service) return reply.code(503).send({ error: "database_unconfigured" });
+        const account = await prisma.user.findUnique({ where: { id: actor.userId }, select: { isPremium: true } });
+        const plan = planPlayback({ url, premium: Boolean(account?.isPremium) });
+        if (plan.type === "error" && plan.code === "premium_required") {
+          return reply.code(403).send({ error: "premium_required", source: detectSource(url)?.id ?? null });
+        }
+        detail = await service.replacePlaying(actor, params.id, url);
+      }
+      const row = await prisma.moderationAction.create({
+        data: { roomId: params.id, actorId: actor.userId, action: `recovery:${action}`, detail: url },
+      });
+      return reply.send({ id: row.id, action, url, ...detail });
     });
-    return reply.send({ id: row.id, action: body.data.action, url: body.data.url });
   });
 
   app.get("/rooms/:id/sync-incidents", async (request, reply) => {

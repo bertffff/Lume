@@ -11,6 +11,8 @@ export interface RedisLike {
   /** Atomically returns the value and removes the key. */
   take(key: string): Promise<string | null>;
   incr(key: string): Promise<number>;
+  /** Counter and initial TTL in one operation. Required for production invite throttling. */
+  incrWithTtl?(key: string, ttlMs: number): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
   ping(): Promise<boolean>;
   quit(): Promise<void>;
@@ -20,6 +22,14 @@ const TAKE_SCRIPT = `
 local value = redis.call('GET', KEYS[1])
 if value then
   redis.call('DEL', KEYS[1])
+end
+return value
+`;
+
+const INCR_WITH_TTL_SCRIPT = `
+local value = redis.call('INCR', KEYS[1])
+if value == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
 end
 return value
 `;
@@ -35,6 +45,7 @@ export function redisAdapter(client: Redis): RedisLike {
     },
     take: async (key) => (await client.eval(TAKE_SCRIPT, 1, key)) as string | null,
     incr: (key) => client.incr(key),
+    incrWithTtl: async (key, ttlMs) => (await client.eval(INCR_WITH_TTL_SCRIPT, 1, key, ttlMs)) as number,
     expire: (key, seconds) => client.expire(key, seconds),
     ping: async () => (await client.ping()) === "PONG",
     quit: async () => {

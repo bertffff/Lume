@@ -1,4 +1,5 @@
-import type { EmbedProvider, MemberRole } from "@lume/contracts";
+import type { EmbedProvider, MemberRole, RoomCatalogItem, RoomCategory, RoomCategorySelection } from "@lume/contracts";
+import type { CatalogPageInput } from "./catalog.js";
 
 export interface RoomRecord {
   id: string;
@@ -8,6 +9,8 @@ export interface RoomRecord {
   ownerId?: string;
   status: "open" | "live" | "ended";
   isPublic: boolean;
+  category: RoomCategory;
+  categorySelection: RoomCategorySelection;
   maxMembers: number;
   hideReactions?: boolean;
   slowModeSeconds?: number;
@@ -60,17 +63,22 @@ export interface QueueRecord {
   position: number;
   addedById: string;
   played: boolean;
+  inferredCategory: RoomCategory;
 }
 
 export interface RoomRepository {
-  insertRoom(room: RoomRecord): Promise<void>;
+  /** Returns false only when the invite code collides at insert. Other failures throw. */
+  insertRoom(room: RoomRecord): Promise<boolean>;
   patchRoom(
     id: string,
-    patch: { status?: RoomRecord["status"]; nowPlayingId?: string | null },
+    patch: { status?: RoomRecord["status"] },
   ): Promise<void>;
+  startPlaying(roomId: string, itemId: string): Promise<void>;
+  setCategory(roomId: string, hostId: string, selection: RoomCategorySelection): Promise<void>;
   findRoomById(id: string): Promise<RoomRecord | null>;
   findRoomByCode(code: string): Promise<RoomRecord | null>;
   listPublicRooms(): Promise<RoomRecord[]>;
+  listCatalog(input: CatalogPageInput): Promise<RoomCatalogItem[]>;
   listMembers(roomId: string): Promise<MemberRecord[]>;
   findMember(roomId: string, userId: string): Promise<MemberRecord | null>;
   saveMember(member: MemberRecord): Promise<void>;
@@ -84,7 +92,6 @@ export interface RoomRepository {
   }): Promise<MessageRecord | null>;
   listQueue(roomId: string): Promise<QueueRecord[]>;
   insertQueueItem(item: QueueRecord): Promise<void>;
-  saveQueueItem(item: QueueRecord): Promise<void>;
 }
 
 export class RoomFailure extends Error {

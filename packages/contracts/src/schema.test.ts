@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   clientEventSchema,
   defaultRoomLayout,
+  joinRoomSchema,
   layoutAspectGroup,
   parseStoredLayouts,
   premiumEntitlementSchema,
   ROOM_LAYOUT_STORAGE_KEY,
   roomLayoutSchema,
   roomSchema,
+  roomSummarySchema,
   serializeStoredLayouts,
   storeLayoutForAspect,
   telegramAuthPayloadSchema,
@@ -59,6 +61,13 @@ describe("contracts", () => {
       isPublic: false,
     });
     expect(room.layout.videoAspect).toBeGreaterThan(1);
+  });
+
+  it("accepts formatted input but requires canonical room codes in responses", () => {
+    expect(joinRoomSchema.parse({ code: " 7KQ-2MX " })).toEqual({ code: "7kq2mx" });
+    expect(joinRoomSchema.safeParse({ code: "7kq2mxzz" }).success).toBe(false);
+    expect(roomSummarySchema.shape.code.safeParse("7KQ-2MX").success).toBe(false);
+    expect(roomSummarySchema.shape.code.parse("7kq2mx")).toBe("7kq2mx");
   });
 
   it("rejects a layout that collapses the player share", () => {

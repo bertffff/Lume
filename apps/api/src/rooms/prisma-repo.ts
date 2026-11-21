@@ -1,6 +1,14 @@
 import { defaultRoomLayout, embedProviderSchema, type EmbedProvider } from "@lume/contracts";
 import type { PrismaClient } from "@lume/db";
-import type { MessageRecord, QueueRecord, RoomRecord, RoomRepository } from "./types.js";
+import { RoomFailure, type MessageRecord, type QueueRecord, type RoomRecord, type RoomRepository } from "./types.js";
+import { prismaCatalog } from "./prisma-catalog.js";
+import { lockCategoryRoom } from "./prisma-category.js";
+
+function isSlugCollision(error: unknown): boolean {
+  const failure = error as { code?: unknown; meta?: { target?: unknown } } | null;
+  const target = failure?.meta?.target;
+  return failure?.code === "P2002" && Array.isArray(target) && target.length === 1 && target[0] === "slug";
+}
 
 function asProvider(value: string): EmbedProvider {
   const parsed = embedProviderSchema.safeParse(value);
@@ -15,6 +23,8 @@ function mapRoom(room: {
   ownerId: string;
   status: "open" | "live" | "ended";
   isPublic: boolean;
+  category: RoomRecord["category"];
+  categorySelection: RoomRecord["categorySelection"];
   maxMembers: number;
   hideReactions: boolean;
   slowModeSeconds: number;
@@ -30,6 +40,8 @@ function mapRoom(room: {
     ownerId: room.ownerId,
     status: room.status,
     isPublic: room.isPublic,
+    category: room.category,
+    categorySelection: room.categorySelection,
     maxMembers: room.maxMembers,
     hideReactions: room.hideReactions,
     slowModeSeconds: room.slowModeSeconds,
@@ -45,32 +57,62 @@ function mapRoom(room: {
 export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
   return {
     async insertRoom(room) {
-      await prisma.room.create({
-        data: {
-          id: room.id,
-          slug: room.code,
-          title: room.title,
-          hostId: room.hostId,
-          ownerId: room.hostId,
-          status: room.status,
-          isPublic: room.isPublic,
-          maxMembers: room.maxMembers,
-          hideReactions: room.hideReactions ?? false,
-          slowModeSeconds: room.slowModeSeconds ?? 0,
-          ...(room.defaultPermissions ? { defaultPermissions: room.defaultPermissions } : {}),
-          layout: defaultRoomLayout,
-          videoAspect: defaultRoomLayout.videoAspect,
-          createdAt: new Date(room.createdAt),
-        },
-      });
+      try {
+        await prisma.room.create({
+          data: {
+            id: room.id,
+            slug: room.code,
+            title: room.title,
+            hostId: room.hostId,
+            ownerId: room.hostId,
+            status: room.status,
+            isPublic: room.isPublic,
+            category: room.category,
+            categorySelection: room.categorySelection,
+            maxMembers: room.maxMembers,
+            hideReactions: room.hideReactions ?? false,
+            slowModeSeconds: room.slowModeSeconds ?? 0,
+            ...(room.defaultPermissions ? { defaultPermissions: room.defaultPermissions } : {}),
+            layout: defaultRoomLayout,
+            videoAspect: defaultRoomLayout.videoAspect,
+            createdAt: new Date(room.createdAt),
+          },
+        });
+        return true;
+      } catch (error) {
+        if (isSlugCollision(error)) return false;
+        throw error;
+      }
     },
     async patchRoom(id, patch) {
       await prisma.room.update({
         where: { id },
-        data: {
-          ...(patch.status ? { status: patch.status } : {}),
-          ...(patch.nowPlayingId !== undefined ? { nowPlayingId: patch.nowPlayingId } : {}),
-        },
+        data: patch,
+      });
+    },
+    async startPlaying(roomId, itemId) {
+      await prisma.$transaction(async (tx) => {
+        await lockCategoryRoom(tx, roomId);
+        const room = await tx.room.findUniqueOrThrow({ where: { id: roomId }, select: { categorySelection: true } });
+        const item = await tx.queueItem.update({ where: { id: itemId, roomId }, data: { played: true } });
+        await tx.room.update({ where: { id: roomId }, data: {
+          status: "live",
+          nowPlayingId: item.id,
+          category: room.categorySelection === "auto" ? item.inferredCategory : room.categorySelection,
+        } });
+      });
+    },
+    async setCategory(roomId, hostId, selection) {
+      await prisma.$transaction(async (tx) => {
+        await lockCategoryRoom(tx, roomId);
+        const room = await tx.room.findUnique({ where: { id: roomId }, include: { nowPlaying: true } });
+        if (!room) throw new RoomFailure("not_found");
+        const member = await tx.roomMember.findUnique({ where: { roomId_userId: { roomId, userId: hostId } } });
+        if (!member || member.leftAt || member.role !== "host") throw new RoomFailure("forbidden");
+        await tx.room.update({ where: { id: roomId }, data: {
+          categorySelection: selection,
+          category: selection === "auto" ? room.nowPlaying?.inferredCategory ?? "other" : selection,
+        } });
       });
     },
     async findRoomById(id) {
@@ -89,6 +131,7 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
       });
       return rooms.map(mapRoom);
     },
+    listCatalog: (input) => prismaCatalog(prisma, input),
     async listMembers(roomId) {
       const rows = await prisma.roomMember.findMany({
         where: { roomId },
@@ -230,13 +273,8 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
           position: item.position,
           addedById: item.addedById,
           played: item.played,
+          inferredCategory: item.inferredCategory,
         },
-      });
-    },
-    async saveQueueItem(item) {
-      await prisma.queueItem.update({
-        where: { id: item.id },
-        data: { played: item.played, title: item.title },
       });
     },
   };
@@ -278,6 +316,7 @@ function mapQueue(row: {
   position: number;
   addedById: string;
   played: boolean;
+  inferredCategory: QueueRecord["inferredCategory"];
 }): QueueRecord {
   return {
     id: row.id,
@@ -291,5 +330,6 @@ function mapQueue(row: {
     position: row.position,
     addedById: row.addedById,
     played: row.played,
+    inferredCategory: row.inferredCategory,
   };
 }
