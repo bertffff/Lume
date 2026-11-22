@@ -4,7 +4,7 @@ import { Button, Card, Input } from "../../ds/index.js";
 import { AppearanceControls } from "../../design/AppearanceControls.js";
 import type { ModeId, StyleId } from "../../design/theme.js";
 import { useI18n } from "../../i18n/context.js";
-import { Row } from "./Row.js";
+import { Check, Row } from "./Row.js";
 import { useSettingsData } from "./useSettingsData.js";
 import styles from "./SettingsScreen.module.css";
 
@@ -31,10 +31,6 @@ function Section({ id, title, lead, children }: { id: string; title: string; lea
       {children ? <div className={styles.rows}>{children}</div> : null}
     </Card>
   );
-}
-
-function Check({ testId, checked, onChange, label }: { testId?: string; checked: boolean; onChange: (next: boolean) => void; label: string }) {
-  return <input className={styles.check} data-testid={testId} type="checkbox" aria-label={label} checked={checked} onChange={(event) => onChange(event.target.checked)} />;
 }
 
 export function SettingsScreen({ style, mode, onStyle, onMode, token, apiUrl, blocked = [], onUnblock, globalBans = [], onRemoveGlobalBan }: SettingsScreenProps) {

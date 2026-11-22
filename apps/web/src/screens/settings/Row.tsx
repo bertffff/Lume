@@ -13,3 +13,7 @@ export function Row({ title, hint, children }: { title: string; hint?: string; c
     </div>
   );
 }
+
+export function Check({ testId, checked, onChange, label, disabled }: { testId?: string; checked: boolean; onChange: (next: boolean) => void; label: string; disabled?: boolean }) {
+  return <input className={styles.check} data-testid={testId} type="checkbox" aria-label={label} checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />;
+}

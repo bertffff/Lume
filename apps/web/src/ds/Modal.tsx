@@ -7,7 +7,7 @@ import styles from "./Modal.module.css";
 
 export interface ModalProps {
   open: boolean;
-  title: string;
+  title: ReactNode;
   onClose: () => void;
   footer?: ReactNode;
   size?: "sm" | "md" | "lg";

@@ -4,7 +4,8 @@ import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { useRoomMeta } from "../room/hooks/useRoomMeta.js";
 import type { RoomActions } from "../room/live.js";
-import { Modal } from "../ui/index.js";
+import { Button, Chip, ChipGroup, Modal } from "../ds/index.js";
+import styles from "./RoomDialogs.module.css";
 import { runVoicePreflight, saveVoicePreflight } from "../voice/preflight.js";
 import { AppearanceControls } from "./AppearanceControls.js";
 import type { RoomAppearance } from "./room-appearance.js";
@@ -51,41 +52,38 @@ export function RoomPersonalSettings({ live, meta, layout, appearance, onLayout,
   }
 
   return (
-    <Modal open title={t("room.layoutGroup")} testId="room-personal-sheet" onClose={onClose}>
-      <div className="room-modal-content">
-        <fieldset>
-          <legend>{t("room.layoutGroup")}</legend>
-          <div className="room-settings-actions">
-            {(["theater", "enlarged", "immersive"] as const).map((preset) => <button type="button" key={preset} data-testid={`layout-${preset}`} aria-pressed={layout.preset === preset} onClick={() => onLayout(withLayoutPreset(layout, preset))}>{t(`layout.${preset}`)}</button>)}
-            <button type="button" data-testid="layout-horizontal" aria-pressed={layoutAspectGroup(layout.videoAspect) === "horizontal"} onClick={() => onLayout(withVideoAspect(layout, 16 / 9))}>16:9</button>
-            <button type="button" data-testid="layout-vertical" aria-pressed={layoutAspectGroup(layout.videoAspect) === "vertical"} onClick={() => onLayout(withVideoAspect(layout, 9 / 16))}>9:16</button>
-          </div>
-        </fieldset>
+    <Modal open size="sm" title={t("room.layoutGroup")} testId="room-personal-sheet" onClose={onClose}>
+      <div className={styles.form}>
+        <ChipGroup label={t("room.layoutGroup")}>
+          {(["theater", "enlarged", "immersive"] as const).map((preset) => <Chip key={preset} data-testid={`layout-${preset}`} selected={layout.preset === preset} onClick={() => onLayout(withLayoutPreset(layout, preset))}>{t(`layout.${preset}`)}</Chip>)}
+          <Chip data-testid="layout-horizontal" selected={layoutAspectGroup(layout.videoAspect) === "horizontal"} onClick={() => onLayout(withVideoAspect(layout, 16 / 9))}>16:9</Chip>
+          <Chip data-testid="layout-vertical" selected={layoutAspectGroup(layout.videoAspect) === "vertical"} onClick={() => onLayout(withVideoAspect(layout, 9 / 16))}>9:16</Chip>
+        </ChipGroup>
         {appearance && <AppearanceControls {...appearance} />}
-        <fieldset>
-          <legend>{t("room.voiceTitle")}</legend>
-          <button type="button" data-testid="voice-preflight-run" disabled={checking} onClick={() => void checkVoice()}>{t(checking ? "room.voiceChecking" : "room.voiceCheck")}</button>
-          <div className="room-diagnostic" data-testid="voice-preflight" data-state={preflight ? "done" : "idle"} data-network={preflight?.network ?? ""} data-mic={preflight ? String(preflight.mic) : ""} data-speaker={preflight ? String(preflight.speaker) : ""}>
+        <section className={styles.moderation} aria-label={t("room.voiceTitle")}>
+          <h3 className={styles.subtitle}>{t("room.voiceTitle")}</h3>
+          <div className={styles.inline}><Button data-testid="voice-preflight-run" disabled={checking} onClick={() => void checkVoice()}>{t(checking ? "room.voiceChecking" : "room.voiceCheck")}</Button></div>
+          <div className={styles.diagnostic} data-testid="voice-preflight" data-state={preflight ? "done" : "idle"} data-network={preflight?.network ?? ""} data-mic={preflight ? String(preflight.mic) : ""} data-speaker={preflight ? String(preflight.speaker) : ""}>
             {preflight ? <>
               <span data-testid="voice-preflight-mic">{preflight.mic ? t("room.micLevel", { level: preflight.micLevel }) : t("room.micNoAccess")}</span>
               <span data-testid="voice-preflight-speaker">{t(preflight.speaker ? "room.speakersOk" : "room.speakersNone")}</span>
               <span data-testid="voice-preflight-network" data-network={preflight.network}>{t("room.network", { state: t(preflight.network === "good" ? "room.networkGood" : preflight.network === "fair" ? "room.networkFair" : "room.networkWeak") })}</span>
             </> : <span>{t("room.preflightHint")}</span>}
           </div>
-        </fieldset>
-        <div className="room-settings-actions">
-          <button type="button" data-testid="session-dock-remind" disabled={savingReminder} onClick={() => void remind()}>{t("room.remind")}</button>
+        </section>
+        <div className={styles.actions}>
+          <Button size="sm" data-testid="session-dock-remind" disabled={savingReminder} onClick={() => void remind()}>{t("room.remind")}</Button>
           {live.state.room.nowPlaying && <>
-            <button type="button" data-testid="sync-incident" title={t("room.syncIncidentHint")} onClick={() => { void fetch(`${roomPath}/sync-incident`, { method: "POST", headers, body: JSON.stringify({ note: "player drift" }) }).catch(() => undefined); }}>{t("room.syncIncident")}</button>
-            <button type="button" data-testid="report-buffering" title={t("room.bufferingHint")} onClick={() => live.reportViewer("buffering")}>{t("room.buffering")}</button>
+            <Button size="sm" data-testid="sync-incident" title={t("room.syncIncidentHint")} onClick={() => { void fetch(`${roomPath}/sync-incident`, { method: "POST", headers, body: JSON.stringify({ note: "player drift" }) }).catch(() => undefined); }}>{t("room.syncIncident")}</Button>
+            <Button size="sm" data-testid="report-buffering" title={t("room.bufferingHint")} onClick={() => live.reportViewer("buffering")}>{t("room.buffering")}</Button>
           </>}
-          <button type="button" data-testid="hide-other-reactions" onClick={() => {
+          <Button size="sm" data-testid="hide-other-reactions" onClick={() => {
             const hideOtherReactions = !meta.hideOther;
             void fetch(`${apiUrl}/me`, { method: "PATCH", headers, body: JSON.stringify({ hideOtherReactions }) })
               .then((response) => { if (response.ok) meta.setHideOther(hideOtherReactions); }).catch(() => undefined);
-          }}>{t(meta.hideOther ? "room.showOthers" : "room.hideOthers")}</button>
+          }}>{t(meta.hideOther ? "room.showOthers" : "room.hideOthers")}</Button>
         </div>
-        {note && <p data-testid="session-dock-note" role="status">{note}</p>}
+        {note && <p className={styles.note} data-testid="session-dock-note" role="status">{note}</p>}
       </div>
     </Modal>
   );
