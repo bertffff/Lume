@@ -1,0 +1,84 @@
+/* TeleRave-v2: индиго-ночь и лаванда, стекло и свечение, один фиолетовый акцент. */
+html[data-style="telerave"] {
+  --ds-font-display: "Geologica", "Onest", system-ui, sans-serif;
+  --ds-font-text: "Onest", system-ui, sans-serif;
+  --ds-font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ds-radius-control: 12px;
+  --ds-radius-card: 20px;
+  --ds-radius-sheet: 28px;
+  --ds-radius-chip: 999px;
+  --ds-radius-pill: 999px;
+  --ds-icon-stroke: 2;
+  --ds-border-w: 1px;
+  --ds-surface-blur: 14px;
+}
+
+html[data-style="telerave"][data-theme="dark"] {
+  color-scheme: dark;
+  --ds-bg: #070812;
+  --ds-surface-1: #0f1020;
+  --ds-surface-2: #161829;
+  --ds-surface-3: #202339;
+  --ds-overlay: rgb(3 4 10 / 78%);
+  --ds-scrim: linear-gradient(0deg, rgb(3 4 10 / 90%), rgb(3 4 10 / 0%));
+  --ds-stage: #000;
+  --ds-text-primary: #ffffff;
+  --ds-text-secondary: #c9c8e0;
+  --ds-text-tertiary: #9c9bbd;
+  --ds-text-on-accent: #ffffff;
+  --ds-border: rgb(165 159 205 / 16%);
+  --ds-border-strong: rgb(205 198 245 / 30%);
+  --ds-focus: #c4b5fd;
+  --ds-accent: #7c3aed;
+  --ds-accent-hover: #6d28d9;
+  --ds-accent-text: #b79cff;
+  --ds-accent-soft: rgb(139 92 246 / 18%);
+  --ds-success: #10d3a0;
+  --ds-success-soft: rgb(16 211 160 / 14%);
+  --ds-warn: #f59e0b;
+  --ds-warn-soft: rgb(245 158 11 / 14%);
+  --ds-danger: #ff6b6b;
+  --ds-danger-soft: rgb(255 107 107 / 14%);
+  --ds-info: #6aa6ff;
+  --ds-info-soft: rgb(106 166 255 / 14%);
+  --ds-surface-blur: 16px;
+  --ds-shadow-1: 0 1px 2px rgb(0 0 0 / 45%);
+  --ds-shadow-2: 0 16px 40px rgb(0 0 0 / 55%), 0 0 0 1px var(--ds-border-strong);
+  --ds-shadow-3: 0 28px 72px rgb(0 0 0 / 65%), 0 0 0 1px var(--ds-border-strong);
+  --ds-glow: 0 0 24px rgb(139 92 246 / 38%), 0 0 72px rgb(139 92 246 / 14%);
+}
+
+html[data-style="telerave"][data-theme="light"] {
+  color-scheme: light;
+  --ds-bg: #f2f1fa;
+  --ds-surface-1: #ffffff;
+  --ds-surface-2: #f8f7ff;
+  --ds-surface-3: #e7e5f6;
+  --ds-overlay: rgb(20 18 43 / 55%);
+  --ds-scrim: linear-gradient(0deg, rgb(20 18 43 / 84%), rgb(20 18 43 / 0%));
+  --ds-stage: #000;
+  --ds-text-primary: #14122b;
+  --ds-text-secondary: #46435f;
+  --ds-text-tertiary: #5b5876;
+  --ds-text-on-accent: #ffffff;
+  --ds-border: rgb(40 30 100 / 12%);
+  --ds-border-strong: rgb(40 30 100 / 28%);
+  --ds-focus: #6d28d9;
+  --ds-accent: #7c3aed;
+  --ds-accent-hover: #6d28d9;
+  --ds-accent-text: #6d28d9;
+  --ds-accent-soft: rgb(124 58 237 / 12%);
+  --ds-success: #086a50;
+  --ds-success-soft: rgb(10 122 92 / 12%);
+  --ds-warn: #9a5200;
+  --ds-warn-soft: rgb(154 82 0 / 12%);
+  --ds-danger: #c42b2b;
+  --ds-danger-soft: rgb(196 43 43 / 12%);
+  --ds-info: #1d58c4;
+  --ds-info-soft: rgb(29 88 196 / 12%);
+  --ds-surface-blur: 12px;
+  --ds-shadow-1: 0 1px 2px rgb(20 18 43 / 10%);
+  --ds-shadow-2: 0 14px 36px rgb(60 40 140 / 18%), 0 0 0 1px var(--ds-border);
+  --ds-shadow-3: 0 28px 64px rgb(60 40 140 / 26%), 0 0 0 1px var(--ds-border);
+  --ds-glow: 0 0 0 transparent;
+}

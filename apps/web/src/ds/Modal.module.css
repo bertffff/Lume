@@ -1,0 +1,81 @@
+.root {
+  /* global.css resets margins; the UA centring for modal dialogs depends on auto. */
+  margin: auto;
+  width: min(100% - var(--ds-space-8), 560px);
+  max-height: calc(100dvh - var(--ds-space-8));
+  padding: 0;
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-sheet);
+  background: var(--ds-surface-1);
+  color: var(--ds-text-primary);
+  box-shadow: var(--ds-shadow-3);
+  overflow: hidden;
+}
+
+.sm { width: min(100% - var(--ds-space-8), 400px); }
+.lg { width: min(100% - var(--ds-space-8), 760px); }
+
+.root::backdrop {
+  background: var(--ds-overlay);
+  -webkit-backdrop-filter: blur(var(--ds-surface-blur));
+  backdrop-filter: blur(var(--ds-surface-blur));
+}
+
+.root[open] {
+  animation: enter var(--ds-dur-base) var(--ds-ease-standard);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4) var(--ds-space-6);
+  border-bottom: var(--ds-border-w) solid var(--ds-border);
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-title) / var(--ds-lh-title) var(--ds-font-display);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-6);
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-4) var(--ds-space-6);
+  border-top: var(--ds-border-w) solid var(--ds-border);
+  background: var(--ds-surface-2);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ds-space-2)) scale(0.98);
+  }
+}
+
+@media (max-width: 640px) {
+  .root,
+  .sm,
+  .lg {
+    width: 100%;
+    max-height: 90dvh;
+    margin: auto 0 0;
+    border-radius: var(--ds-radius-sheet) var(--ds-radius-sheet) 0 0;
+  }
+}

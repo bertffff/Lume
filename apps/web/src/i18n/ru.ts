@@ -144,6 +144,7 @@ export const ru = {
   "common.loading": "Загрузка",
   "common.retry": "Повторить",
   "common.close": "Закрыть",
+  "ds.copyCode": "Скопировать код {code}",
   "common.cancel": "Отмена",
   "room.kicked": "Вас удалили из комнаты",
   "room.connectFailed": "Не удалось подключиться к комнате",

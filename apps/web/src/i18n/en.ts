@@ -146,6 +146,7 @@ export const en: Record<MessageKey, string> = {
   "common.loading": "Loading",
   "common.retry": "Retry",
   "common.close": "Close",
+  "ds.copyCode": "Copy code {code}",
   "common.cancel": "Cancel",
   "room.kicked": "You were removed from the room",
   "room.connectFailed": "Could not connect to the room",

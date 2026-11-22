@@ -8,6 +8,8 @@ const allowed = new Set([
   "src/design/copy.ts",
   "src/design/shot-fixtures.ts",
 ]);
+// Dev-only specimen sheet; excluded from production builds.
+const allowedPrefixes = ["src/gallery/"];
 const cyrillic = /[\u0400-\u04FF]/;
 
 function walk(directory: string): string[] {
@@ -25,7 +27,7 @@ describe("i18n coverage", () => {
     const offenders: string[] = [];
     for (const file of walk("src")) {
       const relative = file.replaceAll("\\", "/");
-      if (allowed.has(relative)) continue;
+      if (allowed.has(relative) || allowedPrefixes.some((prefix) => relative.startsWith(prefix))) continue;
       const lines = readFileSync(file, "utf8").split("\n");
       lines.forEach((line, index) => {
         const code = line.replace(/\/\/.*$/, "").replace(/\/\*.*?\*\//g, "");

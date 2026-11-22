@@ -1,0 +1,4 @@
+.icon {
+  flex: none;
+  stroke-width: var(--ds-icon-stroke);
+}

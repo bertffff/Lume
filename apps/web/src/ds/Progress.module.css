@@ -1,0 +1,27 @@
+.root {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface-3);
+  overflow: hidden;
+  appearance: none;
+}
+
+.sm { height: 4px; }
+.md { height: 8px; }
+
+.root::-webkit-progress-bar {
+  background: var(--ds-surface-3);
+}
+
+.root::-webkit-progress-value {
+  background: var(--ds-accent);
+  border-radius: var(--ds-radius-pill);
+  transition: width var(--ds-dur-base) var(--ds-ease-standard);
+}
+
+.root::-moz-progress-bar {
+  background: var(--ds-accent);
+  border-radius: var(--ds-radius-pill);
+}

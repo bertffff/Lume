@@ -1,0 +1,117 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  min-height: var(--ds-control-md);
+  padding: 0 var(--ds-space-4);
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-primary);
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--ds-dur-fast) var(--ds-ease-standard),
+    border-color var(--ds-dur-fast) var(--ds-ease-standard),
+    transform var(--ds-dur-fast) var(--ds-ease-standard),
+    box-shadow var(--ds-dur-base) var(--ds-ease-standard);
+}
+
+.root:hover:not(:disabled) {
+  background: var(--ds-surface-3);
+}
+
+.root:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.root:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+.root:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary {
+  border-color: var(--ds-accent);
+  background: var(--ds-accent);
+  color: var(--ds-text-on-accent);
+  box-shadow: var(--ds-glow);
+  font-weight: var(--ds-fw-semibold);
+}
+
+.primary:hover:not(:disabled) {
+  border-color: var(--ds-accent-hover);
+  background: var(--ds-accent-hover);
+}
+
+.ghost {
+  border-color: var(--ds-border);
+  background: transparent;
+}
+
+.danger {
+  border-color: var(--ds-danger);
+  background: transparent;
+  color: var(--ds-danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--ds-danger-soft);
+}
+
+.sm {
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-3);
+}
+
+.lg {
+  min-height: var(--ds-control-lg);
+  padding: 0 var(--ds-space-6);
+  font-size: var(--ds-fs-body);
+  line-height: var(--ds-lh-body);
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+.square {
+  width: var(--ds-control-md);
+  padding: 0;
+}
+
+.square.sm {
+  width: var(--ds-control-sm);
+}
+
+.square.lg {
+  width: var(--ds-control-lg);
+}
+
+.spinner {
+  width: var(--ds-icon-sm);
+  height: var(--ds-icon-sm);
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin var(--ds-dur-slow) linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
