@@ -28,7 +28,7 @@ export function useSettingsData(token: string | undefined, apiUrl: string | unde
     }).catch(() => undefined);
   }, [token, apiUrl, noLinked]);
 
-  const send = useCallback((path: string, method: "POST" | "PATCH", body?: unknown) => {
+  const send = useCallback((path: string, method: "POST" | "PATCH" | "PUT" | "DELETE", body?: unknown) => {
     if (!token || !apiUrl) return Promise.reject(new Error("unauthenticated"));
     return fetch(`${apiUrl}${path}`, {
       method,

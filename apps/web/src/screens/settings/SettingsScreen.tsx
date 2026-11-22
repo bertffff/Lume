@@ -4,6 +4,7 @@ import { Button, Card, Input } from "../../ds/index.js";
 import { AppearanceControls } from "../../design/AppearanceControls.js";
 import type { ModeId, StyleId } from "../../design/theme.js";
 import { useI18n } from "../../i18n/context.js";
+import { NotificationSettings } from "./NotificationSettings.js";
 import { Check, Row } from "./Row.js";
 import { useSettingsData } from "./useSettingsData.js";
 import styles from "./SettingsScreen.module.css";
@@ -96,7 +97,9 @@ export function SettingsScreen({ style, mode, onStyle, onMode, token, apiUrl, bl
           </Row>
         </Section>
 
-        <Section id="settings-notifications" title={t("settings.sectionNotifications")} lead={t("settings.notificationsHint")}>{null}</Section>
+        <Section id="settings-notifications" title={t("settings.sectionNotifications")} lead={t("settings.notificationsHint")}>
+          <NotificationSettings token={token} apiUrl={apiUrl} send={data.send} />
+        </Section>
 
         <Section id="settings-privacy" title={t("settings.sectionPrivacy")} lead={t("settings.privacyHint")}>
           <Row title={t("settings.friendsVisible")}>

@@ -789,6 +789,28 @@ export function registerSocialRoutes(
     return reply.send(response);
   });
 
+  app.get("/me/notification-preferences", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const [rows, delivery] = await Promise.all([
+      prisma.notificationPreference.findMany({ where: { userId: actor.userId }, orderBy: [{ channel: "asc" }, { kind: "asc" }] }),
+      prisma.notificationDeliveryPreference.findUnique({ where: { userId: actor.userId } }),
+    ]);
+    return reply.send({
+      preferences: rows.map((row) => ({ channel: row.channel, kind: row.kind, enabled: row.enabled })),
+      delivery: {
+        digest: delivery?.digest ?? "INSTANT",
+        quietHoursEnabled: delivery?.quietHoursEnabled ?? false,
+        quietStart: delivery?.quietStart ?? "22:00",
+        quietEnd: delivery?.quietEnd ?? "08:00",
+        timezone: delivery?.timezone ?? "UTC",
+      },
+    });
+  });
+
   app.put("/me/notification-preferences", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {
