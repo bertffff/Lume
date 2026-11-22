@@ -17,7 +17,7 @@ export function ProfileScreen({ token, apiUrl, userId, displayName, appearance }
   const people = usePeople(token, apiUrl);
   return (
     <div className={styles.root}>
-      <ProfileSidebar name={displayName ?? t("profile.youFallback")} level={data.level} totalXp={data.totalXp} nextLevelXp={data.nextLevelXp} bio={data.bio} achievements={data.achievements} total={data.totalAchievements} />
+      <ProfileSidebar name={displayName ?? t("profile.youFallback")} level={data.level} totalXp={data.totalXp} nextLevelXp={data.nextLevelXp} bio={data.bio} avatarUrl={data.avatarUrl} onAvatar={data.changeAvatar} achievements={data.achievements} total={data.totalAchievements} />
       <div className={styles.content}>
         <Tabs
           label={t("profile.sections")}

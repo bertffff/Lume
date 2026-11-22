@@ -158,3 +158,9 @@ export const api = {
     return request<{ linked: boolean }>("/auth/unlink-telegram", { method: "POST", token });
   },
 };
+
+/** Uploaded files are served by the API; a stored `/uploads/...` path needs its origin in front. */
+export function mediaSrc(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  return url.startsWith("/uploads/") ? `${apiUrl}${url}` : url;
+}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cx } from "./cx.js";
 import styles from "./Avatar.module.css";
 
@@ -18,16 +19,20 @@ export function initialsOf(name: string): string {
 
 export interface AvatarProps {
   name: string;
+  /** A photo; the initials stay underneath until it loads and when it fails. */
+  src?: string | null;
   size?: AvatarSize;
   presence?: Presence;
   speaking?: boolean;
   className?: string;
 }
 
-export function Avatar({ name, size = "md", presence, speaking = false, className }: AvatarProps) {
+export function Avatar({ name, src, size = "md", presence, speaking = false, className }: AvatarProps) {
+  const [broken, setBroken] = useState(false);
   return (
     <span className={cx(styles.root, styles[size], styles[`p${personSlot(name)}`], speaking && styles.speaking, className)} role="img" aria-label={name}>
       <span aria-hidden="true">{initialsOf(name)}</span>
+      {src && !broken ? <img className={styles.photo} src={src} alt="" loading="lazy" onError={() => setBroken(true)} /> : null}
       {presence ? <span className={cx(styles.dot, styles[presence])} data-presence={presence} /> : null}
     </span>
   );

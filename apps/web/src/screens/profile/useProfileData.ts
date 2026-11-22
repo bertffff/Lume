@@ -19,7 +19,7 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
     favourites: [] as Favourite[], history: [] as HistoryItem[], achievements: [] as Achievement[],
     level: 1, totalXp: 0, nextLevelXp: 0, totalAchievements: 0, engagement: null as Engagement | null,
     platforms: [] as Array<{ source: string; count: number }>, topFriends: [] as Array<{ partnerId: string; seconds: number }>,
-    friends: [] as Friend[], incoming: [] as Friend[], bio: "", heat: [] as Array<{ day: string; score: number }>, boards: emptyBoards, hostStats: null as HostStats | null,
+    friends: [] as Friend[], incoming: [] as Friend[], bio: "", avatarUrl: null as string | null, heat: [] as Array<{ day: string; score: number }>, boards: emptyBoards, hostStats: null as HostStats | null,
   });
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
       getJson<Partial<typeof emptyBoards>>(apiUrl, token, "/stats/leaderboard"),
       getJson<{ platforms?: Array<{ source: string; count: number }>; topFriends?: Array<{ partnerId: string; seconds: number }>; heatmap?: Array<{ day: string; score: number }> }>(apiUrl, token, "/me/studio"),
       getJson<{ friends?: Friend[]; incoming?: Friend[] }>(apiUrl, token, "/friends"),
-      getJson<{ bio?: string | null }>(apiUrl, token, "/me"),
+      getJson<{ bio?: string | null; avatarUrl?: string | null }>(apiUrl, token, "/me"),
       getJson<{ items?: Favourite[] }>(apiUrl, token, "/me/favourites"),
       getJson<{ all?: Achievement[]; level?: number; totalXp?: number; nextLevelXp?: number; total?: number }>(apiUrl, token, "/me/achievements"),
       userId ? getJson<{ items?: HistoryItem[] }>(apiUrl, token, `/users/${userId}/watch-history`) : Promise.resolve(null),
@@ -40,7 +40,7 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
       setData({
         boards: { messages: boards?.messages ?? [], reactions: boards?.reactions ?? [], voice: boards?.voice ?? [] },
         platforms: studio?.platforms ?? [], topFriends: studio?.topFriends ?? [], heat: Array.isArray(studio?.heatmap) ? studio.heatmap : [],
-        friends: friends?.friends ?? [], incoming: friends?.incoming ?? [], bio: me?.bio ?? "", favourites: favourites?.items ?? [],
+        friends: friends?.friends ?? [], incoming: friends?.incoming ?? [], bio: me?.bio ?? "", avatarUrl: me?.avatarUrl ?? null, favourites: favourites?.items ?? [],
         achievements: Array.isArray(awards?.all) ? awards.all : [], level: typeof awards?.level === "number" ? awards.level : 1,
         totalXp: awards?.totalXp ?? 0, nextLevelXp: awards?.nextLevelXp ?? 0, totalAchievements: awards?.total ?? 0,
         history: history?.items ?? [], engagement, hostStats: hostStats && hostStats.roomsHosted > 0 ? hostStats : null,
@@ -50,7 +50,36 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
   }, [token, apiUrl, userId, version]);
 
   const reload = useCallback(() => setVersion((value) => value + 1), []);
-  return { ...data, reload };
+
+  /** Upload a photo (base64, like chat images) and store its absolute URL on the profile; null removes it. */
+  const changeAvatar = useCallback(async (file: File | null): Promise<boolean> => {
+    if (!token || !apiUrl) return false;
+    try {
+      let avatarUrl: string | null = null;
+      if (file) {
+        if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return false;
+        const dataBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result ?? "").split(",")[1] ?? "");
+          reader.onerror = () => reject(new Error("read_failed"));
+          reader.readAsDataURL(file);
+        });
+        const upload = await fetch(`${apiUrl}/uploads`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ dataBase64 }) });
+        if (!upload.ok) return false;
+        const { url } = (await upload.json()) as { url?: string };
+        if (!url) return false;
+        avatarUrl = url.startsWith("/") ? `${apiUrl}${url}` : url;
+      }
+      const saved = await fetch(`${apiUrl}/me`, { method: "PATCH", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ avatarUrl }) });
+      if (!saved.ok) return false;
+      setData((current) => ({ ...current, avatarUrl }));
+      return true;
+    } catch {
+      return false;
+    }
+  }, [token, apiUrl]);
+
+  return { ...data, reload, changeAvatar };
 }
 
 export type ProfileData = ReturnType<typeof useProfileData>;

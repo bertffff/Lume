@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { mediaSrc } from "../../api/client.js";
 import { Avatar, Button, Card, Input, List, ListRow } from "../../ds/index.js";
 import { useI18n } from "../../i18n/context.js";
 import type { ProfileData, usePeople } from "./useProfileData.js";
@@ -28,7 +29,7 @@ export function FriendsPanel({ data, people }: { data: ProfileData; people: Peop
             {data.incoming.map((row) => (
               <ListRow
                 key={row.id}
-                leading={<Avatar name={row.displayName} />}
+                leading={<Avatar name={row.displayName} src={mediaSrc(row.avatarUrl)} />}
                 title={row.displayName}
                 subtitle={t("profile.wantsToBeFriends")}
                 trailing={<span className={styles.actions}>
@@ -47,7 +48,7 @@ export function FriendsPanel({ data, people }: { data: ProfileData; people: Peop
             {data.friends.map((friend) => (
               <ListRow
                 key={friend.id}
-                leading={<Avatar name={friend.displayName} />}
+                leading={<Avatar name={friend.displayName} src={mediaSrc(friend.avatarUrl)} />}
                 title={friend.displayName}
                 subtitle={subtitle(friend.roomTitle)}
                 trailing={friend.roomId ? <Button size="sm" onClick={() => void people.inviteFriend(friend.roomId!, friend.userId)}>{t("profile.invite")}</Button> : undefined}

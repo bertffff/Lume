@@ -220,7 +220,7 @@ export function DesignApp({
     try {
       const result = await api.devLogin(name.trim() || t("auth.guest"));
       onSession({ accessToken: result.accessToken, ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}), user: result.user });
-      if (view === "auth") go("/");
+      if (view === "auth" && !window.sessionStorage.getItem("lume-pending-room")) go("/");
     } catch (caught) {
       setError(caught instanceof ClientError ? t(signInErrorKey(caught.code)) : t("auth.error.generic"));
     }
@@ -255,7 +255,7 @@ export function DesignApp({
         ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}),
         user: { id: payload.user.id, displayName: payload.user.displayName, telegramId: null, username: null, locale: "ru", themeId: "ember" },
       });
-      go("/");
+      if (!window.sessionStorage.getItem("lume-pending-room")) go("/");
     } catch {
       setError(t("auth.error.generic"));
     }
@@ -523,7 +523,7 @@ export function DesignApp({
                       ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}),
                       user: { id: payload.user.id, displayName: payload.user.displayName, telegramId: null, username: null, locale: "ru", themeId: "ember" },
                     });
-                    go("/");
+                    if (!window.sessionStorage.getItem("lume-pending-room")) go("/");
                   }
                 });
             }} />
