@@ -88,3 +88,17 @@
     margin-top: var(--ds-space-2);
   }
 }
+
+:global(html[data-style="gruvbox"]) .root::before {
+  content: "[2] session";
+  display: block;
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border-bottom: var(--ds-border-w) solid var(--ds-border);
+  background: var(--ds-bg);
+  color: var(--ds-info, var(--ds-text-secondary));
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-mono);
+}
+
+:global(html[data-style="gruvbox"]) .root:focus-within {
+  border-color: var(--ds-accent);
+}

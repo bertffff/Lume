@@ -145,3 +145,36 @@
     display: none;
   }
 }
+
+/* Gruvbox: the room is a tmux window. Every pane gets a numbered title line and the focused pane lights up. */
+:global(html[data-style="gruvbox"]) .player::before,
+:global(html[data-style="gruvbox"]) .tray > :nth-child(1)::before,
+:global(html[data-style="gruvbox"]) .tray > :nth-child(2)::before {
+  display: block;
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-bottom: 0;
+  background: var(--ds-bg);
+  color: var(--ds-info, var(--ds-text-secondary));
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-mono);
+}
+
+:global(html[data-style="gruvbox"]) .player::before {
+  content: "[1] video";
+}
+
+:global(html[data-style="gruvbox"]) .tray > :nth-child(1)::before {
+  content: "[3] voice";
+  margin: calc(var(--ds-space-3) * -1) calc(var(--ds-space-4) * -1) var(--ds-space-3);
+  border-width: 0 0 var(--ds-border-w);
+}
+
+:global(html[data-style="gruvbox"]) .tray > :nth-child(2)::before {
+  content: "[4] queue";
+  margin: calc(var(--ds-space-3) * -1) calc(var(--ds-space-4) * -1) var(--ds-space-3);
+  border-width: 0 0 var(--ds-border-w);
+}
+
+:global(html[data-style="gruvbox"]) .player:focus-within::before {
+  color: var(--ds-accent-text);
+}
