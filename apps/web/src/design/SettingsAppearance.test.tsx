@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { I18nProvider } from "../i18n/context.js";
-import { SettingsScreen } from "./pages.js";
+import { SettingsScreen } from "../screens/settings/SettingsScreen.js";
 
 test("changes interface style and color mode independently in settings", () => {
   const onStyle = vi.fn();

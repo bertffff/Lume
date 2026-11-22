@@ -1,7 +1,9 @@
-import { Check, Film, Monitor, Moon, Radio, Sun, Terminal, type LucideIcon } from "lucide-react";
+import { Film, Monitor, Moon, Radio, Sun, Terminal, type LucideIcon } from "lucide-react";
+import { Chip, ChipGroup } from "../ds/index.js";
 import { useI18n } from "../i18n/context.js";
 import { type MessageKey } from "../i18n/ru.js";
 import { type StyleId, type ThemeMode } from "./theme.js";
+import styles from "./AppearanceControls.module.css";
 
 interface Option<T extends string> {
   id: T;
@@ -9,47 +11,36 @@ interface Option<T extends string> {
   icon: LucideIcon;
 }
 
-const styles: readonly Option<StyleId>[] = [
+const styleOptions: readonly Option<StyleId>[] = [
   { id: "cinema", label: "settings.cinema", icon: Film },
   { id: "gruvbox", label: "Gruvbox", icon: Terminal },
   { id: "telerave", label: "TeleRave-v2", icon: Radio },
 ];
 
-const modes: readonly Option<ThemeMode>[] = [
+const modeOptions: readonly Option<ThemeMode>[] = [
   { id: "dark", label: "settings.dark", icon: Moon },
   { id: "light", label: "settings.light", icon: Sun },
   { id: "system", label: "settings.systemFollow", icon: Monitor },
 ];
 
-interface OptionGroupProps<T extends string> {
+function OptionGroup<T extends string>({ label, options, value, onSelect }: {
   label: string;
   options: readonly Option<T>[];
   value: T;
   onSelect: (value: T) => void;
-  square: boolean;
-}
-
-function OptionGroup<T extends string>({ label, options, value, onSelect, square }: OptionGroupProps<T>) {
+}) {
   const { t } = useI18n();
   return (
-    <fieldset className="min-w-0">
-      <legend className="mb-2 font-semibold">{label}</legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map(({ id, label: optionLabel, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={id === value}
-            className={`appearance-option inline-flex min-h-11 items-center gap-2 px-3 py-1.5 ${square ? "rounded-none" : "rounded-md"}`}
-            onClick={() => { if (id !== value) onSelect(id); }}
-          >
-            <Icon aria-hidden="true" size={16} />
+    <div className={styles.group}>
+      <span className={styles.label}>{label}</span>
+      <ChipGroup label={label}>
+        {options.map(({ id, label: optionLabel, icon }) => (
+          <Chip key={id} icon={icon} selected={id === value} onClick={() => { if (id !== value) onSelect(id); }}>
             {optionLabel === "Gruvbox" || optionLabel === "TeleRave-v2" ? optionLabel : t(optionLabel)}
-            <Check aria-hidden="true" size={14} className={id === value ? undefined : "invisible"} />
-          </button>
+          </Chip>
         ))}
-      </div>
-    </fieldset>
+      </ChipGroup>
+    </div>
   );
 }
 
@@ -63,9 +54,9 @@ interface AppearanceControlsProps {
 export function AppearanceControls({ style, mode, onStyle, onMode }: AppearanceControlsProps) {
   const { t } = useI18n();
   return (
-    <div className="grid gap-4">
-      <OptionGroup label={t("settings.styleInterface")} options={styles} value={style} onSelect={onStyle} square={style === "gruvbox"} />
-      <OptionGroup label={t("settings.theme")} options={modes} value={mode} onSelect={onMode} square={style === "gruvbox"} />
+    <div className={styles.root}>
+      <OptionGroup label={t("settings.styleInterface")} options={styleOptions} value={style} onSelect={onStyle} />
+      <OptionGroup label={t("settings.theme")} options={modeOptions} value={mode} onSelect={onMode} />
     </div>
   );
 }
