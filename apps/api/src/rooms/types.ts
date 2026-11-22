@@ -23,6 +23,7 @@ export interface MemberRecord {
   roomId: string;
   userId: string;
   displayName: string;
+  avatarUrl?: string | null;
   role: MemberRole;
   muted: boolean;
   leftAt: string | null;

@@ -1,4 +1,5 @@
 import { AudioLines, Volume2, LogOut, Mic, MicOff, VolumeX } from "lucide-react";
+import { mediaSrc } from "../api/client.js";
 import { Avatar, Button, Icon, IconButton } from "../ds/index.js";
 import type { LiveRoom } from "../realtime/useRoomChannel.js";
 import { useI18n } from "../i18n/context.js";
@@ -45,7 +46,7 @@ export function RoomVoiceCard({ voice, members, presence, sharedSeconds, started
             const label = `${member.displayName} · ${speaking ? t("room.speaking") : entry.muted ? t("room.micOff") : t("room.inVoice")}`;
             return (
               <li key={entry.userId} className={styles.speaker} title={label} aria-label={label} data-testid={`voice-member-${entry.userId}`} data-muted={entry.muted} data-speaking={speaking}>
-                <Avatar name={member.displayName} size="md" speaking={speaking} />
+                <Avatar name={member.displayName} src={mediaSrc(member.avatarUrl)} size="md" speaking={speaking} />
                 {entry.muted && <span className={styles.muted} data-testid={`member-muted-${entry.userId}`}><Icon icon={MicOff} size="sm" /></span>}
               </li>
             );

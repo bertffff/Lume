@@ -23,7 +23,7 @@ export interface RoomSession {
       canReorderQueue: boolean;
     };
   };
-  members: Array<{ userId: string; displayName: string; role: MemberRole; muted: boolean }>;
+  members: Array<{ userId: string; displayName: string; avatarUrl?: string | null; role: MemberRole; muted: boolean }>;
   messages: ChatMessage[];
   queue: QueueItem[];
 }

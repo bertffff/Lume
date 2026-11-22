@@ -39,6 +39,7 @@ export const clockPingSchema = z.object({
 export const presenceMemberSchema = z.object({
   userId: z.string().min(1),
   displayName: z.string().min(1),
+  avatarUrl: z.string().nullable().optional(),
   role: memberRoleSchema,
   muted: z.boolean(),
   joinedAtMs: z.number().int().nonnegative(),

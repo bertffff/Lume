@@ -18,8 +18,9 @@ function grouped(reactions: ChatMessage["reactions"], selfId: string) {
 }
 
 /** One chat line: bubble, an optional quote of the message it answers, reaction chips, and hover/focus actions. */
-export function RoomChatMessage({ message, quoted, selfId, unread, onReact, onReply }: {
+export function RoomChatMessage({ message, avatarUrl, quoted, selfId, unread, onReact, onReply }: {
   message: ChatMessage;
+  avatarUrl?: string | null;
   quoted: ChatMessage | null;
   selfId: string;
   unread: boolean;
@@ -31,7 +32,7 @@ export function RoomChatMessage({ message, quoted, selfId, unread, onReact, onRe
   const chips = grouped(message.reactions, selfId);
   return (
     <div className={cx(styles.message, mine && styles.mine)} data-mine={mine} data-testid="chat-message" data-unread={unread}>
-      {!mine && <Avatar name={message.displayName} size="sm" />}
+      {!mine && <Avatar name={message.displayName} src={mediaSrc(avatarUrl)} size="sm" />}
       <div className={styles.stack}>
         <div className={styles.bubble}>
           {!mine && <b className={styles.author}>{message.displayName}</b>}

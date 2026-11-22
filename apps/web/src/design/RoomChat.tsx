@@ -85,7 +85,7 @@ export function RoomChat({ live, recent, onRecent, active, commandLine }: {
           return (
             <Fragment key={message.id}>
               {index === unreadStart && <span className={styles.divider} data-testid="unread-divider">{t("room.unreadTitle")}</span>}
-              <RoomChatMessage message={message} quoted={message.replyToId ? messages.find((item) => item.id === message.replyToId) ?? null : null}
+              <RoomChatMessage message={message} avatarUrl={live.state.members.find((member) => member.userId === message.userId)?.avatarUrl} quoted={message.replyToId ? messages.find((item) => item.id === message.replyToId) ?? null : null}
                 selfId={live.selfId} unread={index >= unreadStart} onReact={live.react} onReply={setReplyTo} />
             </Fragment>
           );

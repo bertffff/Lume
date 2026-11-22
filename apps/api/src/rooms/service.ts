@@ -47,6 +47,7 @@ export interface RoomDetail {
   members: Array<{
     userId: string;
     displayName: string;
+    avatarUrl: string | null;
     role: MemberRole;
     muted: boolean;
   }>;
@@ -510,6 +511,7 @@ export class RoomService {
       members: present.map((member) => ({
         userId: member.userId,
         displayName: member.displayName,
+        avatarUrl: member.avatarUrl ?? null,
         role: member.role,
         muted: member.muted,
       })),

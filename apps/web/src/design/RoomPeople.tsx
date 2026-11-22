@@ -1,5 +1,6 @@
 import { canActOnMember, canAssignRole } from "@lume/contracts";
 import { Ellipsis } from "lucide-react";
+import { mediaSrc } from "../api/client.js";
 import { Avatar, Badge, Icon } from "../ds/index.js";
 import { useI18n } from "../i18n/context.js";
 import type { RoomActions } from "../room/live.js";
@@ -21,7 +22,7 @@ export function RoomPeople({ live, onProfile }: { live: RoomActions; onProfile: 
         return (
           <li key={userId} className={styles.row}>
             <button type="button" className={styles.person} data-testid={`member-${userId}`} data-in-voice={Boolean(peer)} data-speaking={Boolean(peer?.speaking)} data-muted={peer ? String(peer.muted) : "none"} onClick={() => onProfile({ userId, displayName, role })}>
-              <Avatar name={displayName} presence={peer ? "online" : undefined} speaking={Boolean(peer?.speaking && !peer.muted)} />
+              <Avatar name={displayName} src={mediaSrc(member.avatarUrl)} presence={peer ? "online" : undefined} speaking={Boolean(peer?.speaking && !peer.muted)} />
               <span className={styles.text}>
                 <b className={styles.name}>{displayName}{mine ? t("room.you") : ""}</b>
                 <small className={styles.sub}>{voiceText ?? roleText}</small>

@@ -297,6 +297,7 @@ async function join(
   const joined = await joinRoom(redis.pub, parsed.data.roomId, {
     userId: actor.userId,
     displayName: actor.displayName,
+    avatarUrl: session.members.find((member) => member.userId === actor.userId)?.avatarUrl ?? null,
     role: session.self.role,
     muted: session.self.muted,
     joinedAtMs: Date.now(),
