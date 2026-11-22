@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Achievement, Engagement, Favourite, Friend, HistoryItem, LeaderboardRow, PublicProfile } from "./types.js";
+import type { Achievement, Engagement, HostStats, Favourite, Friend, HistoryItem, LeaderboardRow, PublicProfile } from "./types.js";
 
 const emptyBoards = { messages: [] as LeaderboardRow[], reactions: [] as LeaderboardRow[], voice: [] as LeaderboardRow[] };
 
@@ -19,7 +19,7 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
     favourites: [] as Favourite[], history: [] as HistoryItem[], achievements: [] as Achievement[],
     level: 1, totalXp: 0, nextLevelXp: 0, totalAchievements: 0, engagement: null as Engagement | null,
     platforms: [] as Array<{ source: string; count: number }>, topFriends: [] as Array<{ partnerId: string; seconds: number }>,
-    friends: [] as Friend[], incoming: [] as Friend[], bio: "", heat: [] as Array<{ day: string; score: number }>, boards: emptyBoards,
+    friends: [] as Friend[], incoming: [] as Friend[], bio: "", heat: [] as Array<{ day: string; score: number }>, boards: emptyBoards, hostStats: null as HostStats | null,
   });
 
   useEffect(() => {
@@ -34,7 +34,8 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
       getJson<{ all?: Achievement[]; level?: number; totalXp?: number; nextLevelXp?: number; total?: number }>(apiUrl, token, "/me/achievements"),
       userId ? getJson<{ items?: HistoryItem[] }>(apiUrl, token, `/users/${userId}/watch-history`) : Promise.resolve(null),
       userId ? getJson<Engagement>(apiUrl, token, `/users/${userId}/engagement`) : Promise.resolve(null),
-    ]).then(([boards, studio, friends, me, favourites, awards, history, engagement]) => {
+      getJson<HostStats>(apiUrl, token, "/me/host-stats"),
+    ]).then(([boards, studio, friends, me, favourites, awards, history, engagement, hostStats]) => {
       if (!current) return;
       setData({
         boards: { messages: boards?.messages ?? [], reactions: boards?.reactions ?? [], voice: boards?.voice ?? [] },
@@ -42,7 +43,7 @@ export function useProfileData(token: string | undefined, apiUrl: string | undef
         friends: friends?.friends ?? [], incoming: friends?.incoming ?? [], bio: me?.bio ?? "", favourites: favourites?.items ?? [],
         achievements: Array.isArray(awards?.all) ? awards.all : [], level: typeof awards?.level === "number" ? awards.level : 1,
         totalXp: awards?.totalXp ?? 0, nextLevelXp: awards?.nextLevelXp ?? 0, totalAchievements: awards?.total ?? 0,
-        history: history?.items ?? [], engagement,
+        history: history?.items ?? [], engagement, hostStats: hostStats && hostStats.roomsHosted > 0 ? hostStats : null,
       });
     });
     return () => { current = false; };

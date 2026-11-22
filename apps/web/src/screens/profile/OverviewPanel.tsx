@@ -54,6 +54,22 @@ export function OverviewPanel({ data, locale, settings }: { data: ProfileData; l
         </dl>
         {engagement ? <p className={styles.caption} data-testid="engagement-total" data-seconds={engagement.totalSeconds}>{t("profile.totalActions", { time: formatDuration(engagement.totalSeconds, t), count: engagement.activity })}</p> : null}
       </Card>
+      {data.hostStats ? (
+        <Card as="section" aria-label={t("profile.hostTitle")} data-testid="host-stats">
+          <h2 className={styles.heading}>{t("profile.hostTitle")}</h2>
+          <dl className={styles.kpis}>
+            <div className={styles.kpi}><dt className={styles.kpiLabel}>{t("profile.hostRooms")}</dt><dd className={styles.kpiValue}>{data.hostStats.roomsHosted}</dd></div>
+            <div className={styles.kpi}><dt className={styles.kpiLabel}>{t("profile.hostViewers")}</dt><dd className={styles.kpiValue}>{data.hostStats.uniqueViewers}</dd></div>
+            <div className={styles.kpi}><dt className={styles.kpiLabel}>{t("profile.hostVideos")}</dt><dd className={styles.kpiValue}>{data.hostStats.videosPlayed}</dd></div>
+          </dl>
+          {data.hostStats.topVideos.length > 0 ? (
+            <>
+              <h3 className={styles.boardTitle}>{t("profile.hostTop")}</h3>
+              <ol className={styles.plain}>{data.hostStats.topVideos.map((video) => <li key={video.title}>{video.title} · ×{video.count}</li>)}</ol>
+            </>
+          ) : null}
+        </Card>
+      ) : null}
       <Card as="section" pad="lg">
         <SeasonHeatmap
           title={t("profile.season")} days={data.heat.slice(phone ? -154 : -371)} locale={locale}

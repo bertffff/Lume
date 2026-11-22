@@ -13,3 +13,4 @@ export interface PublicProfile {
   watchHistory: Array<{ url: string; title: string | null; watchCount: number }> | null;
   friends: Array<{ id: string; displayName: string }> | null;
 }
+export interface HostStats { roomsHosted: number; uniqueViewers: number; videosPlayed: number; topVideos: Array<{ title: string; count: number }> }

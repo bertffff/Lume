@@ -811,6 +811,28 @@ export function registerSocialRoutes(
     });
   });
 
+  app.get("/me/host-stats", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !prisma) {
+      if (actor && !prisma) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const rooms = await prisma.room.findMany({ where: { hostId: actor.userId }, select: { id: true } });
+    const roomIds = rooms.map((room) => room.id);
+    if (roomIds.length === 0) return reply.send({ roomsHosted: 0, uniqueViewers: 0, videosPlayed: 0, topVideos: [] });
+    const [viewers, history] = await Promise.all([
+      prisma.roomMember.findMany({ where: { roomId: { in: roomIds }, userId: { not: actor.userId } }, distinct: ["userId"], select: { userId: true } }),
+      prisma.roomHistoryItem.findMany({ where: { roomId: { in: roomIds } }, select: { url: true, title: true } }),
+    ]);
+    const byUrl = new Map<string, { title: string; count: number }>();
+    for (const item of history) {
+      const entry = byUrl.get(item.url) ?? { title: item.title || item.url, count: 0 };
+      byUrl.set(item.url, { title: entry.title, count: entry.count + 1 });
+    }
+    const topVideos = [...byUrl.values()].sort((a, b) => b.count - a.count || a.title.localeCompare(b.title)).slice(0, 5);
+    return reply.send({ roomsHosted: roomIds.length, uniqueViewers: viewers.length, videosPlayed: history.length, topVideos });
+  });
+
   app.put("/me/notification-preferences", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !prisma) {
