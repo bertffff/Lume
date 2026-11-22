@@ -74,7 +74,7 @@ async function signedIn(page: Page, name: string): Promise<string> {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(name);
   await page.getByTestId("lobby-sign-in").click();
-  await expect(page.locator('[data-testid="home-create-open"].tile')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("home-create-open")).toBeVisible({ timeout: 20_000 });
   const token = await sessionToken(page);
   expect(token).toBeTruthy();
   return token;
@@ -132,7 +132,7 @@ test("the vertical catalog lists real seeded rooms and filters them by category"
     .toBeGreaterThanOrEqual(beforeActive + filters.length * 2);
 
   // The vertical feed shows the same rows: filtering works and nothing is fabricated.
-  const feed = page.locator(".room-feed");
+  const feed = page.getByTestId("room-feed");
   await expect(feed).toBeVisible();
   const list = feed.getByRole("list", { name: "Комнаты" });
   await expect(list).toBeVisible();
@@ -142,7 +142,7 @@ test("the vertical catalog lists real seeded rooms and filters them by category"
     for (const title of seeded[filter]) {
       await expect(feed.getByRole("heading", { name: title, exact: true })).toBeVisible({ timeout: 20_000 });
     }
-    const titles = await feed.locator(".room-feed__card h3").allInnerTexts();
+    const titles = await feed.getByTestId("room-feed-card").locator("h3").allInnerTexts();
     expect(titles.length).toBeGreaterThan(0);
     for (const other of filters.filter((candidate) => candidate !== filter)) {
       for (const title of seeded[other]) expect(titles).not.toContain(title);
@@ -177,15 +177,15 @@ test("the vertical catalog paginates real rows with an opaque cursor", async ({ 
   expect(seeded.some((title) => apiTitles.includes(title))).toBe(true);
 
   await page.reload();
-  const feed = page.locator(".room-feed");
+  const feed = page.getByTestId("room-feed");
   await expect(feed).toBeVisible();
   const loadMore = feed.getByRole("button", { name: "Показать ещё" });
   await expect(loadMore).toBeVisible({ timeout: 20_000 });
   await expect(loadMore).toBeEnabled();
-  const before = await feed.locator(".room-feed__card").count();
+  const before = await feed.getByTestId("room-feed-card").count();
   await loadMore.click();
-  await expect.poll(async () => feed.locator(".room-feed__card").count(), { timeout: 20_000 }).toBeGreaterThan(before);
-  const titles = await feed.locator(".room-feed__card h3").allInnerTexts();
+  await expect.poll(async () => feed.getByTestId("room-feed-card").count(), { timeout: 20_000 }).toBeGreaterThan(before);
+  const titles = await feed.getByTestId("room-feed-card").locator("h3").allInnerTexts();
   const visibleIds = await feed.locator("[data-room-id]").evaluateAll((cards) => cards.map((card) => card.getAttribute("data-room-id")));
   expect(new Set(visibleIds).size).toBe(visibleIds.length);
   const realTitles = await catalogTitles(page, token, "all");

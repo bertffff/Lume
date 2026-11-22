@@ -43,7 +43,7 @@ test("the live profile engagement widget aggregates watch, voice, and chat activ
   const left = owner.waitForResponse((response) => response.url().includes("/leave") && response.request().method() === "POST");
   await owner.getByTestId("session-dock-leave").click();
   expect((await left).status()).toBe(200);
-  await expect(owner.locator('[data-testid="home-create-open"].tile')).toBeVisible();
+  await expect(owner.getByTestId("home-create-open")).toBeVisible();
 
   const session = await owner.evaluate(() => {
     const raw = window.localStorage.getItem("lume.session");

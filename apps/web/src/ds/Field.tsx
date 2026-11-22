@@ -9,17 +9,19 @@ interface FieldProps {
   label: string;
   hint?: string;
   error?: string;
+  /** Keeps the label for assistive tech while the placeholder carries the visible hint. */
+  hideLabel?: boolean;
   children: ReactElement<{ id?: string; "aria-describedby"?: string; "aria-invalid"?: boolean }>;
 }
 
 /** Label + control + hint/error, wired with ids so screen readers read all three. */
-export function Field({ label, hint, error, children }: FieldProps) {
+export function Field({ label, hint, error, hideLabel = false, children }: FieldProps) {
   const id = useId();
   const noteId = `${id}-note`;
   const note = error ?? hint;
   return (
     <div className={styles.field}>
-      <label htmlFor={id} className={styles.label}>{label}</label>
+      <label htmlFor={id} className={cx(styles.label, hideLabel && styles.visuallyHidden)}>{label}</label>
       {cloneElement(children, { id, "aria-describedby": note ? noteId : undefined, "aria-invalid": error ? true : undefined })}
       {note ? <p id={noteId} className={cx(styles.note, error && styles.error)} role={error ? "alert" : undefined}>{note}</p> : null}
     </div>

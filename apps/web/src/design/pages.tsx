@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { favouriteLine, linkedLabel, roomPresetById, roomPresets, viewerPermissionKeys, type RoomPresetId } from "@lume/contracts";
-import { KeyRound, Plus, UserRound } from "lucide-react";
 import { permissionLabel } from "./copy.js";
 import { useI18n } from "../i18n/context.js";
 import { Modal } from "../ui/index.js";
@@ -690,77 +689,3 @@ export function EmptyScreen({ title, body, action }: { title: string; body?: str
   );
 }
 
-export function MobileHome({
-  session,
-  catalog,
-  continueTile,
-  storyPeople,
-  name,
-  onName,
-  onSignIn,
-  onTelegram,
-  onCreate,
-  onProfile,
-  code,
-  codeInvalid,
-  onCode,
-  onJoin,
-}: {
-  session: { user: { displayName: string } } | null;
-  catalog: ReactNode;
-  continueTile?: ReactNode;
-  storyPeople: Array<{ id: string; name: string }>;
-  name: string;
-  onName: (value: string) => void;
-  onSignIn: (event: FormEvent) => void;
-  onTelegram: () => void;
-  onCreate: () => void;
-  onProfile: () => void;
-  code: string;
-  codeInvalid: boolean;
-  onCode: (value: string) => void;
-  onJoin: (event: FormEvent) => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="pad mobile-home">
-      <div className="greet"><h1>{session ? t("mobile.greetingSigned", { name: session.user.displayName }) : t("mobile.greeting")}</h1><div className="sub">{session ? t("mobile.subtitleSigned") : t("mobile.subtitleGuest")}</div></div>
-      <div className="stories" aria-label={t("home.stories")}>
-        <button type="button" className="st new" onClick={onCreate}>
-          <span className="ring"><span className="face"><Plus size={16} aria-hidden="true" /></span></span>
-          <span className="nm">{t("home.storyMine")}</span>
-        </button>
-        {storyPeople.map((person) => (
-          <button key={person.id} type="button" className="st" onClick={onProfile}>
-            <span className="ring"><span className={`face av p-${personHue(person.id)}`}>{initials(person.name)}</span></span>
-            <span className="nm">{person.name}</span>
-          </button>
-        ))}
-      </div>
-      {!session ? (
-        <form className="tile auth" onSubmit={onSignIn}>
-          <div className="tile-head"><span className="tile-ic"><UserRound size={18} aria-hidden="true" /></span><div><h3>{t("mobile.signInTitle")}</h3><p>{t("mobile.signInBody")}</p></div></div>
-          <label>{t("mobile.nameLabel")}<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder={t("mobile.namePlaceholder")} autoComplete="nickname" /></label>
-          <div className="actions">
-            <button type="submit" className="btn btn-primary" data-testid="lobby-sign-in">{t("mobile.enter")}</button>
-            <button type="button" className="btn btn-telegram" onClick={onTelegram}>{t("mobile.telegram")}</button>
-          </div>
-        </form>
-      ) : null}
-      <div className="acts">
-        {continueTile}
-        <button type="button" className="tile create promo" data-testid="home-create-open" onClick={onCreate}>
-          <span className="promo-plus"><Plus size={20} aria-hidden="true" /></span>
-          <h3>{t("mobile.createTitle")}</h3>
-          <p>{t("mobile.createHint")}</p>
-        </button>
-        <form className="tile join" onSubmit={onJoin}>
-          <div className="tile-head"><span className="tile-ic"><KeyRound size={18} aria-hidden="true" /></span><div><h3>{t("mobile.joinTitle")}</h3><p>{t("mobile.joinHint")}</p></div></div>
-          <RoomCodeInput value={code} onChange={onCode} invalid={codeInvalid} />
-          <div className="actions"><button type="submit" className="btn btn-social" data-testid="lobby-join">{t("mobile.enter")}</button></div>
-        </form>
-      </div>
-      {catalog}
-    </div>
-  );
-}

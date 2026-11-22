@@ -10,6 +10,8 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
   tone?: CardTone;
   pad?: CardPad;
   interactive?: boolean;
+  /** Only meaningful with as="button". */
+  type?: "button" | "submit";
   children?: ReactNode;
 }
 

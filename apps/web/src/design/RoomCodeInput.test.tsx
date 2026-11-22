@@ -13,7 +13,7 @@ function Harness() {
 }
 
 function cells(container: HTMLElement) {
-  return Array.from(container.querySelectorAll(".code-cell"), (cell) => cell.textContent);
+  return Array.from(container.querySelectorAll("[data-code-cell]"), (cell) => cell.textContent);
 }
 
 describe("RoomCodeInput", () => {
@@ -23,8 +23,8 @@ describe("RoomCodeInput", () => {
     const field = screen.getByRole("textbox", { name: "Код комнаты" });
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
     expect(cells(container)).toEqual(["", "", "", "", "", ""]);
-    expect(container.querySelector(".room-code-cells")).toHaveAttribute("aria-hidden", "true");
-    expect(container.querySelector(".code-separator")).toHaveTextContent("-");
+    expect(container.querySelector("[data-code-cells]")).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector("[data-code-separator]")).toHaveTextContent("-");
 
     await user.tab();
     expect(field).toHaveFocus();
@@ -57,7 +57,7 @@ describe("RoomCodeInput", () => {
       expect(field).toHaveValue(value);
       expect(field).toHaveAttribute("aria-invalid", "true");
       expect(field).toHaveAccessibleDescription(/7KQ-2MX/);
-      expect(field.parentElement).toHaveClass("room-code-input-raw");
+      expect(field.parentElement).toHaveAttribute("data-raw", "true");
       expect(cells(container)).toEqual(["", "", "", "", "", ""]);
     },
   );

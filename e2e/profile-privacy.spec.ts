@@ -42,7 +42,7 @@ test("privacy switches hide friends and history on the public profile", async ({
   await viewer.goto("/");
   await viewer.getByTestId("lobby-name").fill(`Зритель ${stamp}`);
   await viewer.getByTestId("lobby-sign-in").click();
-  await expect(viewer.locator('[data-testid="home-create-open"].tile')).toBeVisible({ timeout: 20_000 });
+  await expect(viewer.getByTestId("home-create-open")).toBeVisible({ timeout: 20_000 });
   await viewer.goto("/profile");
   await viewer.getByRole("tab", { name: "Друзья" }).click();
   await viewer.getByTestId("friend-search").fill(ownerName);

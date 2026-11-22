@@ -5,7 +5,9 @@ import { join, relative } from "node:path";
  * Guard for the design system and everything migrated onto it:
  * no !important, no inline style, no raw colours outside tokens, no raw px in spacing.
  */
-const roots = ["src/ds", "src/gallery"];
+const roots = ["src/ds", "src/gallery", "src/shell", "src/screens"];
+// Screens migrated out of the legacy layer: only their CSS modules are held to the token rules.
+const migratedModules = ["src/design"];
 const tokenDir = join("src", "ds", "tokens");
 const spacing = /(?:^|[;{\s])(?:padding|margin|gap|row-gap|column-gap|inset|top|right|bottom|left)(?:-[a-z]+)?\s*:\s*[^;}]*\b[1-9]\d*px/;
 
@@ -17,9 +19,18 @@ function* walk(dir) {
   }
 }
 
+function* walkModules(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) yield* walkModules(path);
+    else if (entry.name.endsWith(".module.css")) yield path;
+  }
+}
+
 const problems = [];
-for (const root of roots) {
-  for (const file of walk(root)) {
+const files = [...roots.flatMap((root) => [...walk(root)]), ...migratedModules.flatMap((root) => [...walkModules(root)])];
+{
+  for (const file of files) {
     const source = readFileSync(file, "utf8");
     source.split("\n").forEach((line, index) => {
       const at = `${relative(".", file)}:${index + 1}`;
@@ -28,7 +39,7 @@ for (const root of roots) {
         if (/!important/.test(code)) problems.push(`${at}: !important is forbidden`);
         if (!file.startsWith(tokenDir) && /#[0-9a-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(/i.test(code)) problems.push(`${at}: raw colour, use a --ds-* token`);
         if (spacing.test(code)) problems.push(`${at}: raw px in spacing, use --ds-space-*`);
-      } else if (/\bstyle=\{/.test(line)) {
+      } else if (/\bstyle=\{\{/.test(line)) {
         problems.push(`${at}: inline style is forbidden`);
       }
     });

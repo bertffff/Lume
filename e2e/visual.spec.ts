@@ -27,7 +27,7 @@ test("mobile cinema home", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?shot=home&style=cinema&mode=dark");
   await expect(page.locator(".design-app")).toHaveAttribute("data-view", "home");
-  await expect(page.locator(".mobile-home")).toBeVisible();
+  await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Добрый вечер" })).toBeVisible();
   await expect(page.getByText("Открытые комнаты")).toBeVisible();
   await page.screenshot({ path: "test-results/visual/cinema-dark-home-mobile.png" });

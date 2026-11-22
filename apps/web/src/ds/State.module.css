@@ -30,6 +30,12 @@
   align-items: flex-start;
 }
 
+.bare {
+  padding: var(--ds-space-2) 0;
+  border: 0;
+  background: none;
+}
+
 .glyph {
   display: grid;
   flex: none;

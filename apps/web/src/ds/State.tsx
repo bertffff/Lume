@@ -14,15 +14,17 @@ export interface StateProps {
   body?: string;
   action?: ReactNode;
   compact?: boolean;
+  /** No border or background: for a state that already sits inside a card. */
+  bare?: boolean;
 }
 
 /**
  * One block for "nothing here", "failed", "offline", "no access" and "not found".
  * Errors use role=alert; the rest are quiet. Every state names what happened and offers the next step.
  */
-export function State({ kind, title, body, action, compact = false }: StateProps) {
+export function State({ kind, title, body, action, compact = false, bare = false }: StateProps) {
   return (
-    <div className={cx(styles.root, styles[kind], compact && styles.compact)} role={kind === "error" ? "alert" : "status"}>
+    <div className={cx(styles.root, styles[kind], compact && styles.compact, bare && styles.bare)} role={kind === "error" ? "alert" : "status"}>
       <span className={styles.glyph}><Icon icon={glyphs[kind]} size="lg" /></span>
       <div className={styles.content}>
         <h3 className={styles.title}>{title}</h3>

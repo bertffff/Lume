@@ -1,0 +1,185 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+}
+
+.heading {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-title) / var(--ds-lh-title) var(--ds-font-display);
+  letter-spacing: var(--ds-tracking-display);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-width: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--ds-space-6) var(--ds-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "poster poster"
+    "body action";
+  align-items: start;
+  gap: var(--ds-space-3);
+  min-width: 0;
+}
+
+.full {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "poster"
+    "body";
+}
+
+.poster {
+  grid-area: poster;
+  transition: transform var(--ds-dur-base) var(--ds-ease-standard), box-shadow var(--ds-dur-base) var(--ds-ease-standard);
+}
+
+.card:hover .poster {
+  transform: translateY(calc(var(--ds-space-1) * -1));
+  box-shadow: var(--ds-shadow-2);
+}
+
+.body {
+  grid-area: body;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  overflow: hidden;
+  font: var(--ds-fw-semibold) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playing {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2);
+  color: var(--ds-text-tertiary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+}
+
+.meta .code {
+  padding: 0 var(--ds-space-1);
+  font-size: var(--ds-fs-caption);
+  line-height: var(--ds-lh-caption);
+}
+
+/* The whole card is the target: the button's pseudo-element stretches over it. */
+.join {
+  grid-area: action;
+  align-self: center;
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-4);
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-primary);
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  cursor: pointer;
+  transition: background var(--ds-dur-fast) var(--ds-ease-standard), border-color var(--ds-dur-fast) var(--ds-ease-standard);
+}
+
+.join::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.card:hover .join {
+  border-color: var(--ds-text-tertiary);
+  background: var(--ds-surface-3);
+}
+
+.join:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+}
+
+.note {
+  margin: 0;
+  color: var(--ds-text-tertiary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  text-align: center;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+}
+
+.sentinel {
+  height: 1px;
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--ds-space-3);
+  }
+
+  .card {
+    grid-template-columns: 128px minmax(0, 1fr) auto;
+    grid-template-areas: "poster body action";
+    align-items: center;
+  }
+
+  .full {
+    grid-template-columns: 128px minmax(0, 1fr);
+    grid-template-areas: "poster body";
+  }
+
+  .card:hover .poster {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .poster {
+    border-radius: var(--ds-radius-control);
+  }
+}

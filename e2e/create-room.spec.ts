@@ -6,7 +6,7 @@ test("the Home create CTA opens the wizard and creates a room", async ({ page })
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(`Мастер ${stamp}`);
   await page.getByTestId("lobby-sign-in").click();
-  await expect(page.locator('[data-testid="home-create-open"].tile')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("home-create-open")).toBeVisible({ timeout: 20_000 });
 
   await openCreateWizard(page);
   await page.getByTestId("lobby-title").fill(`Мастер ${stamp}`);

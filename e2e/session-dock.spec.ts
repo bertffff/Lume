@@ -36,5 +36,5 @@ test("the live session dock shows the persisted session and its controls work", 
 
   await page.getByTestId("session-dock-leave").click();
   await expect(page.getByTestId("session-dock")).toHaveCount(0);
-  await expect(page.locator('[data-testid="home-create-open"].tile')).toBeVisible();
+  await expect(page.getByTestId("home-create-open")).toBeVisible();
 });

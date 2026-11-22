@@ -151,7 +151,7 @@ describe("room invite navigation", () => {
     const { container } = render(<App />);
 
     expect(screen.getByRole("textbox", { name: "Код комнаты" })).toBeVisible();
-    expect(container.querySelectorAll(".room-code-cells > .code-cell")).toHaveLength(6);
+    expect(container.querySelectorAll("[data-code-cells] > [data-code-cell]")).toHaveLength(6);
     expect(await screen.findByText("7KQ-2MX", { exact: true })).toBeVisible();
   });
 });

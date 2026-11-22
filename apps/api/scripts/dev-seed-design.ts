@@ -154,7 +154,8 @@ async function seedActivity(viewerId: string, partnerIds: string[]) {
 
 async function main() {
   await reset();
-  const albert = await user(people.albert, { bio: "Смотрю ночные сеансы и собираю документалки", xp: 2340, totalParties: 142, totalWatchTime: 1_140_000, totalMessages: 860, roomsCreated: 23, totalReactions: 410 });
+  // The empty profile is a genuinely new account: no xp, no history, so global counters stay honest too.
+  const albert = await user(people.albert, profile === "empty" ? {} : { bio: "Смотрю ночные сеансы и собираю документалки", xp: 2340, totalParties: 142, totalWatchTime: 1_140_000, totalMessages: 860, roomsCreated: 23, totalReactions: 410 });
   if (profile === "empty") {
     console.log(`Seeded EMPTY profile: viewer "${people.albert}" only`);
     return;

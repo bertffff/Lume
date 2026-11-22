@@ -1,0 +1,36 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-height: 208px;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-bold) var(--ds-fs-title) / var(--ds-lh-title) var(--ds-font-display);
+  letter-spacing: var(--ds-tracking-display);
+}
+
+.body {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+.note {
+  margin: 0;
+  color: var(--ds-text-tertiary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+}

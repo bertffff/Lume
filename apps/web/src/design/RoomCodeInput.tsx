@@ -1,16 +1,19 @@
 import { formatRoomCode, parseRoomCode, ROOM_CODE_ALPHABET } from "@lume/contracts";
 import { useId, type ClipboardEvent } from "react";
 import { useI18n } from "../i18n/context.js";
-import "./room-code-input.css";
+import { cx } from "../ds/cx.js";
+import styles from "./RoomCodeInput.module.css";
 
 // Recognize unfinished entry for display only. Submission always uses the shared parser.
 const partialCode = new RegExp(`^(?:[${ROOM_CODE_ALPHABET}]{0,5}|[${ROOM_CODE_ALPHABET}]{3}-[${ROOM_CODE_ALPHABET}]{0,2})$`, "i");
 
-export function RoomCodeInput({ value, onChange, invalid = false, autoFocus = false }: {
+/** One real input; six decorative cells show it as 3–3. Pasted grouped codes stay editable. */
+export function RoomCodeInput({ value, onChange, invalid = false, autoFocus = false, hideLabel = false }: {
   value: string;
   onChange: (value: string) => void;
   invalid?: boolean;
   autoFocus?: boolean;
+  hideLabel?: boolean;
 }) {
   const { t } = useI18n();
   const id = useId();
@@ -31,18 +34,18 @@ export function RoomCodeInput({ value, onChange, invalid = false, autoFocus = fa
   }
 
   return (
-    <div className="room-code-field">
-      <label htmlFor={id}>{t("join.codeLabel")}</label>
-      <div className={`room-code-input${showRaw ? " room-code-input-raw" : ""}`}>
-        <div className="room-code-cells" aria-hidden="true">
+    <div className={styles.field}>
+      <label htmlFor={id} className={cx(styles.label, hideLabel && styles.visuallyHidden)}>{t("join.codeLabel")}</label>
+      <div className={cx(styles.control, hasError && styles.invalid, showRaw && styles.raw)} data-raw={showRaw || undefined}>
+        <div className={styles.cells} data-code-cells="" aria-hidden="true">
           {Array.from({ length: 6 }, (_, index) => (
-            <span key={index} className="code-cell">{symbols[index] ?? ""}</span>
+            <span key={index} className={cx(styles.cell, index === symbols.length && styles.current)} data-code-cell="">{symbols[index] ?? ""}</span>
           ))}
-          <span className="code-separator">-</span>
+          <span className={styles.separator} data-code-separator="">-</span>
         </div>
         <input
           id={id}
-          className="room-code-native"
+          className={styles.native}
           data-testid="lobby-code"
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -55,9 +58,9 @@ export function RoomCodeInput({ value, onChange, invalid = false, autoFocus = fa
           autoFocus={autoFocus}
         />
       </div>
-      <div id={`${id}-hint`} className={hasError ? "room-code-error" : "room-code-hint"} aria-live="polite">
+      <p id={`${id}-hint`} className={cx(styles.hint, hasError && styles.error)} aria-live="polite">
         {t(hasError ? "join.codeInvalid" : "join.codeHint")}
-      </div>
+      </p>
     </div>
   );
 }

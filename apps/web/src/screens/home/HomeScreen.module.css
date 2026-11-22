@@ -1,0 +1,128 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: start;
+  gap: var(--ds-space-6);
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--ds-space-6) var(--ds-gutter) var(--ds-space-12);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4) var(--ds-space-8);
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+}
+
+.stats {
+  padding-bottom: var(--ds-space-1);
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-bold) var(--ds-fs-headline) / var(--ds-lh-headline) var(--ds-font-display);
+  letter-spacing: var(--ds-tracking-display);
+  text-wrap: balance;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-text);
+}
+
+.tiles,
+.tilesGuest {
+  display: grid;
+  gap: var(--ds-space-4);
+}
+
+.tiles {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 1.2fr);
+}
+
+.tilesGuest {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+}
+
+.side {
+  position: sticky;
+  top: calc(var(--ds-header-h) + var(--ds-space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  max-height: calc(100dvh - var(--ds-header-h) - var(--ds-space-8));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.side > * {
+  flex: none;
+}
+
+/* On short windows a sticky column would need its own scrollbar: let it scroll with the page instead. */
+@media (max-height: 820px) {
+  .side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .side {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats {
+    display: none;
+  }
+
+  .tiles > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .tiles,
+  .tilesGuest {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    gap: var(--ds-space-4);
+    padding-bottom: calc(var(--ds-control-lg) + var(--ds-space-12));
+  }
+
+  .tiles,
+  .tilesGuest,
+  .side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

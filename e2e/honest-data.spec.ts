@@ -12,7 +12,7 @@ test("a fresh account sees honest empty states instead of demo content", async (
   await page.getByTestId("lobby-name").fill(`Чистый ${Date.now()}`);
   await page.getByTestId("lobby-sign-in").click();
 
-  await expect(page.locator(".tile.resume")).toContainText("Пока пусто");
+  await expect(page.getByTestId("home-resume")).toContainText("Пока пусто");
   await expect(page.getByText("Друзья онлайн")).toBeVisible();
   await expect(page.getByText("Нет напоминаний.")).toBeVisible();
   await expect(page.getByText("Проведите первый сеанс — здесь появится карта сезона.")).toBeVisible();

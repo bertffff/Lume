@@ -1,28 +1,13 @@
-import { Clapperboard, DoorOpen, Film, Music2, UsersRound, Video } from "lucide-react";
-import { formatRoomCode, parseRoomCode } from "@lume/contracts";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Film, Music2, UsersRound, Video } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Badge, Button, Chip, ChipGroup, CodeBadge, Icon, Poster, Skeleton, State } from "../ds/index.js";
+import { cx } from "../ds/cx.js";
 import { useI18n } from "../i18n/context.js";
-import "./room-feed.css";
+import type { RoomFeedFilter, RoomFeedLoader, RoomFeedRoom, RoomFeedStyle } from "./useRoomFeed.js";
+import { useRoomFeed } from "./useRoomFeed.js";
+import styles from "./RoomFeed.module.css";
 
-export type RoomFeedFilter = "all" | "friends" | "film" | "music" | "vlog";
-export type RoomFeedStyle = "cinema" | "gruvbox" | "telerave";
-
-export interface RoomFeedRoom {
-  readonly id: string;
-  readonly code: string;
-  readonly title: string;
-  readonly category: "film" | "music" | "vlog" | "other";
-  readonly memberCount?: number;
-  readonly isFull: boolean;
-  readonly mediaPreview?: { thumbnailUrl: string | null } | null;
-}
-
-export interface RoomFeedPage {
-  readonly rooms: readonly RoomFeedRoom[];
-  readonly nextCursor: string | null;
-}
-
-export type RoomFeedLoader = (filter: RoomFeedFilter, cursor: string | null, signal: AbortSignal) => Promise<RoomFeedPage>;
+export type { RoomFeedFilter, RoomFeedLoader, RoomFeedPage, RoomFeedRoom, RoomFeedStyle } from "./useRoomFeed.js";
 
 export interface RoomFeedProps {
   id?: string;
@@ -32,102 +17,40 @@ export interface RoomFeedProps {
   loadPage: RoomFeedLoader;
   onOpenRoom: (room: RoomFeedRoom) => void;
   onSignIn: () => void;
+  onCreate?: () => void;
 }
 
-const categories = {
-  film: { label: "feed.film", Icon: Film },
-  music: { label: "feed.music", Icon: Music2 },
-  vlog: { label: "feed.vlog", Icon: Video },
-  other: { label: "feed.other", Icon: DoorOpen },
-} as const;
+const labels = { film: "feed.film", music: "feed.music", vlog: "feed.vlog", other: "feed.other" } as const;
 
 const filters = [
-  { id: "all", label: "feed.all" },
-  { id: "friends", label: "feed.friends" },
-  { id: "film", label: categories.film.label },
-  { id: "music", label: categories.music.label },
-  { id: "vlog", label: categories.vlog.label },
+  { id: "all", label: "feed.all", icon: undefined },
+  { id: "friends", label: "feed.friends", icon: UsersRound },
+  { id: "film", label: labels.film, icon: Film },
+  { id: "music", label: labels.music, icon: Music2 },
+  { id: "vlog", label: labels.vlog, icon: Video },
 ] as const;
 
-type FeedState = RoomFeedPage & { phase: "loading" | "retrying" | "ready" | "error" };
-const initialState: FeedState = { phase: "loading", rooms: [], nextCursor: null };
-
-function appendUnique(previous: readonly RoomFeedRoom[], incoming: readonly RoomFeedRoom[]) {
-  const seen = new Set(previous.map(({ id }) => id));
-  return [...previous, ...incoming.filter(({ id }) => {
-    if (seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  })];
-}
-
-function useRoomFeed(filter: RoomFeedFilter, loadPage: RoomFeedLoader) {
-  const [state, setState] = useState(initialState);
-  // Request gates must change synchronously: an observer and a click can arrive before React paints.
-  const latest = useRef(initialState);
-  const loader = useRef(loadPage);
-  const activeRequest = useRef<AbortController | null>(null);
-  const completedCursors = useRef(new Set<string>());
-
-  useEffect(() => { loader.current = loadPage; }, [loadPage]);
-
-  const requestPage = useCallback(async (source: "initial" | "manual" | "observer") => {
-    const previous = latest.current;
-    if (activeRequest.current || (source === "observer" && previous.phase !== "ready")) return;
-    if (source !== "initial" && previous.phase !== "error" && previous.nextCursor === null) return;
-
-    const controller = new AbortController();
-    const cursor = previous.nextCursor;
-    activeRequest.current = controller;
-    const publish = (next: FeedState) => {
-      latest.current = next;
-      setState(next);
-    };
-    publish({ ...previous, phase: previous.phase === "error" ? "retrying" : "loading" });
-    try {
-      const page = await loader.current(filter, cursor, controller.signal);
-      if (controller.signal.aborted || activeRequest.current !== controller) return;
-      if (cursor !== null) completedCursors.current.add(cursor);
-      const nextCursor = page.nextCursor !== null && completedCursors.current.has(page.nextCursor)
-        ? null : page.nextCursor;
-      publish({ phase: "ready", rooms: appendUnique(previous.rooms, page.rooms), nextCursor });
-    } catch {
-      if (!controller.signal.aborted && activeRequest.current === controller) publish({ ...previous, phase: "error" });
-    } finally {
-      if (activeRequest.current === controller) activeRequest.current = null;
-    }
-  }, [filter]);
-
-  useEffect(() => {
-    void requestPage("initial");
-    return () => {
-      activeRequest.current?.abort();
-      activeRequest.current = null;
-    };
-  }, [requestPage]);
-
-  return { state, requestPage };
-}
-
-function RoomFeedCard({ room, onOpenRoom }: { room: RoomFeedRoom; onOpenRoom: RoomFeedProps["onOpenRoom"] }) {
+function RoomCard({ room, onOpenRoom }: { room: RoomFeedRoom; onOpenRoom: RoomFeedProps["onOpenRoom"] }) {
   const { t } = useI18n();
-  const { label, Icon } = categories[room.category];
-  const code = parseRoomCode(room.code);
-  const artwork = room.mediaPreview?.thumbnailUrl;
-  const showArtwork = Boolean(artwork && /^https?:\/\//i.test(artwork));
+  const nowPlaying = room.mediaPreview?.title;
   return (
-    <li className="room-feed__card" data-room-id={room.id}>
-      <div className="room-feed__emblem" aria-hidden="true">{showArtwork ? <img src={artwork ?? undefined} alt="" loading="lazy" /> : <Icon size={22} strokeWidth={1.6} />}</div>
-      <div className="room-feed__details">
-        <h3>{room.title}</h3>
-        <div className="room-feed__meta">
-          <span>{t(label)}</span>
-          {code ? <span className="mono">{formatRoomCode(code)}</span> : null}
-          {room.memberCount !== undefined && <span><UsersRound size={14} aria-hidden="true" /> {t("feed.memberCount", { count: room.memberCount })}</span>}
+    <li className={cx(styles.card, room.isFull && styles.full)} data-testid="room-feed-card" data-room-id={room.id}>
+      <Poster src={room.mediaPreview?.thumbnailUrl} category={room.category} className={styles.poster}>
+        {room.memberCount !== undefined ? (
+          <Badge tone="media"><Icon icon={UsersRound} size="sm" />{t("feed.memberCount", { count: room.memberCount })}</Badge>
+        ) : null}
+      </Poster>
+      <div className={styles.body}>
+        <h3 className={styles.title}>{room.title}</h3>
+        {nowPlaying ? <p className={styles.playing}>{nowPlaying}</p> : null}
+        <div className={styles.meta}>
+          <span>{t(labels[room.category])}</span>
+          <CodeBadge code={room.code} className={styles.code} />
+          {room.isFull ? <Badge tone="warn">{t("feed.full")}</Badge> : null}
         </div>
       </div>
-      {room.isFull ? <span className="room-feed__capacity">{t("feed.full")}</span> : (
-        <button className="room-feed__join" type="button" aria-label={t("feed.openRoom", { title: room.title })} onClick={() => onOpenRoom(room)}>
+      {room.isFull ? null : (
+        <button className={styles.join} type="button" aria-label={t("feed.openRoom", { title: room.title })} onClick={() => onOpenRoom(room)}>
           {t("auth.login")}
         </button>
       )}
@@ -135,16 +58,16 @@ function RoomFeedCard({ room, onOpenRoom }: { room: RoomFeedRoom; onOpenRoom: Ro
   );
 }
 
-function RoomFeedResults({ filter, loadPage, onOpenRoom }: Pick<RoomFeedProps, "loadPage" | "onOpenRoom"> & { filter: RoomFeedFilter }) {
+function FeedResults({ filter, loadPage, onOpenRoom, onCreate }: Pick<RoomFeedProps, "loadPage" | "onOpenRoom" | "onCreate"> & { filter: RoomFeedFilter }) {
   const { t } = useI18n();
   const { state, requestPage } = useRoomFeed(filter, loadPage);
   const sentinel = useRef<HTMLDivElement>(null);
   const listId = useId();
-  const errorId = useId();
   const { rooms, nextCursor, phase } = state;
   const failed = phase === "error";
   const retrying = phase === "retrying";
   const loading = phase === "loading" || retrying;
+  const empty = !failed && !loading && rooms.length === 0 && nextCursor === null;
 
   useEffect(() => {
     if (phase !== "ready" || nextCursor === null || !sentinel.current || typeof IntersectionObserver !== "function") return;
@@ -159,49 +82,58 @@ function RoomFeedResults({ filter, loadPage, onOpenRoom }: Pick<RoomFeedProps, "
     };
   }, [phase, nextCursor, requestPage]);
 
-  let status = "";
-  if (loading) status = t(nextCursor === null ? "feed.loading" : "feed.loadingMore");
-  else if (!failed && rooms.length === 0 && nextCursor === null) {
-    status = t(filter === "all" ? "feed.empty" : "feed.emptyFilter");
-  }
-
   return (
-    <>
-      <ul id={listId} className="room-feed__list" role="list" aria-label={t("feed.rooms")} aria-busy={loading} hidden={rooms.length === 0}>
-        {rooms.map((room) => <RoomFeedCard key={room.id} room={room} onOpenRoom={onOpenRoom} />)}
+    <div className={styles.results}>
+      <ul id={listId} className={styles.grid} role="list" aria-label={t("feed.rooms")} aria-busy={loading} hidden={rooms.length === 0}>
+        {rooms.map((room) => <RoomCard key={room.id} room={room} onOpenRoom={onOpenRoom} />)}
       </ul>
-      <p role="status" className="room-feed__notice">{status}</p>
-      {failed && <p id={errorId} role="alert" className="room-feed__notice room-feed__error">{t("feed.failed")}</p>}
-      {nextCursor !== null && <div ref={sentinel} aria-hidden="true" data-testid="room-feed-sentinel" className="room-feed__sentinel" />}
-      {(failed || retrying || nextCursor !== null) && (
-        <button type="button" aria-controls={listId} aria-describedby={failed ? errorId : undefined} aria-disabled={loading}
-          onClick={() => { if (!loading) void requestPage("manual"); }}>
-          {t(failed || retrying ? "feed.retry" : "feed.loadMore")}
-        </button>
-      )}
-    </>
+      {loading && rooms.length === 0 ? (
+        <div className={styles.grid} aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className={styles.skeleton}><Skeleton shape="poster" /><Skeleton shape="title" /><Skeleton /></div>
+          ))}
+        </div>
+      ) : null}
+      {loading ? <p role="status" className={styles.note}>{t(nextCursor === null ? "feed.loading" : "feed.loadingMore")}</p> : null}
+      {empty ? (
+        <State
+          kind="empty"
+          title={t(filter === "all" ? "feed.empty" : "feed.emptyFilter")}
+          body={t(filter === "all" ? "feed.emptyBody" : "feed.emptyFilterBody")}
+          action={onCreate ? <Button size="sm" onClick={onCreate}>{t("feed.createRoom")}</Button> : undefined}
+        />
+      ) : null}
+      {failed ? <State kind="error" compact={rooms.length > 0} title={t("feed.failed")} body={t("feed.failedBody")} /> : null}
+      {nextCursor !== null ? <div ref={sentinel} aria-hidden="true" data-testid="room-feed-sentinel" className={styles.sentinel} /> : null}
+      {failed || retrying || nextCursor !== null ? (
+        <div className={styles.more}>
+          <Button aria-controls={listId} aria-disabled={loading} onClick={() => { if (!loading) void requestPage("manual"); }}>
+            {t(failed || retrying ? "feed.retry" : "feed.loadMore")}
+          </Button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
-export function RoomFeed({ id, initialFilter = "all", style, signedIn, loadPage, onOpenRoom, onSignIn }: RoomFeedProps) {
+export function RoomFeed({ id, initialFilter = "all", style, signedIn, loadPage, onOpenRoom, onSignIn, onCreate }: RoomFeedProps) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<RoomFeedFilter>(initialFilter);
   const headingId = useId();
   return (
-    <section id={id} className="room-feed" data-feed-style={style} aria-labelledby={headingId}>
-      <h2 id={headingId} className="room-feed__heading"><Clapperboard size={22} aria-hidden="true" /> {t("feed.title")}</h2>
-      <div className="room-feed__filters" role="group" aria-label={t("feed.filters")}>
-        {filters.map(({ id: value, label }) => (
-          <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{t(label)}</button>
-        ))}
+    <section id={id} className={styles.root} data-testid="room-feed" data-feed-style={style} aria-labelledby={headingId}>
+      <div className={styles.head}>
+        <h2 id={headingId} className={styles.heading}>{t("feed.title")}</h2>
+        <ChipGroup label={t("feed.filters")}>
+          {filters.map(({ id: value, label, icon }) => (
+            <Chip key={value} icon={icon} selected={filter === value} onClick={() => setFilter(value)}>{t(label)}</Chip>
+          ))}
+        </ChipGroup>
       </div>
       {filter === "friends" && !signedIn ? (
-        <div className="room-feed__guest">
-          <p>{t("feed.guest")}</p>
-          <button type="button" onClick={onSignIn}>{t("auth.login")}</button>
-        </div>
+        <State kind="forbidden" title={t("feed.guest")} action={<Button size="sm" onClick={onSignIn}>{t("auth.login")}</Button>} />
       ) : (
-        <RoomFeedResults key={`${filter}:${signedIn}`} filter={filter} loadPage={loadPage} onOpenRoom={onOpenRoom} />
+        <FeedResults key={`${filter}:${signedIn}`} filter={filter} loadPage={loadPage} onOpenRoom={onOpenRoom} onCreate={onCreate} />
       )}
     </section>
   );
