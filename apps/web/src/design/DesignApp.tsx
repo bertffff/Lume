@@ -16,7 +16,7 @@ import { AuthScreen, EmptyScreen, JoinScreen, OnboardingScreen, PremiumScreen, S
 import { ProfileScreen } from "../screens/profile/ProfileScreen.js";
 import { RoomCodeInput } from "./RoomCodeInput.js";
 import { initials, isStyleId, isThemeMode, personHue } from "./theme.js";
-import { NotificationInboxPage, NotificationInboxPopover, type NotificationInboxProps } from "./NotificationInbox.js";
+import { NotificationInboxPage, NotificationInboxPopover, type NotificationInboxProps } from "../screens/notifications/NotificationInbox.js";
 import { useNotificationFeed } from "./useNotificationFeed.js";
 import { RoomFeed, type RoomFeedLoader, type RoomFeedRoom } from "./RoomFeed.js";
 import { AppearanceControls } from "./AppearanceControls.js";

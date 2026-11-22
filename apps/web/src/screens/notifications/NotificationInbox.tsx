@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import "./notification-inbox.css";
+import { cx } from "../../ds/cx.js";
+import styles from "./NotificationInbox.module.css";
 
 export type NotificationInboxItem = {
   id: string;
@@ -95,7 +96,7 @@ export function NotificationInboxPopover({ viewAllLabel, onOpenAll, ...inbox }: 
 
   return (
     <div
-      className="notification-inbox-anchor"
+      className={styles.anchor}
       ref={rootRef}
       onKeyDown={(event) => {
         if (!open || event.key !== "Escape" || event.defaultPrevented) return;
@@ -106,7 +107,7 @@ export function NotificationInboxPopover({ viewAllLabel, onOpenAll, ...inbox }: 
     >
       <button
         type="button"
-        className="notification-inbox-button notification-inbox-trigger"
+        className={styles.trigger}
         ref={triggerRef}
         aria-label={inbox.labels.title}
         aria-haspopup="dialog"
@@ -115,28 +116,28 @@ export function NotificationInboxPopover({ viewAllLabel, onOpenAll, ...inbox }: 
         aria-describedby={unreadDescription !== null ? countId : undefined}
         onClick={() => open ? dismiss() : setOpen(true)}
       >
-        <span className="notification-inbox-icon" aria-hidden="true">{inbox.icon}</span>
+        <span className={styles.bell} aria-hidden="true">{inbox.icon}</span>
         {unreadDescription !== null && <>
-          <span className="notification-inbox-badge" aria-hidden="true" />
+          <span className={styles.badge} aria-hidden="true" />
           <span id={countId} hidden>{unreadDescription}</span>
         </>}
       </button>
       {open && (
         <div
-          className="notification-inbox notification-inbox-popover"
+          className={cx(styles.root, styles.popover)}
           id={id}
           role="dialog"
           aria-labelledby={headingId}
           ref={panelRef}
           tabIndex={-1}
         >
-          <header className="notification-inbox-header">
+          <header className={styles.header}>
             <div>
               <h2 id={headingId}>{inbox.labels.title}</h2>
               <InboxCount {...inbox} />
             </div>
-            <div className="notification-inbox-header-actions">
-              <button type="button" className="notification-inbox-button" onClick={() => {
+            <div className={styles.headerActions}>
+              <button type="button" className={styles.button} onClick={() => {
                 dismiss();
                 onOpenAll();
               }}>{viewAllLabel}</button>
@@ -153,8 +154,8 @@ export function NotificationInboxPopover({ viewAllLabel, onOpenAll, ...inbox }: 
 export function NotificationInboxPage(inbox: NotificationInboxProps) {
   const headingId = useId();
   return (
-    <section className="notification-inbox notification-inbox-page" aria-labelledby={headingId}>
-      <header className="notification-inbox-header">
+    <section className={cx(styles.root, styles.page)} aria-labelledby={headingId}>
+      <header className={styles.header}>
         <div>
           <h1 id={headingId}>{inbox.labels.title}</h1>
           <InboxCount {...inbox} />
@@ -168,7 +169,7 @@ export function NotificationInboxPage(inbox: NotificationInboxProps) {
 
 function InboxCount({ unreadCount, labels }: Pick<NotificationInboxProps, "unreadCount" | "labels">) {
   return (
-    <p className="notification-inbox-count" aria-live="polite">
+    <p className={styles.count} aria-live="polite">
       {unreadCount !== null ? labels.unreadCount(unreadCount) : null}
     </p>
   );
@@ -180,7 +181,7 @@ function InboxMarkAll({ unreadCount, labels, markingAllRead, onMarkAllRead }: No
   return (
     <button
       type="button"
-      className="notification-inbox-button"
+      className={styles.button}
       aria-disabled={disabled || undefined}
       aria-busy={markingAllRead || undefined}
       onClick={() => { if (!disabled) onMarkAllRead(); }}
@@ -194,18 +195,18 @@ function InboxFeed({ items, status = "ready", mutationError, onRetry, ...entryPr
   const { labels } = entryProps;
   const message = status === "loading" ? labels.loading : status === "error" ? labels.error : items.length === 0 ? labels.empty : null;
   return (
-    <div className="notification-inbox-feed">
-      {mutationError && <div className="notification-inbox-message"><p role="alert">{mutationError}</p></div>}
+    <div className={styles.feed}>
+      {mutationError && <div className={styles.message}><p role="alert">{mutationError}</p></div>}
       {message && (
-        <div className="notification-inbox-message">
+        <div className={styles.message}>
           <p role="status">{message}</p>
           {status === "error" && onRetry && (
-            <button type="button" className="notification-inbox-button" onClick={onRetry}>{labels.retry}</button>
+            <button type="button" className={styles.button} onClick={onRetry}>{labels.retry}</button>
           )}
         </div>
       )}
       {items.length > 0 && (
-        <ul className="notification-inbox-list" role="list">
+        <ul className={styles.list} role="list">
           {items.map((item) => <InboxEntry key={item.id} {...entryProps} item={item} />)}
         </ul>
       )}
@@ -220,19 +221,19 @@ function InboxEntry({ item, heading: Heading, icon, labels, markingAllRead, onMa
   const { action, timestamp } = item;
   const knownTime = timestamp && timestamp.label.trim() && Number.isFinite(Date.parse(timestamp.dateTime)) ? timestamp : null;
   return (
-    <li className="notification-inbox-entry" data-unread={!item.read}>
-      <span className="notification-inbox-icon" aria-hidden="true">{item.icon ?? icon}</span>
-      <div>
-        <Heading id={headingId}>{item.title}</Heading>
-        <p className="notification-inbox-body">{item.body}</p>
-        <div className="notification-inbox-meta">
-          <span className="notification-inbox-read-state">{item.read ? labels.read : labels.unread}</span>
+    <li className={styles.entry} data-unread={!item.read}>
+      <span className={styles.tile} aria-hidden="true">{item.icon ?? icon}</span>
+      <div className={styles.content}>
+        <Heading id={headingId} className={styles.title}>{item.title}</Heading>
+        <p className={styles.body}>{item.body}</p>
+        <div className={styles.meta}>
+          <span className={styles.state}>{item.read ? labels.read : labels.unread}</span>
           {knownTime && <time dateTime={knownTime.dateTime}>{knownTime.label}</time>}
         </div>
         {(action || onMarkRead) && (
-          <div className="notification-inbox-actions">
+          <div className={styles.actions}>
             {action && (
-              <button type="button" className="notification-inbox-button" onClick={() => {
+              <button type="button" className={styles.button} onClick={() => {
                 onNavigate?.();
                 action.onSelect(item.id);
               }}>{action.label}</button>
@@ -240,7 +241,7 @@ function InboxEntry({ item, heading: Heading, icon, labels, markingAllRead, onMa
             {onMarkRead && (
               <button
                 type="button"
-                className="notification-inbox-button notification-inbox-mark"
+                className={cx(styles.button, styles.mark)}
                 aria-describedby={headingId}
                 aria-disabled={item.read || item.markingRead || markingAllRead || undefined}
                 aria-busy={item.markingRead || undefined}
