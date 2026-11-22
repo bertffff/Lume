@@ -7,6 +7,7 @@ import type { RoomActions } from "../room/live.js";
 import { ChevronDown, ChevronUp, Play, X } from "lucide-react";
 import { Button, IconButton, Input, Poster } from "../ds/index.js";
 import { roomClock } from "./RoomQueuePreview.js";
+import { RoomSearch } from "./RoomSearch.js";
 import styles from "./RoomQueue.module.css";
 
 export function RoomQueue({ live, meta, queue, inputRef, refresh, refreshing }: {
@@ -85,6 +86,7 @@ export function RoomQueue({ live, meta, queue, inputRef, refresh, refreshing }: 
           {sourceLabel && <small className={styles.hint} role="status" data-testid="queue-source">{sourceLabel}</small>}
         </form>
       </section>
+      <RoomSearch live={live} />
       <section className={styles.section} data-testid="queue-recommendations">
         <h3 className={styles.heading}>{t("room.recommendations")}</h3>
         {recommendations.length ? <ol className={styles.list}>{recommendations.map((item) => (

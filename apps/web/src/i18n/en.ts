@@ -596,6 +596,7 @@ export const en: Record<MessageKey, string> = {
   "player.limited": "This site may ignore the remote",
   "player.buffering": "Buffering",
   "player.unblock": "Play here",
+  "chat.replyTo": "Replying to {name}",
   "chat.title": "Chat",
   "chat.placeholder": "Write to the room",
   "chat.send": "Send",

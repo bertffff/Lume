@@ -1,13 +1,14 @@
-import { emojiCategories } from "@lume/contracts";
-import { Paperclip, Send, Smile } from "lucide-react";
+import { emojiCategories, type ChatMessage } from "@lume/contracts";
+import { Paperclip, Send, Smile, X } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { useChatScroll } from "../room/hooks/useChatScroll.js";
 import type { RoomActions } from "../room/live.js";
-import { Avatar, Icon, IconButton, Input } from "../ds/index.js";
+import { Icon, IconButton, Input } from "../ds/index.js";
 import { cx } from "../ds/cx.js";
 import { EmojiPicker } from "./EmojiPicker.js";
+import { RoomChatMessage } from "./RoomChatMessage.js";
 import styles from "./RoomChat.module.css";
 
 export function RoomChat({ live, recent, onRecent, active, commandLine }: {
@@ -25,6 +26,7 @@ export function RoomChat({ live, recent, onRecent, active, commandLine }: {
   const [draft, setDraft] = useState("");
   const [command, setCommand] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [seenId, setSeenId] = useState(() => messages.at(-1)?.id);
   const unreadStart = seenId === undefined ? 0 : messages.findIndex((message) => message.id === seenId) + 1;
   const unread = messages.length - unreadStart;
@@ -80,14 +82,11 @@ export function RoomChat({ live, recent, onRecent, active, commandLine }: {
       <div className={styles.log} data-testid="chat-log" role="log" aria-label={t("chat.title")} ref={chatRef} onScroll={chat.onScroll}>
         {messages.length === 0 && <p className={styles.empty}>{t("room.chatEmpty")}</p>}
         {messages.map((message, index) => {
-          const mine = message.userId === live.selfId;
           return (
             <Fragment key={message.id}>
               {index === unreadStart && <span className={styles.divider} data-testid="unread-divider">{t("room.unreadTitle")}</span>}
-              <div className={cx(styles.message, mine && styles.mine)} data-mine={mine} data-testid="chat-message" data-unread={index >= unreadStart}>
-                {!mine && <Avatar name={message.displayName} size="sm" />}
-                <div className={styles.bubble}>{!mine && <b className={styles.author}>{message.displayName}</b>}{message.body}{message.imageUrl && <img className={cx(styles.photo, "chat-attach")} src={message.imageUrl} alt={t("chat.photo")} loading="lazy" />}</div>
-              </div>
+              <RoomChatMessage message={message} quoted={message.replyToId ? messages.find((item) => item.id === message.replyToId) ?? null : null}
+                selfId={live.selfId} unread={index >= unreadStart} onReact={live.react} onReply={setReplyTo} />
             </Fragment>
           );
         })}
@@ -96,11 +95,18 @@ export function RoomChat({ live, recent, onRecent, active, commandLine }: {
       <div className={styles.reactions}>{Object.values(emojiCategories).flat().slice(0, 5).map((emoji) => <button key={emoji} type="button" className={styles.reaction} onClick={() => live.sendFloat(emoji)} aria-label={t("room.reaction", { emoji })}>{emoji}</button>)}</div>
       {live.typingName && <small className={styles.typing}>{live.typingName} {t("chat.typing")}</small>}
       {active && emojiOpen && <EmojiPicker recent={recent} anchor={emojiButton.current} onPick={pickEmoji} onClose={() => setEmojiOpen(false)} />}
+      {replyTo ? (
+        <div className={styles.replying} data-testid="chat-replying">
+          <span>{t("chat.replyTo", { name: replyTo.displayName })}: {replyTo.body}</span>
+          <IconButton icon={X} size="sm" variant="ghost" label={t("chat.cancelReply")} onClick={() => setReplyTo(null)} />
+        </div>
+      ) : null}
       <form className={styles.composer} onSubmit={(event) => {
         event.preventDefault();
         if (!draft.trim()) return;
-        live.sendChat(draft.trim());
+        live.sendChat(draft.trim(), replyTo?.id ?? null);
         setDraft("");
+        setReplyTo(null);
       }}>
         <IconButton icon={Smile} variant="ghost" ref={emojiButton} data-testid="emoji-picker-toggle" aria-expanded={active && emojiOpen} label={t("room.emoji")} onClick={() => setEmojiOpen((value) => !value)} />
         <label className={styles.attach} title={t("chat.attach")}>

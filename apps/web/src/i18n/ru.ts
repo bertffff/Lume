@@ -594,6 +594,7 @@ export const ru = {
   "player.limited": "Плеер площадки может не слушаться пульта",
   "player.buffering": "Буфер",
   "player.unblock": "Смотреть здесь",
+  "chat.replyTo": "Ответ для {name}",
   "chat.title": "Чат",
   "chat.placeholder": "Написать в зал",
   "chat.send": "Отправить",
