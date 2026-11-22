@@ -61,8 +61,7 @@ dock and adapter stay mounted in every composition. */
 .room-live[data-room-style="gruvbox"]{ --room-radius: 0px; --room-gap: 8px; height: calc(100dvh - 32px); }
 .room-live[data-room-style="telerave"]{ --room-radius: 16px; --room-gap: 16px; }
 .room-live,
-.room-live *,
-.room-modal-content{ box-sizing: border-box; }
+.room-live *{ box-sizing: border-box; }
 .room-live h1,
 .room-live h2,
 .room-live h3,
@@ -71,9 +70,7 @@ dock and adapter stay mounted in every composition. */
 .room-live ol{ padding: 0; margin: 0; list-style: none; }
 .room-live button,
 .room-live input:not([type="file"]),
-.room-live summary,
-.room-modal-content button,
-.room-modal-content select{
+.room-live summary{
   min-height: 36px;
   padding: 6px 12px;
   border: 1px solid var(--line-2);
@@ -82,13 +79,10 @@ dock and adapter stay mounted in every composition. */
   background: var(--s2);
 }
 .room-live button,
-.room-live summary,
-.room-modal-content button{ display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.2; }
+.room-live summary{ display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.2; }
 .room-live button:hover:not(:disabled),
-.room-live summary:hover,
-.room-modal-content button:hover:not(:disabled){ background: var(--s3); border-color: var(--accent); }
-.room-live :is(button,input,summary):focus-visible,
-.room-modal-content :is(button,input,select):focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+.room-live summary:hover{ background: var(--s3); border-color: var(--accent); }
+.room-live :is(button,input,summary):focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
 .room-live button:disabled{ opacity: .6; }
 .room-live button svg,
 .room-live summary svg{ width: 17px; height: 17px; flex: 0 0 auto; }
@@ -96,12 +90,6 @@ dock and adapter stay mounted in every composition. */
 .room-header h1{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 650 clamp(16px, 2vw, 24px)/1.2 var(--font-display, var(--font)); }
 .room-playbar{ display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--s1); border-radius: var(--room-radius); padding: 8px; }
 .room-playbar progress{ flex: 1 1 40px; min-width: 0; accent-color: var(--accent); }
-.room-live .av{ display: inline-grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid var(--line-2); border-radius: min(50%, var(--room-radius)); background: var(--s3); font-weight: 700; font-size: .78rem; }
-.room-modal-content button[aria-pressed="true"]{ border-color: var(--accent); color: var(--accent-text); background: var(--accent-soft); }
-.room-settings-actions{ display: flex; flex-wrap: wrap; gap: 8px; }
-.room-modal-content{ display: grid; gap: 14px; }
-.room-modal-content :is(fieldset,.room-diagnostic){ display: grid; gap: 8px; min-width: 0; }
-.room-moderation{ margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
 .room-live :is(.room-dock-toggle,.room-dock-close){ display: none; }
 @media (min-width: 821px) {.room-live[data-room-style="gruvbox"] .room-header h1{ font-family: var(--font-mono); }
 .room-live[data-room-style="gruvbox"] .room-header h1::before{ content: "# "; color: var(--accent-text); }

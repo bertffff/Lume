@@ -10,21 +10,12 @@ colour there. */
 html[data-style="cinema"],
 html[data-style="cinema"] body{font-size:14px;line-height:20px}
 .kbd{font-size:11px;line-height:16px;padding:0 5px;border-radius:4px}
-.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:600 11px/1 var(--font-ui);flex:none;position:relative}
-.av.sm{width:22px;height:22px;font-size:10px}
-.av.lg{width:36px;height:36px;font-size:13px}
-.av.xl{width:52px;height:52px;font-size:17px}
 .btn{height:32px;padding:0 12px;border-radius:var(--r-sm);display:inline-flex;align-items:center;gap:8px;font-size:13px}
 .icon-btn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center}
 .theme-btn{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center}
 html[data-theme="dark"] .theme-btn .icon-moon{display:none}
 html[data-theme="light"] .theme-btn .icon-sun{display:none}
 html[data-style="cinema"] .design-app .theme-btn .icon{width:15px;height:15px}
-.heat-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.heat-top h3{font:600 15px/20px var(--font-display)}
-.heat-top .stats{font:500 12.5px/18px var(--font-ui)}
-.heat-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);grid-auto-columns:11px;gap:3px}
-.heat-grid i{width:11px;height:11px;border-radius:2px}
 /* ===== E v3 additions: C layout patterns in E cinema language ===== */
 .search-lg{width:min(440px,100%);min-height:44px;border-radius:var(--r-pill);display:flex;align-items:center;gap:10px;padding:0 16px;font-size:14px}
 .search-lg .kbd{margin-left:auto}
@@ -71,24 +62,15 @@ lists used across final screens */
 .row{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;padding:10px 0}
 .row b{display:block}
 .row small{font-size:12.5px}
-.set-grp{margin-bottom:4px}
-.set-grp h3{font:600 13px/18px var(--font-display);margin-bottom:8px}
 .shop{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:40px 24px;min-height:280px}
 .empty .ic{width:64px;height:64px;border-radius:20px;display:grid;place-items:center}
 .empty h2{font:600 22px/28px var(--font-display)}
 .empty p{max-width:36ch}
-.auth-card{width:min(420px,100%);border-radius:var(--r-lg);padding:28px 28px 24px}
-.tg-btn{height:44px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;gap:8px}
 .or{display:flex;align-items:center;gap:10px;font-size:12px}
 .or::before,
 .or::after{flex:1;height:1px}
-.npanel{width:min(360px,calc(100vw - 32px));border-radius:var(--r-lg);position:absolute;right:32px;top:64px;z-index:20;overflow:hidden}
-.nitem{display:grid;grid-template-columns:36px 1fr;gap:10px;padding:12px 14px}
-.nitem .t{font-size:13.5px}
-.nitem .s{font-size:12.5px}
 .page{width:100%;min-height:100dvh;overflow:hidden;display:flex;flex-direction:column}
-.page-body{flex:1;min-height:0;overflow:hidden}
 /* Base button: every button in the product is visibly a control. */
 html[data-style="cinema"] .design-app button{min-height:32px;padding:5px 12px;border-radius:var(--r-sm);display:inline-flex;align-items:center;justify-content:center;gap:8px;font:500 13px/1.2 var(--font-ui);white-space:nowrap}
 html[data-style="cinema"] .design-app button:active:not(:disabled){transform:translateY(1px)}
@@ -100,16 +82,11 @@ html[data-style="cinema"] .design-app .me{min-height:40px;padding:4px 10px 4px 5
 html[data-style="cinema"] .design-app :is(.theme-btn,.icon-btn){width:36px;height:36px;min-height:36px;padding:0;border-radius:50%}
 /* Semantic buttons */
 html[data-style="cinema"] :is(.design-app,.cinema-room) .btn{height:var(--ctl-h);min-height:var(--ctl-h);padding:0 14px;border-radius:var(--r-sm);font:600 13.5px/1 var(--font-ui);gap:8px;white-space:nowrap}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .tg-btn{height:44px;min-height:44px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .mini{height:var(--ctl-h-sm);min-height:var(--ctl-h-sm);padding:0 10px;font:500 12.5px/1 var(--font-ui);border-radius:var(--r-pill)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .go{height:var(--ctl-h);min-height:var(--ctl-h);padding:0 16px;border-radius:var(--r-sm)}
-/* Pills and segmented controls */
-html[data-style="cinema"] :is(.design-app,.cinema-room) .pill{height:var(--ctl-h-sm);padding:0 11px;border-radius:var(--r-pill);font:500 12.5px/1 var(--font-ui);gap:6px;min-height:var(--ctl-h-sm)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs{display:flex;align-items:center;gap:4px;padding:4px;border-radius:var(--r-sm)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs .tab{flex:1;min-width:0;height:32px;min-height:32px;padding:0 8px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:500 12.5px/1 var(--font-ui)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs .tab .n{min-width:20px;height:20px;padding:0 6px;border-radius:999px;display:inline-grid;place-items:center;font:600 10.5px/1 var(--font-mono)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs2{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-sm)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs2 .tab{height:32px;min-height:32px;padding:0 14px;border-radius:5px;font:500 13px/1 var(--font-ui)}
 /* Fields */
 html[data-style="cinema"] .design-app :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){height:38px;min-width:0;width:100%;padding:0 12px;border-radius:var(--r-sm);font:400 13.5px/1.25 var(--font-ui)}
 html[data-style="cinema"] .design-app textarea{height:auto;min-height:88px;padding:10px 12px}
@@ -128,10 +105,8 @@ html[data-style="cinema"] .design-app .card h3{font:600 15px/1.3 var(--font-disp
 html[data-style="cinema"] .design-app .card h3 span{font:600 11px/1 var(--font-mono)}
 html[data-style="cinema"] .design-app .card .ct{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font:600 14px/1.3 var(--font-display)}
 html[data-style="cinema"] .design-app .card .ct small{font:500 11.5px/1.3 var(--font-ui);margin-left:0}
-html[data-style="cinema"] .design-app .card .ct .pill{margin-left:auto}
 html[data-style="cinema"] .design-app .lead{font-size:13.5px;line-height:1.55}
 html[data-style="cinema"] .empty-note{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--r-sm);font-size:12.5px;line-height:1.45}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .choice-label{font:600 12px/1.4 var(--font-ui);margin:0 0 8px}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .choice{border-radius:var(--r-md);padding:12px;min-height:0}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .choice b{display:block;font:600 13px/1.4 var(--font-ui);margin-bottom:2px}
@@ -141,11 +116,7 @@ html[data-style="cinema"] :is(.design-app,.cinema-room) .steps span{flex:1;heigh
 /* ===== gruvbox ===== */
 html[data-style="gruvbox"],
 html[data-style="gruvbox"] body{font-size:13px;line-height:18px}
-/* Avatars: square,
-not circles — terminal tiles */
-html[data-style="gruvbox"] .av{width:22px;height:22px;border-radius:0;display:grid;place-items:center;font:600 10px/1 var(--font);flex:none;position:relative}
-html[data-style="gruvbox"] .av.sm{width:18px;height:18px;font-size:9px}
-html[data-style="gruvbox"] .av.lg{width:28px;height:28px;font-size:11px}
+/* Avatars: square{width:22px;height:22px;border-radius:0;display:grid;place-items:center;font:600 10px/1 var(--font);flex:none;position:relative}
 /* Tabline / buffers */
 html[data-style="gruvbox"] .tabline{display:flex;align-items:stretch;height:28px;font-size:12px;flex:none;z-index:3}
 html[data-style="gruvbox"] .brand{padding:0 14px;display:flex;align-items:center;gap:8px}
@@ -156,14 +127,8 @@ html[data-style="gruvbox"] .theme-btn{width:28px;height:28px;display:grid;place-
 html[data-style="gruvbox"] .kbd{font-size:11px;padding:0 5px;line-height:16px}
 /* Panes */
 html[data-style="gruvbox"] .pane{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
-html[data-style="gruvbox"] .pt{position:absolute;top:-8px;left:10px;z-index:2;padding:0 8px;font-size:11px;line-height:14px}
-html[data-style="gruvbox"] .pt .dim{margin-left:8px}
 /* Airline statusline */
 html[data-style="gruvbox"] .status{display:flex;align-items:stretch;height:24px;font-size:12px;flex:none;z-index:3}
-html[data-style="gruvbox"] .heat-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-html[data-style="gruvbox"] .heat-top .stats{font-size:12px}
-html[data-style="gruvbox"] .heat-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);grid-auto-columns:11px;gap:3px}
-html[data-style="gruvbox"] .heat-grid i{width:11px;height:11px;border-radius:0}
 /* G final-screen helpers — stay strictly tiled / mono */
 html[data-style="gruvbox"] .search-lg{display:flex;align-items:center;gap:8px;padding:0 8px;min-height:28px;flex:1;min-width:0}
 html[data-style="gruvbox"] .go{height:24px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;width:max-content}
@@ -190,14 +155,9 @@ html[data-style="gruvbox"] .shop{display:grid;grid-template-columns:repeat(3,1fr
 html[data-style="gruvbox"] .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:32px;min-height:240px}
 html[data-style="gruvbox"] .empty h2{font-size:16px}
 html[data-style="gruvbox"] .empty p{max-width:40ch}
-html[data-style="gruvbox"] .auth-card{width:min(440px,100%);padding:20px}
-html[data-style="gruvbox"] .tg-btn{height:32px;display:flex;align-items:center;justify-content:center;gap:8px}
 html[data-style="gruvbox"] .or{display:flex;align-items:center;gap:8px;font-size:11px}
 html[data-style="gruvbox"] .or::before,
 html[data-style="gruvbox"] .or::after{flex:1;height:1px}
-html[data-style="gruvbox"] .npanel{width:min(360px,calc(100vw - 32px));position:absolute;right:8px;top:36px;z-index:20}
-html[data-style="gruvbox"] .nitem{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px 10px}
-html[data-style="gruvbox"] .nitem .s{font-size:11px}
 html[data-style="gruvbox"] .page{width:100%;min-height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 html[data-style="gruvbox"] .btn{height:28px;padding:0 12px;display:inline-flex;align-items:center;gap:6px}
 html[data-style="gruvbox"] .toggle{width:28px;height:16px;border-radius:0;position:relative}

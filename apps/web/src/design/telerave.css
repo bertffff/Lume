@@ -66,23 +66,4 @@ html[data-style="telerave"]{
 html[data-style="telerave"] body{font-family:var(--font-ui)}
 html[data-style="telerave"] .style-frame[data-frame-style="telerave"]{background:var(--frame-canvas);color:var(--text)}
 html[data-style="telerave"] .style-frame-legacy{background:var(--frame-bg);border:1px solid var(--line);box-shadow:var(--shadow-card);backdrop-filter:blur(16px)}
-/* Shared appearance controls. Import after the existing style sheets so this
-   focus outline supersedes Cinema's shadow-only button rule. */
-:root[data-style] :is(body,.design-app,.cinema-room) .appearance-option{
-  background:var(--s2);
-  border:1px solid var(--text-3);
-  color:var(--text);
-}
-:root[data-style] :is(body,.design-app,.cinema-room) .appearance-option:hover{
-  background:var(--s3);
-  border-color:var(--focus-outline);
-}
-:root[data-style] :is(body,.design-app,.cinema-room) .appearance-option[aria-pressed="true"]{
-  background:var(--s1);
-  border-color:var(--focus-outline);
-}
-:root[data-style] :is(body,.design-app,.cinema-room) .appearance-option:focus-visible{
-  outline:2px solid var(--focus-outline) !important;
-  outline-offset:2px;
-}
 }
