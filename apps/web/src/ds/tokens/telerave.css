@@ -1,6 +1,6 @@
 /* TeleRave-v2: индиго-ночь и лаванда, стекло и свечение, один фиолетовый акцент. */
 html[data-style="telerave"] {
-  --ds-font-display: "Geologica", "Onest", system-ui, sans-serif;
+  --ds-font-display: "Unbounded", "Onest", system-ui, sans-serif;
   --ds-font-text: "Onest", system-ui, sans-serif;
   --ds-font-mono: "JetBrains Mono", ui-monospace, monospace;
   --ds-radius-control: 12px;
@@ -11,6 +11,13 @@ html[data-style="telerave"] {
   --ds-icon-stroke: 2;
   --ds-border-w: 1px;
   --ds-surface-blur: 14px;
+  --ds-tracking-display: -0.01em;
+  --ds-fs-title: 18px;
+  --ds-lh-title: 26px;
+  --ds-fs-headline: 24px;
+  --ds-lh-headline: 34px;
+  --ds-fs-display: 32px;
+  --ds-lh-display: 44px;
 }
 
 html[data-style="telerave"][data-theme="dark"] {

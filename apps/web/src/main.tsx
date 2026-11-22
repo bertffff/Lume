@@ -4,6 +4,8 @@ import { App } from "./App.js";
 import "./styles/global.css";
 import "@fontsource/geologica/cyrillic-600.css";
 import "@fontsource/geologica/cyrillic-700.css";
+import "@fontsource/unbounded/cyrillic-600.css";
+import "@fontsource/unbounded/cyrillic-700.css";
 import "@fontsource/onest/cyrillic-400.css";
 import "@fontsource/onest/cyrillic-500.css";
 import "@fontsource/onest/cyrillic-600.css";
