@@ -12,8 +12,7 @@
 .design-app .mf{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line);justify-content:flex-end;flex:none;flex-wrap:wrap}
 /* ============ Layout flow: side / below / stack,
 with a real resize handle ============ */
-.body,
-.low{
+.body{
   min-width: 0;
   min-height: 0;
 }

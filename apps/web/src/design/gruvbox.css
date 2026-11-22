@@ -70,7 +70,6 @@ html[data-style="gruvbox"]{
 }
 html[data-style="gruvbox"],
 html[data-style="gruvbox"] body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv02","calt";font-variant-ligatures:contextual;accent-color:var(--orange);scrollbar-color:var(--bg3) transparent;scrollbar-width:thin}
-html[data-style="gruvbox"] .mono{font-variant-numeric:tabular-nums}
 /* Tabline / buffers */
 html[data-style="gruvbox"] .tabline{background:var(--bg1);border-bottom:1px solid var(--bg2)}
 html[data-style="gruvbox"] .brand{color:var(--orange);font-weight:700;letter-spacing:.04em}
@@ -80,9 +79,6 @@ html[data-style="gruvbox"] .buf .nr{color:var(--yellow)}
 html[data-style="gruvbox"] .buf.on{background:var(--bg);color:var(--fg0);box-shadow:inset 0 -2px 0 var(--yellow)}
 html[data-style="gruvbox"] .buf.on .nr{color:var(--orange)}
 html[data-style="gruvbox"] .theme-btn{color:var(--yellow)}
-html[data-style="gruvbox"] .kbd{color:var(--bg4);border:1px solid var(--bg2)}
-/* Panes */
-html[data-style="gruvbox"] .pane{border:1px solid var(--bg2);background:var(--s1)}
 /* Airline statusline */
 html[data-style="gruvbox"] .status{background:var(--bg1);border-top:1px solid var(--bg2);font-weight:500}
 html[data-style="gruvbox"] .style-frame-terminal{background:var(--s2);border-bottom:1px solid var(--bg2)}
@@ -91,21 +87,12 @@ html[data-style="gruvbox"] .style-frame-status-label{background:var(--mode-bg);c
 html[data-style="gruvbox"] .style-frame-status-detail{color:var(--text-2)}
 /* G final-screen helpers — stay strictly tiled / mono */
 html[data-style="gruvbox"] .search-lg{color:var(--text-3);border-left:1px solid var(--bg2)}
-html[data-style="gruvbox"] .go{background:var(--fill-yellow,#fabd2f);color:var(--fill-yellow-ink,#1d2021);font-weight:700}
 html[data-style="gruvbox"] .overlay{background:color-mix(in srgb,var(--bg0-h) 55%,#000 45%)}
 html[data-style="gruvbox"] .modal{background:var(--bg0);border:1px solid var(--bg2)}
 html[data-style="gruvbox"] .mh{border-bottom:1px solid var(--bg2);color:var(--aqua)}
 html[data-style="gruvbox"] .mh h2{font-weight:600;color:var(--fg0);letter-spacing:0}
 html[data-style="gruvbox"] .mf{border-top:1px solid var(--bg2)}
-html[data-style="gruvbox"] .field label{color:var(--text-3)}
-html[data-style="gruvbox"] .inbox,
-html[data-style="gruvbox"] .field .box{border:1px solid var(--bg2);background:var(--bg0-h);color:var(--fg)}
-html[data-style="gruvbox"] .choice{border:1px solid var(--bg2);background:var(--bg0)}
-html[data-style="gruvbox"] .choice.on{border-color:var(--yellow)}
-html[data-style="gruvbox"] .choice b{color:var(--fg0)}
-html[data-style="gruvbox"] .choice p{color:var(--text-3)}
-html[data-style="gruvbox"] .steps span{background:var(--bg2)}
-html[data-style="gruvbox"] .steps span.on{background:var(--yellow)}
+html[data-style="gruvbox"] .inbox{border:1px solid var(--bg2);background:var(--bg0-h);color:var(--fg)}
 html[data-style="gruvbox"] .empty h2{color:var(--fg0);font-weight:600}
 html[data-style="gruvbox"] .empty p{color:var(--text-2)}
 html[data-style="gruvbox"] .or{color:var(--text-3)}

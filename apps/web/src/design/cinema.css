@@ -79,8 +79,6 @@ html[data-style="cinema"]{
 }
 html[data-style="cinema"],
 html[data-style="cinema"] body{background:var(--bg);color:var(--text);font-family:var(--font-ui);-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11";accent-color:var(--accent);scrollbar-color:var(--text-3) transparent;scrollbar-width:thin}
-.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:0}
-.kbd{font-family:var(--font-mono);border:1px solid var(--line-2);color:var(--text-3)}
 .btn{font-weight:500}
 .btn-primary{background:var(--accent);color:var(--accent-ink)}
 .btn-social{background:var(--social);color:var(--social-ink)}
@@ -90,19 +88,6 @@ html[data-style="cinema"] body{background:var(--bg);color:var(--text);font-famil
 .theme-btn{color:var(--text-2);background:var(--toggle-bg);border:1px solid var(--line-2)}
 /* ===== E v3 additions: C layout patterns in E cinema language ===== */
 .search-lg{background:var(--s1);border:1px solid var(--line);color:var(--text-3);font-weight:500}
-.tile{background:var(--s1);border:1px solid var(--line);box-shadow:var(--shadow-card)}
-.tile.resume{color:#F3EDE6;color-scheme:dark;background:radial-gradient(120% 140% at 78% 18%,#2b2723 0%,#171413 54%,#0b0908 100%)}
-.tile.resume::before{content:"";background:linear-gradient(180deg,rgba(10,8,7,.15) 20%,rgba(10,8,7,.82) 100%)}
-.tile.resume h2{letter-spacing:-.015em;text-wrap:balance}
-.tile.resume .sub{color:rgba(243,237,230,.78)}
-.tile.create{background:var(--accent);color:var(--accent-ink);border-color:transparent}
-.tile.create .ic{background:rgba(26,18,5,.12)}
-.tile.create h3{letter-spacing:-.015em}
-.tile.create p{opacity:.8}
-.tile.join h3{letter-spacing:-.015em}
-.tile.join p{color:var(--text-2)}
-.tile.join .ic{background:var(--social-soft);color:var(--social-text)}
-.tile.join .go{background:var(--social);color:var(--social-ink);font-weight:600}
 .card{background:var(--s1);border:1px solid var(--line);box-shadow:var(--shadow-card)}
 .card .ct small{color:var(--text-3)}
 /* Modals,
@@ -113,15 +98,7 @@ lists used across final screens */
 .mh{border-bottom:1px solid var(--line)}
 .mh h2{letter-spacing:-.015em}
 .mf{border-top:1px solid var(--line)}
-.field label{color:var(--text-2)}
-.field .box,
-.field input,
 .inbox{background:var(--s2);border:1px solid var(--line);color:var(--text)}
-.choice{border:1px solid var(--line-2);background:var(--s2)}
-.choice.on{border-color:var(--accent);background:var(--accent-soft)}
-.choice p{color:var(--text-2)}
-.steps span{background:var(--s3)}
-.steps span.on{background:var(--accent)}
 .row{border-bottom:1px solid var(--line)}
 .row:last-child{border-bottom:0}
 .row b{font-weight:600}
@@ -154,7 +131,6 @@ html[data-style="cinema"] :is(.design-app,.cinema-room) :is(button,input,select,
 /* Chromeless controls keep their own shape. */
 html[data-style="cinema"] .design-app :is(.logo,.me,.st,.slink,.tab,.buf),
 html[data-style="cinema"] .design-app .tabs .tab{box-shadow:none;background:transparent;border:0}
-html[data-style="cinema"] .design-app .logo{color:var(--text)}
 html[data-style="cinema"] .design-app .me{border:1px solid var(--line);background:var(--s1)}
 html[data-style="cinema"] .design-app .me:hover{background:var(--s2);border-color:var(--line-2)}
 html[data-style="cinema"] .design-app :is(.theme-btn,.icon-btn){background:var(--s1);border:1px solid var(--line);color:var(--text-2)}
@@ -174,8 +150,6 @@ html[data-style="cinema"] :is(.design-app,.cinema-room) .btn-telegram:hover:not(
 html[data-style="cinema"] :is(.design-app,.cinema-room) .btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .mini{background:transparent;border-color:var(--line-2);box-shadow:none}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .mini:hover:not(:disabled){background:var(--s2)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .mini.go{background:var(--social);border-color:transparent;color:var(--social-ink)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .go{background:var(--social);border-color:transparent;color:var(--social-ink);font-weight:600}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs{border:1px solid var(--line);background:var(--s2);box-shadow:var(--control-shadow)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs .tab{color:var(--text-2)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .tabs .tab:hover{background:color-mix(in srgb,var(--text) 7%,transparent);color:var(--text)}
@@ -195,7 +169,6 @@ html[data-style="cinema"] .design-app .search-lg input{border:0;background:trans
 html[data-style="cinema"] .design-app .search-lg input:hover{background:transparent;border:0}
 html[data-style="cinema"] .design-app .search-lg:focus-within{border-color:var(--accent);box-shadow:var(--focus-ring)}
 html[data-style="cinema"] .design-app .search-lg:focus-within input{box-shadow:none !important;border:0 !important}
-html[data-style="cinema"] .design-app .field{color:var(--text-2)}
 /* Cards and section headings */
 html[data-style="cinema"] .design-app .card{background:var(--s1);border:1px solid var(--line);box-shadow:var(--shadow-card)}
 html[data-style="cinema"] .design-app .card h3{letter-spacing:-.01em}
@@ -204,10 +177,4 @@ html[data-style="cinema"] .design-app .card .ct{color:var(--text)}
 html[data-style="cinema"] .design-app .card .ct small{color:var(--text-2)}
 html[data-style="cinema"] .design-app .lead{color:var(--text-2)}
 html[data-style="cinema"] .empty-note{border:1px dashed var(--line-2);color:var(--text-3)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .choice{border:1px solid var(--line-2);background:var(--s2)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .choice.on{border-color:var(--accent);background:var(--accent-soft)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .choice b{color:var(--text)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .choice p{color:var(--text-2)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .steps span{background:var(--s3)}
-html[data-style="cinema"] :is(.design-app,.cinema-room) .steps span.on{background:var(--accent)}
 }
