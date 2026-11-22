@@ -1,3 +1,4 @@
+@layer legacy {
 /* TeleRave-v2 standard/light canvas and restrained panel chrome, adapted to
    Lume's semantic roles. Opaque text/ink steps maintain readable contrast. */
 html[data-style="telerave"][data-theme="dark"]{
@@ -86,4 +87,5 @@ html[data-style="telerave"] .style-frame-legacy{background:var(--frame-bg);borde
 :root[data-style] :is(body,.design-app,.cinema-room) .appearance-option:focus-visible{
   outline:2px solid var(--focus-outline) !important;
   outline-offset:2px;
+}
 }

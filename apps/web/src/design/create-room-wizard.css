@@ -1,3 +1,4 @@
+@layer legacy {
 /* CreateRoomWizard: layout, state and affordances only.
    All visible copy is supplied by props/i18n; nothing here is localised text.
    Scoped under the shared modal so overrides win over .ui-overlay .modal rules. */
@@ -259,4 +260,5 @@
   .ui-overlay .modal .create-wizard__choice {
     transition: none;
   }
+}
 }

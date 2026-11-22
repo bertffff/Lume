@@ -1,3 +1,4 @@
+@layer legacy {
 /* Live room + static room preview.
    Composition: header / session dock / player + rail. Dark stage is intentional. */
 
@@ -975,4 +976,5 @@
 }
 .session-rail {
   z-index: 60;
+}
 }

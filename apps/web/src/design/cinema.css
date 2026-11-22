@@ -1,3 +1,4 @@
+@layer legacy {
 /* Variant E v2 — «Кинозал × Посиделки»
    A owns canvas, type, amber cinema accent, player-first stage + spill.
    C owns social patterns: bubble chat, voice stage, mobile queue sheet, story rings.
@@ -237,7 +238,7 @@ html[data-style="cinema"] .design-app button:hover:not(:disabled),
 html[data-style="cinema"] .cinema-room button:hover:not(:disabled){background:var(--s3);border-color:color-mix(in srgb,var(--text) 32%,transparent)}
 html[data-style="cinema"] .design-app button:disabled,
 html[data-style="cinema"] .cinema-room button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
-html[data-style="cinema"] :is(.design-app,.cinema-room) :is(button,input,select,textarea,a):focus-visible{outline:none !important;box-shadow:var(--focus-ring) !important;border-color:var(--accent) !important}
+html[data-style="cinema"] :is(.design-app,.cinema-room) :is(button,input,select,textarea,a):focus-visible{outline:none;box-shadow:var(--focus-ring);border-color:var(--accent)}
 /* Chromeless controls keep their own shape. */
 html[data-style="cinema"] .design-app :is(.logo,.me,.st,.slink,.tab,.buf),
 html[data-style="cinema"] .cinema-room :is(.logo,.tab,.buf),
@@ -341,3 +342,4 @@ html[data-style="cinema"] :is(.design-app,.cinema-room) .choice b{color:var(--te
 html[data-style="cinema"] :is(.design-app,.cinema-room) .choice p{color:var(--text-2)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .steps span{background:var(--s3)}
 html[data-style="cinema"] :is(.design-app,.cinema-room) .steps span.on{background:var(--accent)}
+}

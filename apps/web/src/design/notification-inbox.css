@@ -1,3 +1,4 @@
+@layer legacy {
 .notification-inbox-anchor {
   position: relative;
   display: inline-flex;
@@ -219,4 +220,5 @@
   block-size: 8px;
   border-radius: 50%;
   background: var(--social-text, var(--accent-text, Highlight));
+}
 }

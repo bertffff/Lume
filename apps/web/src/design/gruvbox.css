@@ -1,3 +1,4 @@
+@layer legacy {
 /* Variant G v2 — Gruvbox, uncompromising.
    Official palette only (morhetz/gruvbox). JetBrains Mono throughout.
    Composition is a tiled vim/tmux product: panes, buffer tabline, airline statusline.
@@ -191,3 +192,4 @@ html[data-style="gruvbox"] .qrow .th{background:center/cover;border:1px solid va
 html[data-style="gruvbox"] .actsheet{border:1px solid var(--yellow);background:var(--bg0-h)}
 html[data-style="gruvbox"] .actsheet button{color:var(--fg)}
 html[data-style="gruvbox"] .actsheet button.danger{color:var(--red)}
+}

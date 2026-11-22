@@ -4,6 +4,7 @@
 @import "@fontsource/outfit/600.css";
 @import "@fontsource/fraunces/500.css";
 
+@layer app {
 :root {
   color-scheme: dark;
   --lume-bg: #100e0c;
@@ -105,4 +106,5 @@ img {
   * {
     transition: none !important;
   }
+}
 }

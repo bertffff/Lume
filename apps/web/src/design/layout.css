@@ -1,3 +1,4 @@
+@layer legacy {
 /* Layout layer: shell, navigation, home grid, side rail, pages.
    Loaded after cinema.css, so this file owns composition, not color tokens. */
 
@@ -1392,4 +1393,5 @@ html[data-style="gruvbox"] .design-app .g-shot.poster-concert { background: #4a2
 }
 html[data-style="gruvbox"] .design-app.is-narrow .g-home {
   padding-bottom: 64px;
+}
 }

@@ -1,3 +1,4 @@
+@layer legacy {
 .profile-view {
   --profile-rail: clamp(12rem, 24vw, 17rem);
   --profile-radius: 14px;
@@ -204,3 +205,4 @@
 
 .profile-achievements-grid li.got { border-color: var(--accent-text, var(--accent)); }
 .profile-achievements-grid small { color: var(--text-2); }
+}

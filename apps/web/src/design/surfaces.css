@@ -1,3 +1,4 @@
+@layer legacy {
 /* Geometry, layout primitives and responsive surfaces.
    Token colours, shadows and font families stay in cinema.css / gruvbox.css.
    A rule that mixes both is split: geometry here, colour there. */
@@ -322,3 +323,4 @@ html[data-style="gruvbox"] .qrow{display:grid;grid-template-columns:48px 1fr aut
 html[data-style="gruvbox"] .qrow .th{height:32px}
 html[data-style="gruvbox"] .actsheet{padding:8px;margin:4px 0 8px}
 html[data-style="gruvbox"] .actsheet button{display:block;width:100%;text-align:left;padding:4px 6px;font-size:12px}
+}
