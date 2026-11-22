@@ -220,8 +220,44 @@ export function DesignApp({
     try {
       const result = await api.devLogin(name.trim() || t("auth.guest"));
       onSession({ accessToken: result.accessToken, ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}), user: result.user });
+      if (view === "auth") go("/");
     } catch (caught) {
       setError(caught instanceof ClientError ? t(signInErrorKey(caught.code)) : t("auth.error.generic"));
+    }
+  }
+
+  async function emailSignIn(event: FormEvent, password: string) {
+    event.preventDefault();
+    const email = name.trim();
+    if (!email.includes("@")) {
+      await signIn(event);
+      return;
+    }
+    if (!password) {
+      try {
+        const response = await fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
+        if (!response.ok) throw new Error("magic_link_failed");
+        setNotice(t("auth.magicSent"));
+      } catch {
+        setError(t("auth.magicFailed"));
+      }
+      return;
+    }
+    try {
+      const response = await fetch(`${apiUrl}/auth/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
+      const payload = (await response.json().catch(() => ({}))) as { accessToken?: string; refreshToken?: string; user?: { id: string; displayName: string } };
+      if (!response.ok || !payload.accessToken || !payload.user) {
+        setError(t(response.status === 429 ? "auth.error.rateLimited" : "auth.error.unauthorized"));
+        return;
+      }
+      onSession({
+        accessToken: payload.accessToken,
+        ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}),
+        user: { id: payload.user.id, displayName: payload.user.displayName, telegramId: null, username: null, locale: "ru", themeId: "ember" },
+      });
+      go("/");
+    } catch {
+      setError(t("auth.error.generic"));
     }
   }
 
@@ -474,7 +510,7 @@ export function DesignApp({
           {view === "notifications" ? <NotificationInboxPage {...inbox} /> : null}
           {view === "onboarding" ? <OnboardingScreen onDone={() => { window.localStorage.setItem("lume-onboarded", "1"); go("/"); }} /> : null}
           {view === "auth" ? (
-            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event) => { event.preventDefault(); void fetch(`${apiUrl}/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name }) }).then(() => setNotice(t("auth.magicSent"))).catch(() => setError(t("auth.magicFailed"))); }} onRegister={(event) => {
+            <AuthScreen name={name} onName={setName} onTelegram={() => void signIn({ preventDefault() {} } as FormEvent)} onEmail={(event, password) => void emailSignIn(event, password)} onRegister={(event) => {
               event.preventDefault();
               const data = new FormData(event.currentTarget);
               void fetch(`${apiUrl}/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: name, password: String(data.get("password") ?? ""), displayName: String(data.get("displayName") ?? name) }) })
@@ -487,6 +523,7 @@ export function DesignApp({
                       ...(payload.refreshToken ? { refreshToken: payload.refreshToken } : {}),
                       user: { id: payload.user.id, displayName: payload.user.displayName, telegramId: null, username: null, locale: "ru", themeId: "ember" },
                     });
+                    go("/");
                   }
                 });
             }} />

@@ -8,7 +8,7 @@ export function AuthScreen({ onTelegram, name, onName, onEmail, onRegister }: {
   onTelegram: () => void;
   name: string;
   onName: (value: string) => void;
-  onEmail: (event: FormEvent) => void;
+  onEmail: (event: FormEvent, password: string) => void;
   onRegister: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const { t } = useI18n();
@@ -21,7 +21,7 @@ export function AuthScreen({ onTelegram, name, onName, onEmail, onRegister }: {
         <h1 className={styles.headline}>{t("auth.heroTitle")}</h1>
         <p className={styles.lead}>{t("auth.heroBody")}</p>
       </section>
-      <form className={styles.card} onSubmit={tab === "register" ? onRegister : onEmail}>
+      <form className={styles.card} onSubmit={tab === "register" ? onRegister : (event) => onEmail(event, password)}>
         <div className={styles.tabs} role="group">
           {(["login", "register"] as const).map((id) => (
             <button key={id} type="button" aria-pressed={tab === id} className={cx(styles.tab, tab === id && styles.on)} onClick={() => setTab(id)}>
