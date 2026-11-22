@@ -154,3 +154,9 @@
     line-height: var(--ds-lh-body);
   }
 }
+
+@media (max-width: 420px) {
+  .code {
+    display: none;
+  }
+}

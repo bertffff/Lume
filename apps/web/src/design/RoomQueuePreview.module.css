@@ -73,7 +73,7 @@
     gap: var(--ds-space-2);
   }
 
-  .item:nth-child(n + 2),
+  .list,
   .empty {
     display: none;
   }
