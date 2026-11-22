@@ -1,0 +1,204 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-width: 0;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ds-space-3);
+  margin: 0;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--ds-space-1);
+}
+
+.kpiLabel {
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.kpiValue {
+  margin: 0;
+  font: var(--ds-fw-bold) var(--ds-fs-headline) / var(--ds-lh-headline) var(--ds-font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  margin: var(--ds-space-3) 0 0;
+  color: var(--ds-text-tertiary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+}
+
+.heading {
+  margin: 0 0 var(--ds-space-3);
+  font: var(--ds-fw-semibold) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-display);
+}
+
+.boards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  min-width: 0;
+}
+
+.boardTitle {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.rank {
+  width: var(--ds-space-4);
+  color: var(--ds-text-tertiary);
+  font: var(--ds-fw-medium) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-mono);
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  min-width: 0;
+}
+
+.rowName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowValue {
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-mono);
+}
+
+.muted {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+.search {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ds-space-2);
+  margin-bottom: var(--ds-space-3);
+}
+
+.searchField {
+  flex: 1;
+  min-width: 0;
+}
+
+.awardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--ds-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.award {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-4);
+  border: var(--ds-border-w) solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-2);
+}
+
+.awardLocked {
+  opacity: 0.55;
+}
+
+.awardEarned {
+  border-color: var(--ds-accent);
+}
+
+.awardIcon {
+  font-size: var(--ds-fs-headline);
+  line-height: var(--ds-lh-headline);
+}
+
+.awardTitle {
+  font: var(--ds-fw-semibold) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.awardState {
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+}
+
+@media (max-width: 900px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .boards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-4);
+}
+
+.actions {
+  display: inline-flex;
+  gap: var(--ds-space-2);
+}
+
+.public {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-4);
+  padding: var(--ds-space-4);
+  border: var(--ds-border-w) solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-2);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.publicName {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-display);
+}
+
+.plain {
+  margin: var(--ds-space-1) 0 0;
+  padding-left: var(--ds-space-4);
+  color: var(--ds-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

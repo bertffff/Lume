@@ -1,0 +1,528 @@
+
+{
+  "nav": {
+    "home": "Home",
+    "browse": "Browse",
+    "create": "Create",
+    "profile": "Profile",
+    "admin": "Admin",
+    "login": "Sign In",
+    "logout": "Sign Out"
+  },
+  "buttons": {
+    "retry": "Try Again",
+    "refresh": "Refresh",
+    "join": "Join",
+    "goHome": "Go Home",
+    "reload": "Reload",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "loading": "Loading..."
+  },
+  "status": {
+    "connecting": "Connecting...",
+    "reconnecting": "Reconnecting...",
+    "disconnected": "Connection lost",
+    "connected": "Connected"
+  },
+  "errors": {
+    "appCrash": "Something went wrong",
+    "pageCrash": "Page error",
+    "appCrashDesc": "A critical error occurred. Please try reloading the app.",
+    "pageCrashDesc": "An error occurred while loading this page.",
+    "notFound": "Page not found. It may have been deleted or you followed an invalid link.",
+    "noConnection": "No connection",
+    "noConnectionDesc": "Check your internet connection and try again.",
+    "checking": "Checking..."
+  },
+  "home": {
+    "subtitle": "Real-time collaborative video watching",
+    "greeting": "Hi,",
+    "levelLabel": "Lvl. {{level}}",
+    "quickJoin": {
+      "title": "Quick Join",
+      "placeholder": "Room code or link...",
+      "button": "Join"
+    },
+    "sessionHub": {
+      "title": "Session Hub",
+      "subtitle": "Continue watching, start a room, or find a live crew.",
+      "continueLabel": "Continue",
+      "startLabel": "Start",
+      "startTitle": "New watch party",
+      "startDesc": "Launch a room and send the invite right away.",
+      "resumeMeta": "From {{time}} • queue {{count}}",
+      "roomCode": "Room {{code}}",
+      "browseLabel": "Live rooms",
+      "browseDesc": "Find an active watch",
+      "createLabel": "Host a session",
+      "createDesc": "Bring friends in by link",
+      "time": "Time",
+      "queue": "Queue",
+      "history": "History"
+    },
+    "globalStats": {
+      "online": "Online",
+      "activeRooms": "Active rooms",
+      "videosWatched": "Videos watched",
+      "hoursWatched": "Hours watched"
+    },
+    "stats": {
+      "title": "Your Stats",
+      "watched": "Watched",
+      "parties": "Parties",
+      "level": "Level"
+    },
+    "features": {
+      "title": "Features",
+      "platforms": {
+        "title": "YouTube, Vimeo, Twitch and more",
+        "desc": "Support for all popular platforms"
+      },
+      "sync": {
+        "title": "Real-time synchronization",
+        "desc": "Perfect timestamp matching"
+      },
+      "chat": {
+        "title": "Chat and voice",
+        "desc": "Talk while you watch"
+      },
+      "achievements": {
+        "title": "Achievements and levels",
+        "desc": "Earn badges for watching"
+      }
+    },
+    "actions": {
+      "createRoom": "Create Room",
+      "createRoomDesc": "Start a party",
+      "browseRooms": "Browse Rooms",
+      "browseRoomsDesc": "Find company",
+      "resumeViewing": "Continue Watching",
+      "resumeFromTime": "From {{time}}",
+      "resumeQueueCount": "Queue: {{count}}",
+      "resumeHistoryCount": "History: {{count}}"
+    }
+  },
+  "profile": {
+    "settingsTitle": "Profile Settings",
+    "privacySection": "Privacy",
+    "showUsername": "Show @username",
+    "showUsernameDesc": "Others will see your user tag",
+    "friendsList": "Friends list",
+    "friendsListDesc": "When on — other users can see your friends",
+    "watchHistory": "Watch history",
+    "watchHistoryDesc": "Visible to other users",
+    "topFriends": "Top co-viewers",
+    "topFriendsDesc": "Who can see your co-viewers",
+    "favoriteVideos": "Favorite videos",
+    "favoriteVideosDesc": "Show favorite videos",
+    "chatSection": "Chat & Reactions",
+    "quickReaction": "Quick reaction",
+    "quickReactionDesc": "Double-tap on message",
+    "quickEmojis": "Quick emojis",
+    "quickEmojisDesc": "Appear on long-press message (3-10)",
+    "hideReactions": "Hide video reactions",
+    "hideReactionsDesc": "Don't show floating reactions from others",
+    "permissionsSection": "🛡️ Default viewer permissions",
+    "permissionsSubtitle": "Applied when creating a room",
+    "permChat": "Write in chat",
+    "permSpeak": "Speak",
+    "permControlVideo": "Control video",
+    "permAddToQueue": "Add to queue",
+    "permRemoveFromQueue": "Remove from queue",
+    "permReorderQueue": "Reorder queue",
+    "roomDefaultsSection": "Default room settings",
+    "roomTitle": "Title",
+    "roomTitleExample": "My awesome party",
+    "roomPublic": "Public room",
+    "roomMaxMembers": "Max members",
+    "saveRoomDefaults": "Save room settings",
+    "levelProgress": "Level progress",
+    "xpProgress": "XP",
+    "saved": "✓ Saved!",
+    "languageLabel": "Language",
+    "languageRu": "Русский",
+    "languageEn": "English",
+    "loginRequired": "Sign in via Telegram to view profile",
+    "raveLevel": "Rave Level {{level}}",
+    "tabInfo": "Info",
+    "tabOverview": "Overview",
+    "tabHistory": "History",
+    "tabAchievements": "Badges",
+    "tabFriends": "Friends",
+    "recentAchievements": "Recent Achievements",
+    "noAchievements": "Nothing yet...",
+    "emptyAchievementsTitle": "Achievements are waiting",
+    "emptyAchievementsDesc": "Join a public room, watch with friends, and TeleRave will start collecting your first badges.",
+    "emptyAchievementsCta": "Find a room",
+    "emptyHistoryTitle": "Watch history is empty",
+    "emptyHistoryDesc": "After a shared viewing session, videos, platforms, and sessions you can revisit will appear here.",
+    "emptyHistoryCta": "Start watching",
+    "viewAll": "View All",
+    "allAchievements": "All Achievements",
+    "remainingCount": "{{count}} more to go",
+    "remainingWord": "achievements",
+    "friendRequests": "Friend Requests ({{count}})",
+    "acceptTitle": "Accept",
+    "rejectTitle": "Reject",
+    "noFriends": "No friends yet",
+    "editEmojis": "Edit",
+    "manageBlacklist": "Manage Blacklist",
+    "blacklist": "Blacklist",
+    "blacklistEmpty": "List is empty",
+    "unblock": "Unblock",
+    "themeSection": "Theme",
+    "bio": {
+      "title": "About you",
+      "description": "Short description for your profile",
+      "placeholder": "Tell us about yourself...",
+      "saveError": "Save error",
+      "saving": "Saving...",
+      "saved": "Saved!",
+      "save": "Save"
+    },
+    "currentActivity": {
+      "label": "Watching now:",
+      "inRoom": "in \"{{title}}\"",
+      "join": "Join",
+      "private": "In a private room"
+    },
+    "avatar": {
+      "selectImage": "Select image",
+      "preview": "Preview",
+      "saving": "Saving...",
+      "save": "Save avatar",
+      "cancel": "Cancel",
+      "uploadError": "Upload error"
+    },
+    "pinnedAchievement": {
+      "chooseTitle": "Choose an achievement:",
+      "close": "Close",
+      "pinToSlot": "Pin achievement to slot {{slot}}",
+      "xpReward": "+{{xp}} XP"
+    },
+    "heatmap": {
+      "title": "Activity over the year",
+      "less": "Less",
+      "more": "More",
+      "tooltipMin_one": "{{count}}m watched",
+      "tooltipMin_other": "{{count}}m watched",
+      "tooltipMessages_one": "{{count}} message",
+      "tooltipMessages_other": "{{count}} messages"
+    },
+    "platforms": {
+      "title": "Top platforms",
+      "empty": "No watch data",
+      "vkVideo": "VK Video",
+      "directLinks": "Direct links",
+      "other": "Other"
+    },
+    "engagement": {
+      "voice": "Voice",
+      "messages": "Messages",
+      "reactions": "Reactions"
+    },
+    "shareWidget": {
+      "title": "Share profile",
+      "qrCode": "QR code",
+      "copied": "Copied!",
+      "copyLink": "Copy link",
+      "share": "Share"
+    },
+    "friendsEmpty": {
+      "title": "No friends yet",
+      "description": "Invite friends or find company in public rooms.",
+      "shareInvite": "Share invite",
+      "searchUsers": "Find users",
+      "inviteTelegram": "Invite via Telegram"
+    },
+    "activity": {
+      "title": "Profile feed",
+      "now": "now",
+      "latestAchievement": "Latest badge",
+      "watchTime": "Watch time",
+      "parties": "Sessions",
+      "partiesCount": "{{count}} shared watches",
+      "social": "Social layer",
+      "friendsCount": "{{count}} friends",
+      "requestsCount": "{{count}} requests waiting",
+      "emptyTitle": "Your profile story starts here",
+      "emptyDesc": "After your first rooms, this feed will show badges, sessions, friends, and watch time."
+    },
+    "completeness": {
+      "title": "Profile readiness",
+      "description": "A short checklist helps you find company faster, invite friends, and look present in rooms.",
+      "count": "{{completed}}/{{total}} ready",
+      "progressLabel": "profile",
+      "avatarTitle": "Avatar",
+      "avatarDesc": "People can recognize you in rooms and member lists.",
+      "contactTitle": "Sign-in method",
+      "contactDesc": "Telegram or email keeps access and magic links available.",
+      "sessionTitle": "First session",
+      "sessionDesc": "History starts collecting your shared watches.",
+      "achievementTitle": "First badge",
+      "achievementDesc": "Badges show your watch style and activity.",
+      "friendsTitle": "Friends",
+      "friendsDesc": "Invites and quick joins work better with company.",
+      "ctaSettings": "Open settings",
+      "ctaBrowse": "Find a room",
+      "ctaInvite": "Invite friends",
+      "reviewSettings": "Review settings",
+      "done": "Profile is ready for shared watching"
+    },
+    "hostStats": {
+      "title": "Host statistics",
+      "uniqueViewers": "Unique viewers",
+      "topVideos": "Top videos",
+      "sharedHours": "Shared hours",
+      "topParticipants": "Top participants",
+      "noData": "No host data yet"
+    }
+  },
+  "user": {
+    "levelProgress": "Level progress",
+    "xpFormat": "XP",
+    "statOnAir": "On Air",
+    "statParties": "Parties",
+    "statAchievements": "Achievements",
+    "statTotalXP": "Total XP",
+    "achievements": "Achievements",
+    "infographics": "Infographics",
+    "topCoViewers": "Top co-viewers",
+    "favoriteVideos": "Favorite videos",
+    "watchHistory": "Watch history",
+    "tabStats": "Stats",
+    "tabFriends": "Friends",
+    "noSharedViewingData": "No shared viewing data",
+    "noFavoriteVideos": "No favorite videos",
+    "watchHistoryEmpty": "Watch history is empty",
+    "watchesAbbr": "views",
+    "alreadyFriends": "Already friends",
+    "requestSent": "Request sent",
+    "addFriend": "Add Friend",
+    "sending": "Sending...",
+    "noAchievements": "No achievements yet",
+    "friendsHidden": "Friends list is hidden",
+    "friendsHiddenDesc": "This user has hidden their friends list",
+    "friendsEmpty": "Friends list is empty",
+    "timeJustNow": "just now",
+    "timeMinAgo": "{{count}} min ago",
+    "timeHoursAgo": "{{count}}h ago",
+    "timeDaysAgo": "{{count}}d ago",
+    "durationSec": "{{v}}s",
+    "durationMin": "{{v}}m",
+    "durationHr": "{{v}}h",
+    "durationHrMin": "{{h}}h {{m}}m"
+  },
+  "report": {
+    "title": "Report",
+    "placeholder": "Describe the issue...",
+    "submit": "Submit Report",
+    "success": "Report submitted. Thank you!",
+    "error": "Failed to submit report. Try again later.",
+    "reasonRequired": "Please describe the reason for the report"
+  },
+  "notifications": "Notification Settings",
+  "notificationsPanel": {
+    "open": "Notifications",
+    "title": "Notifications",
+    "subtitle": "Room, friend and moderation signals",
+    "markAllRead": "Mark all as read",
+    "loading": "Loading notifications...",
+    "empty": "No notifications yet",
+    "dismiss": "Dismiss notification"
+  },
+  "notificationsSettings": {
+    "enablePush": "Enable Push Notifications",
+    "eventColumn": "Event",
+    "summaryTitle": "Delivery channels",
+    "summaryDesc": "Choose where signals should arrive first, then tune individual events below.",
+    "enabledCount": "of {{total}} events",
+    "channelToggleLabel": "Turn all events for {{channel}} on or off",
+    "channelAllOn": "All events on",
+    "channelPartial": "Partially tuned",
+    "pushNeedsPermission": "Browser permission required",
+    "rhythmTitle": "Delivery rhythm",
+    "rhythmDesc": "Local rhythm choice for future server-side digest and quiet-hours.",
+    "quietHours": "Quiet hours",
+    "digest": {
+      "instant": "Instant",
+      "hourly": "Hourly",
+      "daily": "Digest"
+    },
+    "digestPreview": {
+      "title": "Digest preview",
+      "next": "Next batch: {{date}}",
+      "noSchedule": "no scheduled batch",
+      "empty": "No queued notifications. New room, friend, and progress signals will appear here before the next batch.",
+      "itemsCount": "{{count}} queued",
+      "history": "Recently sent",
+      "unknownChannel": "Channel"
+    },
+    "deliveryHealth": {
+      "title": "Delivery health",
+      "desc": "Recent channel status without exposing raw provider errors.",
+      "ok": "OK",
+      "failed": "{{count}} failed",
+      "lastSent": "Last sent: {{date}}",
+      "next": "Next: {{date}}",
+      "lastIssue": "Last issue: {{error}}",
+      "never": "not yet",
+      "unknown": "unknown"
+    },
+    "pushPermission": {
+      "default": {
+        "title": "Push is waiting for permission",
+        "desc": "Enable system permission so TeleRave can send room and friend signals outside the open tab."
+      },
+      "denied": {
+        "title": "Push is blocked in the browser",
+        "desc": "Allow notifications for this site in browser settings, then return here to tune events."
+      },
+      "unsupported": {
+        "title": "Push is unavailable here",
+        "desc": "This browser or container does not support web push. Use Telegram, email, or in-app notifications instead."
+      }
+    },
+    "groups": {
+      "socialTitle": "Social signals",
+      "socialDesc": "Requests, new friends, and actions that help you gather company.",
+      "roomsTitle": "Rooms and invites",
+      "roomsDesc": "Events that call you into a shared watch right now.",
+      "progressTitle": "Profile progress",
+      "progressDesc": "Badges and notable moments worth seeing.",
+      "systemTitle": "System and safety",
+      "systemDesc": "Service, moderation, and important account notifications."
+    },
+    "eventDescriptions": {
+      "friendRequest": "Someone wants to add you and watch together.",
+      "friendAccepted": "Your requests were accepted or a social link changed.",
+      "roomInvite": "You were invited into a room or watch party.",
+      "achievementUnlocked": "Badges, streaks, or profile progress unlocked.",
+      "system": "Service changes, account status, and important TeleRave updates.",
+      "moderation": "Moderation decisions, restrictions, and safety signals."
+    },
+    "channels": {
+      "inApp": "In-App",
+      "telegram": "Telegram",
+      "email": "Email",
+      "push": "Push"
+    },
+    "events": {
+      "friendRequest": "Friend Requests",
+      "friendAccepted": "Friend Accepted",
+      "roomInvite": "Room Invites",
+      "achievementUnlocked": "Achievements",
+      "system": "System",
+      "moderation": "Moderation"
+    }
+  },
+  "design": {
+    "title": "Design System",
+    "colors": "Colors",
+    "typography": "Typography",
+    "shadows": "Shadows",
+    "spacing": "Spacing",
+    "radius": "Border Radius",
+    "components": "Components"
+  },
+  "theme": {
+    "standard": "Standard",
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "accessibility": {
+    "languageSwitcher": "Language selection",
+    "mobileMenu": "More options",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "settings": {
+    "privacyTitle": "Privacy",
+    "notificationsTitle": "Notifications",
+    "appearanceTitle": "Appearance",
+    "accountTitle": "Account",
+    "hubPrivacyTitle": "Visibility",
+    "hubUsernameVisible": "@username visible",
+    "hubUsernameHidden": "@username hidden",
+    "hubNotificationsTitle": "Events",
+    "hubNotificationsReady": "No new notifications",
+    "hubUnread": "{{count}} new",
+    "hubLinkedTitle": "Sign-in",
+    "hubLinkedMissing": "No sign-in method found",
+    "hubDataTitle": "Data",
+    "hubDataDesc": "Export and deletion",
+    "logout": "Sign Out",
+    "logoutConfirm": "Are you sure you want to sign out?",
+    "logoutChip": "Session"
+  },
+  "account": {
+    "dataExport": {
+      "title": "Download my data",
+      "description": "A ZIP archive with your profile, watch history, messages, achievements, and rooms. The link is valid for 24 hours.",
+      "statusIdle": "Ready",
+      "statusPreparing": "Preparing",
+      "statusReady": "Archive ready",
+      "statusExpired": "Link expired",
+      "statusError": "Error",
+      "readyTitle": "Archive download started",
+      "readyDescription": "Check your downloads folder. You can request a fresh archive later if needed.",
+      "expiredTitle": "Link expired",
+      "expiredDescription": "Request a new export so your data is not left available for too long.",
+      "errorTitle": "Could not prepare archive",
+      "downloadButton": "Download data",
+      "preparingButton": "Preparing..."
+    },
+    "telegramLink": {
+      "title": "Telegram Account",
+      "linked": "Linked: @{{username}}",
+      "linkedNoUsername": "Telegram account linked",
+      "notLinked": "No Telegram account linked",
+      "statusChecking": "Checking",
+      "statusLinked": "Linked",
+      "statusNotLinked": "Not linked",
+      "linkButton": "Link Telegram",
+      "unlinkButton": "Unlink Telegram",
+      "unlinkConfirm": "Are you sure you want to unlink your Telegram account?",
+      "unlinkConfirmButton": "Yes, unlink",
+      "unlinkDisabled": "Cannot unlink — Telegram is your only login method",
+      "requiresTelegramMiniApp": "Linking is available only inside the Telegram Mini App",
+      "linkSuccess": "Telegram account linked successfully",
+      "linkError": "Failed to link Telegram account",
+      "conflict": "This Telegram account is already linked to another user"
+    },
+    "danger": {
+      "title": "Danger zone",
+      "description": "Deletion is delayed: you get 30 days to cancel, then the data is permanently removed.",
+      "scheduledSummary": "Deletion is already scheduled. Signing in again before the deletion date cancels it.",
+      "recoveryNote": "After confirmation, your account is marked for deletion. You can return and cancel by signing in before the waiting period ends.",
+      "scheduledNotice": "Account deletion is scheduled for {{date}}. Sign in again before that date to cancel deletion.",
+      "dangerChip": "Critical",
+      "scheduledChip": "Scheduled",
+      "deleteButton": "Delete account"
+    },
+    "deleteModal": {
+      "title": "Delete account",
+      "description": "After 30 days, your profile, history, messages, and connections will be removed. Recovery is impossible after that.",
+      "dangerChip": "30 days to cancel",
+      "acknowledge": "I understand that my account and data will be deleted after the waiting period.",
+      "confirmLabel": "Type",
+      "passwordLabel": "Account password",
+      "passwordPlaceholder": "Your password",
+      "deleteButton": "Delete account",
+      "deletingButton": "Deleting...",
+      "scheduledChip": "Deletion scheduled",
+      "scheduledTitle": "Account scheduled for deletion",
+      "scheduledDescription": "Permanent deletion will happen on {{date}}. Until then, you can sign in and cancel the process."
+    },
+    "linkedAccounts": "Linked accounts",
+    "emailLinked": "Email",
+    "emailNotLinked": "Email not linked",
+    "telegramLinked": "Telegram",
+    "telegramNotLinked": "Telegram not linked"
+  }
+}
+
+

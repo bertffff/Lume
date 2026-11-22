@@ -1,0 +1,25 @@
+.root {
+  display: block;
+  border-radius: var(--ds-radius-control);
+  background: linear-gradient(90deg, var(--ds-surface-2) 0%, var(--ds-surface-3) 50%, var(--ds-surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s var(--ds-ease-standard) infinite;
+}
+
+.line { width: 100%; height: var(--ds-space-3); }
+.title { width: 60%; height: var(--ds-space-4); }
+.block { width: 100%; height: var(--ds-space-16); }
+.circle { width: 40px; height: 40px; border-radius: var(--ds-radius-pill); }
+.poster { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--ds-radius-card); }
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    animation: none;
+  }
+}

@@ -1,0 +1,39 @@
+.contents {
+  display: contents;
+}
+
+.terminal {
+  min-width: 0;
+}
+
+/* TeleRave floats its header as a rounded bar above the page. */
+.hub {
+  position: sticky;
+  top: var(--ds-space-3);
+  z-index: var(--ds-z-sticky);
+  margin: 0 var(--ds-space-3);
+  border-radius: var(--ds-radius-sheet);
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-1) var(--ds-space-3);
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border-top: var(--ds-border-w) solid var(--ds-border-strong);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-primary);
+  font: var(--ds-fw-medium) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-mono);
+}
+
+.mode {
+  padding: 0 var(--ds-space-2);
+  background: var(--ds-accent);
+  color: var(--ds-text-on-accent);
+  font-weight: var(--ds-fw-bold);
+}
+
+.detail {
+  color: var(--ds-text-secondary);
+}

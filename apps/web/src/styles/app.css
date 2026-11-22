@@ -1,0 +1,55 @@
+/* Page-level rules that belong to no single component: the document background, focus ring,
+   reduced motion, and the full-height app frame. Everything else lives in CSS modules. */
+@layer app {
+  html[data-style] body {
+    background: var(--ds-bg);
+    color: var(--ds-text-primary);
+    font: var(--ds-fw-regular) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-text);
+  }
+
+  html[data-style] :focus-visible {
+    outline: 2px solid var(--ds-focus);
+    outline-offset: 2px;
+  }
+
+  .design-app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100dvh;
+    background: var(--ds-bg);
+    color: var(--ds-text-primary);
+    font-family: var(--ds-font-text);
+  }
+
+  .design-app[data-view="auth"] {
+    display: block;
+  }
+
+  .app-note {
+    margin: var(--ds-space-3) var(--ds-gutter);
+    padding: var(--ds-space-2) var(--ds-space-4);
+    border: var(--ds-border-w) solid var(--ds-border-strong);
+    border-radius: var(--ds-radius-control);
+    background: var(--ds-surface-2);
+    color: var(--ds-text-primary);
+    font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  }
+
+  .skip-link {
+    position: absolute;
+    top: calc(var(--ds-space-16) * -1);
+    left: var(--ds-space-2);
+    z-index: var(--ds-z-toast);
+    padding: var(--ds-space-2) var(--ds-space-3);
+    border-radius: var(--ds-radius-control);
+    background: var(--ds-accent);
+    color: var(--ds-text-on-accent);
+    font-weight: var(--ds-fw-semibold);
+  }
+
+  .skip-link:focus-visible {
+    top: var(--ds-space-2);
+  }
+}

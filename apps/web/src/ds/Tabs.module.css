@@ -1,0 +1,57 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  gap: var(--ds-space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: var(--ds-border-w) solid var(--ds-border);
+}
+
+.tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--ds-space-2);
+  min-height: var(--ds-control-md);
+  margin-bottom: calc(var(--ds-border-w) * -1);
+  padding: 0 var(--ds-space-4);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  cursor: pointer;
+  transition: color var(--ds-dur-fast) var(--ds-ease-standard), border-color var(--ds-dur-fast) var(--ds-ease-standard);
+}
+
+.tab:hover {
+  color: var(--ds-text-primary);
+  background: var(--ds-surface-2);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: -2px;
+}
+
+.active,
+.active:hover {
+  border-bottom-color: var(--ds-accent);
+  color: var(--ds-text-primary);
+}
+
+.count {
+  color: var(--ds-text-tertiary);
+  font-size: var(--ds-fs-caption);
+}
+
+.panel:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 4px;
+}

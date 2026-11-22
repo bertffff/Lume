@@ -1,0 +1,46 @@
+
+{
+  "hero": {
+    "title": "Watch Together. Anywhere.",
+    "subtitle": "Synchronized video viewing with friends via Telegram",
+    "cta_login": "Get Started",
+    "cta_browse": "Browse Rooms"
+  },
+  "features": {
+    "sync_title": "Real-time Sync",
+    "sync_desc": "Frame-perfect playback synchronization. Everyone sees the same moment, always.",
+    "chat_title": "Live Chat",
+    "chat_desc": "Text chat, emoji reactions, reply threads, and floating reactions while you watch.",
+    "voice_title": "Voice Chat",
+    "voice_desc": "Crystal-clear voice powered by MediaSoup SFU — up to 100 people in one room.",
+    "platforms_title": "25+ Platforms",
+    "platforms_desc": "YouTube, Twitch, VK, Rutube, TikTok, Twitter and many more. Direct HLS/DASH links too.",
+    "achievements_title": "Achievements",
+    "achievements_desc": "Earn XP, level up, and unlock 10+ achievements. Show off your watch party stats.",
+    "rooms_title": "Private Rooms",
+    "rooms_desc": "Create public or private rooms, invite friends by code, and control who can do what."
+  },
+  "stats": {
+    "users": "Online now",
+    "rooms": "Active rooms",
+    "videos": "Videos watched"
+  },
+  "footer": {
+    "tagline": "Built for Telegram",
+    "privacy": "Privacy",
+    "source": "Source"
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "get_started": "Get Started",
+    "step1_title": "Create or Find a Room",
+    "step1_desc": "Create your own room, browse public ones, or join by invite code. It takes seconds.",
+    "step2_title": "Watch Videos Together",
+    "step2_desc": "Perfectly synced playback with text chat, voice chat, and 25+ supported platforms.",
+    "step3_title": "Unlock Achievements",
+    "step3_desc": "Earn XP, level up, collect achievements, and invite friends to watch parties."
+  }
+}
+
+

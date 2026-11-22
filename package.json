@@ -1,0 +1,39 @@
+{
+  "name": "lume",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "db:generate": "pnpm --filter @lume/db db:generate",
+    "db:migrate": "pnpm --filter @lume/db db:migrate",
+    "pretest:e2e": "node e2e/check-build.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "lightningcss",
+      "msgpackr-extract",
+      "prisma",
+      "tsx"
+    ]
+  }
+}

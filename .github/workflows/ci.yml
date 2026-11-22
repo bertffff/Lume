@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main, cursor/lume-greenfield-87d4]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # API integration tests create a fresh database in a dedicated service. They
+  # never use the default-port database or the E2E runner's services.
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lume
+          POSTGRES_PASSWORD: lume
+          POSTGRES_DB: lume
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lume -d lume"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      api-test-postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lume
+          POSTGRES_PASSWORD: lume
+          POSTGRES_DB: postgres
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready -U lume -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://lume:lume@localhost:5432/lume?schema=public
+      REDIS_URL: redis://localhost:6379
+      API_TEST_DATABASE_URL: postgresql://lume:lume@127.0.0.1:55433/lume_api_test_ci?schema=public
+      API_TEST_REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: e2e-only-not-a-real-secret
+      ALLOW_STUB_AUTH: "true"
+      ALLOW_STUB_VOICE: "true"
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  # Browser acceptance gets its OWN job, runner VM and service containers.
+  # A `runs-on: ubuntu-latest` job runs on the host, not inside a container:
+  # service DNS aliases (postgres/redis) are NOT resolvable from the host, so
+  # every target below uses the published host ports on localhost. The plain
+  # host:container mappings below are GitHub Actions service syntax; the explicit
+  # 127.0.0.1:host:container form in the release doc is for local docker run only.
+  e2e:
+    needs: check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lume
+          POSTGRES_PASSWORD: lume
+          POSTGRES_DB: lume
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U lume -d lume"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 56379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Disposable E2E targets: alternate ports, `e2e` in the database name.
+      E2E_DATABASE_URL: postgresql://lume:lume@localhost:55432/lume_e2e_ci?schema=public
+      E2E_REDIS_URL: redis://localhost:56379
+      # Per-job bound service origins (all loopback-only).
+      E2E_API_PORT: "33001"
+      E2E_REALTIME_PORT: "33002"
+      E2E_WEB_PORT: "35173"
+      E2E_MOCK_PORT: "33099"
+      # VITE_* are baked into the build. turbo.json hashes them so the cached
+      # dist from the `check` job can never be reused with stale origins.
+      VITE_API_URL: http://127.0.0.1:33001
+      VITE_REALTIME_URL: http://127.0.0.1:33002
+      JWT_SECRET: e2e-only-not-a-real-secret
+      ALLOW_STUB_AUTH: "true"
+      ALLOW_STUB_VOICE: "true"
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: E2E target preflight (pure, no connections)
+        run: pnpm --filter @lume/api exec tsx scripts/check-e2e-target.ts
+      - name: Guard tests (no database globalSetup)
+        run: pnpm --filter @lume/api exec vitest run --config vitest.guard.config.ts
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Full browser acceptance suite on bound alternate ports
+        run: pnpm test:e2e

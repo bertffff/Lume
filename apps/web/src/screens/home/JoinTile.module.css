@@ -1,0 +1,38 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-height: 208px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.glyph {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--ds-control-md);
+  height: var(--ds-control-md);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-3);
+  color: var(--ds-text-secondary);
+}
+
+.copy {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-display);
+}
+
+.hint {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}

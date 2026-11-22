@@ -1,0 +1,264 @@
+import { z } from "zod";
+
+export const embedProviderSchema = z.enum([
+  "youtube",
+  "vk",
+  "rutube",
+  "twitch",
+  "vimeo",
+  "direct",
+]);
+
+export type EmbedProvider = z.infer<typeof embedProviderSchema>;
+
+export interface ParsedEmbed {
+  provider: EmbedProvider;
+  externalId: string;
+  url: string;
+  titleHint: string;
+}
+
+function youtube(id: string, url: string): ParsedEmbed | null {
+  if (!/^[\w-]{6,}$/.test(id)) {
+    return null;
+  }
+  return { provider: "youtube", externalId: id, url, titleHint: `YouTube ${id}` };
+}
+
+export function parseEmbedInput(input: string): ParsedEmbed | null {
+  let url: URL;
+  try {
+    url = new URL(input.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./, "");
+  const parts = url.pathname.split("/").filter((part) => part.length > 0);
+  const original = url.toString();
+
+  if (host === "youtu.be") {
+    return parts[0] ? youtube(parts[0], original) : null;
+  }
+  if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+    const watchId = url.searchParams.get("v");
+    if (watchId) {
+      return youtube(watchId, original);
+    }
+    if ((parts[0] === "embed" || parts[0] === "shorts" || parts[0] === "live") && parts[1]) {
+      return youtube(parts[1], original);
+    }
+  }
+  if (host === "vk.com" || host === "vkvideo.ru") {
+    const match = `${url.pathname}${url.search}`.match(/video(-?\d+)_(\d+)/);
+    if (match?.[1] && match[2]) {
+      return {
+        provider: "vk",
+        externalId: `${match[1]}_${match[2]}`,
+        url: original,
+        titleHint: `VK ${match[2]}`,
+      };
+    }
+  }
+  if (host === "rutube.ru") {
+    const videoAt = parts.indexOf("video");
+    const embedAt = parts.indexOf("embed");
+    const id = videoAt >= 0 ? parts[videoAt + 1] : embedAt >= 0 ? parts[embedAt + 1] : undefined;
+    if (id) {
+      return { provider: "rutube", externalId: id, url: original, titleHint: `Rutube ${id.slice(0, 8)}` };
+    }
+  }
+  if (host === "twitch.tv" || host === "m.twitch.tv") {
+    if (parts[0] === "videos" && parts[1]) {
+      return {
+        provider: "twitch",
+        externalId: `video:${parts[1]}`,
+        url: original,
+        titleHint: `Twitch ${parts[1]}`,
+      };
+    }
+    if (parts[0] && parts[0] !== "directory") {
+      return {
+        provider: "twitch",
+        externalId: `channel:${parts[0]}`,
+        url: original,
+        titleHint: `Twitch ${parts[0]}`,
+      };
+    }
+  }
+  if (host === "vimeo.com" || host === "player.vimeo.com") {
+    const id = [...parts].reverse().find((part) => /^\d+$/.test(part));
+    if (id) {
+      return { provider: "vimeo", externalId: id, url: original, titleHint: `Vimeo ${id}` };
+    }
+  }
+  return {
+    provider: "direct",
+    externalId: original,
+    url: original,
+    titleHint: host,
+  };
+}
+
+export function isHlsUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith(".m3u8");
+  } catch {
+    return url.toLowerCase().includes(".m3u8");
+  }
+}
+
+export function isDashUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith(".mpd");
+  } catch {
+    return url.toLowerCase().includes(".mpd");
+  }
+}
+
+export type PlayerKind = EmbedProvider | "hls" | "dash" | "file";
+
+/** Which adapter should mount. Direct URLs split into HLS and a plain file. */
+export function playerKind(item: { provider: EmbedProvider; url: string }): PlayerKind {
+  if (item.provider !== "direct") {
+    return item.provider;
+  }
+  if (isDashUrl(item.url)) return "dash";
+  return isHlsUrl(item.url) ? "hls" : "file";
+}
+
+export function mediaFallbackTitle(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url.slice(0, 80);
+  }
+}
+
+export function embedSrc(
+  item: { provider: EmbedProvider; externalId: string },
+  parentHost: string,
+): string {
+  const parent = parentHost.split(":")[0] || "localhost";
+  switch (item.provider) {
+    case "youtube":
+      return `https://www.youtube.com/embed/${encodeURIComponent(item.externalId)}?enablejsapi=1`;
+    case "vk": {
+      const [oid, id] = item.externalId.split("_");
+      return `https://vk.com/video_ext.php?oid=${oid ?? ""}&id=${id ?? ""}&hd=2&js_api=1&hide_logo=1`;
+    }
+    case "rutube":
+      return `https://rutube.ru/play/embed/${encodeURIComponent(item.externalId)}?controls=false`;
+    case "twitch":
+      if (item.externalId.startsWith("video:")) {
+        return `https://player.twitch.tv/?video=${encodeURIComponent(item.externalId.slice(6))}&parent=${parent}`;
+      }
+      return `https://player.twitch.tv/?channel=${encodeURIComponent(item.externalId.replace(/^channel:/, ""))}&parent=${parent}`;
+    case "vimeo":
+      return `https://player.vimeo.com/video/${encodeURIComponent(item.externalId)}`;
+    case "direct":
+      return item.externalId;
+  }
+}
+
+export type EmbedControl =
+  | { type: "play" }
+  | { type: "pause" }
+  | { type: "seek"; positionMs: number };
+
+export type EmbedEvent =
+  | { kind: "ready" }
+  | { kind: "playing" }
+  | { kind: "buffering" }
+  | { kind: "ended" }
+  | { kind: "error" }
+  | { kind: "time"; positionMs: number }
+  | { kind: "duration"; durationMs: number };
+
+/**
+ * VK video_ext and Rutube play/embed speak JSON over postMessage. The two
+ * protocols use different keys, so the live adapters share this translation.
+ */
+export function embedCommand(provider: "vk" | "rutube", command: EmbedControl): string {
+  if (provider === "vk") {
+    if (command.type === "seek") {
+      return JSON.stringify({ method: "seek", seek: Math.max(0, command.positionMs) / 1000 });
+    }
+    return JSON.stringify({ method: command.type });
+  }
+  if (command.type === "seek") {
+    return JSON.stringify({ type: "player:seek", time: Math.max(0, command.positionMs) / 1000 });
+  }
+  return JSON.stringify({ type: `player:${command.type}` });
+}
+
+function numeric(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function parseEmbedEvent(provider: "vk" | "rutube", raw: unknown): EmbedEvent | null {
+  let payload: Record<string, unknown> | null = null;
+  if (typeof raw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      payload = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  } else if (raw && typeof raw === "object") {
+    payload = raw as Record<string, unknown>;
+  }
+  if (!payload) {
+    return null;
+  }
+  const name = String(payload.event ?? payload.type ?? "").toLowerCase();
+  if (provider === "rutube") {
+    if (name === "player:ready" || name === "ready") return { kind: "ready" };
+    if (name === "playing" || name === "player:playing") return { kind: "playing" };
+    if (name === "waiting" || name === "buffering" || name === "player:waiting") return { kind: "buffering" };
+    if (name === "ended" || name === "player:ended") return { kind: "ended" };
+    if (name === "error" || name === "player:error") return { kind: "error" };
+    if (name === "timeupdate" || name === "currenttime" || name === "player:timeupdate") {
+      const seconds = numeric(payload.currentTime ?? payload.time ?? payload.position);
+      return seconds === null ? null : { kind: "time", positionMs: Math.max(0, seconds * 1000) };
+    }
+    if (name === "durationchange" || name === "player:durationchange") {
+      const seconds = numeric(payload.duration ?? payload.durationMs);
+      return seconds === null ? null : { kind: "duration", durationMs: Math.max(0, seconds * 1000) };
+    }
+    return null;
+  }
+  if (name === "ready") return { kind: "ready" };
+  if (name === "playing") return { kind: "playing" };
+  if (name === "buffering") return { kind: "buffering" };
+  if (name === "ended") return { kind: "ended" };
+  if (name === "error") return { kind: "error" };
+  if (name === "timeupdate") {
+    const seconds = numeric(payload.time ?? payload.currentTime ?? payload.position);
+    return seconds === null ? null : { kind: "time", positionMs: Math.max(0, seconds * 1000) };
+  }
+  if (name === "durationchange") {
+    const seconds = numeric(payload.duration ?? payload.durationMs);
+    return seconds === null ? null : { kind: "duration", durationMs: Math.max(0, seconds * 1000) };
+  }
+  return null;
+}
+
+export function oEmbedEndpoint(item: ParsedEmbed): string | null {
+  if (item.provider === "youtube") {
+    return `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(item.url)}`;
+  }
+  if (item.provider === "vimeo") {
+    return `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(item.url)}`;
+  }
+  if (item.provider === "rutube") {
+    return `https://rutube.ru/api/oembed/?format=json&url=${encodeURIComponent(item.url)}`;
+  }
+  return null;
+}

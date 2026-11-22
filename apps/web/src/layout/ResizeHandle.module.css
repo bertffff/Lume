@@ -1,0 +1,42 @@
+.handle {
+  position: relative;
+  z-index: var(--ds-z-sticky);
+  touch-action: none;
+}
+
+.x {
+  width: var(--ds-space-4);
+  height: 100%;
+  cursor: col-resize;
+}
+
+.y {
+  width: 100%;
+  height: var(--ds-space-4);
+  cursor: row-resize;
+}
+
+.handle::after {
+  content: "";
+  position: absolute;
+  border-radius: var(--ds-radius-pill);
+  background: transparent;
+  transition: background var(--ds-dur-fast) var(--ds-ease-standard);
+}
+
+.x::after {
+  inset: var(--ds-space-8) calc(50% - var(--ds-border-w));
+}
+
+.y::after {
+  inset: calc(50% - var(--ds-border-w)) var(--ds-space-8);
+}
+
+.handle:hover::after,
+.handle:focus-visible::after {
+  background: var(--ds-accent);
+}
+
+.handle:focus-visible {
+  outline: 0;
+}

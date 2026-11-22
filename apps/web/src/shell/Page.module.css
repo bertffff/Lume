@@ -1,0 +1,14 @@
+.root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: var(--ds-space-3) var(--ds-gutter) 0;
+}

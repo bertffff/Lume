@@ -1,0 +1,42 @@
+.search {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ds-space-2);
+  margin-bottom: var(--ds-space-3);
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
+
+.found {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-2);
+  margin-bottom: var(--ds-space-2);
+}
+
+.foundName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Removing a friend is rare: on hover-capable devices it appears with the row, elsewhere it stays visible. */
+@media (hover: hover) {
+  .remove {
+    opacity: 0;
+  }
+
+  li:hover .remove,
+  li:focus-within .remove {
+    opacity: 1;
+  }
+}

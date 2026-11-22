@@ -1,0 +1,106 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.rows > * + * {
+  border-top: var(--ds-border-w) solid var(--ds-border);
+}
+
+.subtitle {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-display);
+}
+
+.note {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.name {
+  font: var(--ds-fw-semibold) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.number {
+  width: 96px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+}
+
+.moderation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  padding-top: var(--ds-space-4);
+  border-top: var(--ds-border-w) solid var(--ds-border);
+}
+
+.moderation .actions {
+  justify-content: flex-start;
+}
+
+.log {
+  margin: 0;
+  padding-left: var(--ds-space-4);
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  padding-top: var(--ds-space-4);
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  margin-top: var(--ds-space-2);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.diagnostic {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-3);
+  border: var(--ds-border-w) solid var(--ds-border);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}

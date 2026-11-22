@@ -1,0 +1,216 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: start;
+  gap: var(--ds-space-6);
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--ds-space-6) var(--ds-gutter) var(--ds-space-12);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4) var(--ds-space-8);
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+}
+
+.stats {
+  padding-bottom: var(--ds-space-1);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2) var(--ds-space-6);
+}
+
+.splash {
+  margin: 0;
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border: var(--ds-border-w) solid var(--ds-accent-soft);
+  border-radius: var(--ds-radius-chip);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-text);
+  font: var(--ds-fw-semibold) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-display);
+  transform: rotate(-3deg);
+  animation: splash-pulse 2.4s var(--ds-ease-standard) infinite;
+}
+
+@keyframes splash-pulse {
+  50% {
+    transform: rotate(-3deg) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    animation: none;
+  }
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-bold) var(--ds-fs-headline) / var(--ds-lh-headline) var(--ds-font-display);
+  letter-spacing: var(--ds-tracking-display);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-text);
+}
+
+.tiles,
+.tilesGuest {
+  display: grid;
+  gap: var(--ds-space-4);
+}
+
+.tiles {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 1.2fr);
+}
+
+.tilesGuest {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+}
+
+.side {
+  position: sticky;
+  top: calc(var(--ds-header-h) + var(--ds-space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  max-height: calc(100dvh - var(--ds-header-h) - var(--ds-space-8));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.side > * {
+  flex: none;
+}
+
+/* On short windows a sticky column would need its own scrollbar: let it scroll with the page instead. */
+@media (max-height: 820px) {
+  .side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .side {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats {
+    display: none;
+  }
+
+  .tiles > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .tiles,
+  .tilesGuest {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    gap: var(--ds-space-4);
+    padding-bottom: calc(var(--ds-control-lg) + var(--ds-space-12));
+  }
+
+  .tiles,
+  .tilesGuest,
+  .side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* TeleRave-v2 hub: one centred column — greeting and stat pills, three big entry tiles, the friends/reminders/progress
+   row, then the room wall — instead of the Cinema main-plus-sidebar split. */
+:global(html[data-style="telerave"]) .page {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ds-space-6);
+  max-width: 1280px;
+}
+
+:global(html[data-style="telerave"]) .main {
+  display: contents;
+}
+
+:global(html[data-style="telerave"]) .main > * {
+  order: 5;
+}
+
+:global(html[data-style="telerave"]) .top {
+  order: 1;
+  align-items: center;
+  padding: var(--ds-space-6);
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-sheet);
+  background: linear-gradient(120deg, var(--ds-accent-soft), var(--ds-surface-1) 60%);
+}
+
+:global(html[data-style="telerave"]) .title {
+  font-size: var(--ds-fs-display);
+  line-height: var(--ds-lh-display);
+}
+
+:global(html[data-style="telerave"]) .tiles,
+:global(html[data-style="telerave"]) .tilesGuest {
+  order: 2;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+:global(html[data-style="telerave"]) .side {
+  order: 3;
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  max-height: none;
+  overflow: visible;
+}
+
+@media (max-width: 1100px) {
+  :global(html[data-style="telerave"]) .tiles,
+  :global(html[data-style="telerave"]) .tilesGuest,
+  :global(html[data-style="telerave"]) .side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
