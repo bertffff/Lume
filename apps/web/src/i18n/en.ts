@@ -342,6 +342,7 @@ export const en: Record<MessageKey, string> = {
   "gruvbox.inRoom": "in a room",
   "gruvbox.enter": "join",
   "gruvbox.seasonMeta": "14 days in a row · 142 sessions this year",
+  "gruvbox.catalog": "#catalog",
   "gruvbox.resume": "~resume",
   "gruvbox.resumeHint": "Your recent rooms appear here.",
   "gruvbox.new": ":new",

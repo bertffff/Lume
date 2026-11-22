@@ -79,7 +79,8 @@ function roomErrorKey(code: string): MessageKey {
 }
 
 import { Icon, Page, RoomPreview } from "./chrome.js";
-import { GruvboxBar, GruvboxHome } from "./GruvboxHome.js";
+import { GruvboxBar } from "./GruvboxHome.js";
+import { GruvboxHome } from "../screens/gruvbox/GruvboxHome.js";
 
 export function DesignApp({
   session,

@@ -13,6 +13,8 @@ export interface SeasonHeatmapProps {
   lessLabel: string;
   moreLabel: string;
   emptyText: string;
+  /** Hide the visible heading when a surrounding pane already names the block. */
+  bare?: boolean;
   summaryText: (activeDays: number) => string;
 }
 
@@ -23,7 +25,7 @@ const offsets = [styles.r0, styles.r1, styles.r2, styles.r3, styles.r4, styles.r
  * A year of activity as weeks × weekdays. One tab stop; arrows move by day (up/down) or week (left/right);
  * the readout appears on hover or focus and Escape hides it, so the map works with a mouse, a finger and a keyboard.
  */
-export function SeasonHeatmap({ title, days, locale, scoreText, lessLabel, moreLabel, emptyText, summaryText }: SeasonHeatmapProps) {
+export function SeasonHeatmap({ title, days, locale, scoreText, lessLabel, moreLabel, emptyText, summaryText, bare = false }: SeasonHeatmapProps) {
   const id = useId();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const [current, setCurrent] = useState(Math.max(0, days.length - 1));
@@ -33,7 +35,7 @@ export function SeasonHeatmap({ title, days, locale, scoreText, lessLabel, moreL
   const format = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }), [locale]);
 
   if (days.length === 0 || days.every((entry) => entry.score <= 0)) {
-    return <section className={styles.root} aria-label={title}><h2 className={styles.title}>{title}</h2><p className={styles.empty}>{emptyText}</p></section>;
+    return <section className={styles.root} aria-label={title}>{bare ? null : <h2 className={styles.title}>{title}</h2>}<p className={styles.empty}>{emptyText}</p></section>;
   }
 
   function move(event: KeyboardEvent, index: number) {
@@ -52,7 +54,7 @@ export function SeasonHeatmap({ title, days, locale, scoreText, lessLabel, moreL
   return (
     <section className={styles.root} aria-label={title}>
       <div className={styles.head}>
-        <h2 className={styles.title}>{title}</h2>
+        {bare ? <span /> : <h2 className={styles.title}>{title}</h2>}
         <div className={styles.legend} aria-hidden="true">
           <span>{lessLabel}</span>
           {levels.map((level) => <i key={level} className={cx(styles.cell, level)} />)}

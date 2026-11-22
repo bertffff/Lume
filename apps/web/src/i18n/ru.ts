@@ -340,6 +340,7 @@ export const ru = {
   "gruvbox.inRoom": "в комнате",
   "gruvbox.enter": "зайти",
   "gruvbox.seasonMeta": "14 дней подряд · 142 сеанса в этом году",
+  "gruvbox.catalog": "#каталог",
   "gruvbox.resume": "~продолжить",
   "gruvbox.resumeHint": "Ваши последние комнаты появятся здесь.",
   "gruvbox.new": ":new",

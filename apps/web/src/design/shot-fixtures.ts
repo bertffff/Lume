@@ -13,7 +13,7 @@ export const shotPeople = [
 ];
 
 export const shotHeat = Array.from({ length: 49 }, (_, index) => ({
-  day: `shot-${index}`,
+  day: new Date(Date.UTC(2026, 0, 1 + index)).toISOString().slice(0, 10),
   score: [0, 1, 2, 3, 4, 0, 2, 1, 0, 3][index % 10] ?? 0,
 }));
 
