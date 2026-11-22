@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Bell, KeyRound, Moon, Plus, Search, Sun, UserRound } from "lucide-react";
 import { AppShell } from "../shell/AppShell.js";
 import { AppHeader } from "../shell/AppHeader.js";
 import { BottomNav } from "../shell/BottomNav.js";
@@ -7,11 +6,12 @@ import { HomeScreen } from "../screens/home/HomeScreen.js";
 import type { HomeFriend, HomeProps, HomeResume } from "../screens/home/types.js";
 import { dayPartOf } from "../screens/home/greeting.js";
 import { pickSplash, splashes } from "../i18n/splashes.js";
-import { detectSource, formatRoomCode, parseRoomCode, roomPresets, type RoomPresetId } from "@lume/contracts";
+import { formatRoomCode, parseRoomCode, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { ClientSession } from "../session.js";
 import { copy } from "./copy.js";
+import { SearchScreen } from "../screens/search/SearchScreen.js";
 import { AuthScreen } from "../screens/entry/AuthScreen.js";
 import { EmptyScreen } from "../screens/entry/EmptyScreen.js";
 import { JoinScreen } from "../screens/entry/JoinScreen.js";
@@ -19,8 +19,7 @@ import { OnboardingScreen } from "../screens/entry/OnboardingScreen.js";
 import { PremiumScreen } from "../screens/entry/PremiumScreen.js";
 import { SettingsScreen } from "../screens/settings/SettingsScreen.js";
 import { ProfileScreen } from "../screens/profile/ProfileScreen.js";
-import { RoomCodeInput } from "./RoomCodeInput.js";
-import { initials, isStyleId, isThemeMode, personHue } from "./theme.js";
+import { isStyleId, isThemeMode } from "./theme.js";
 import { NotificationInboxPage, NotificationInboxPopover, type NotificationInboxProps } from "../screens/notifications/NotificationInbox.js";
 import { useNotificationFeed } from "./useNotificationFeed.js";
 import { RoomFeed, type RoomFeedLoader, type RoomFeedRoom } from "./RoomFeed.js";
@@ -33,7 +32,7 @@ import { bindBackButton } from "../telegram/adapter.js";
 import { readTelegramWebApp } from "../telegram/types.js";
 import { useGlobalStats } from "./useGlobalStats.js";
 
-type View =
+export type View =
   | "home"
   | "room"
   | "search"
@@ -49,7 +48,7 @@ type View =
   | "offline"
   | "unavailable";
 
-import { posterClasses, shotHeat, shotPeople, shotRooms } from "./shot-fixtures.js";
+import { shotHeat, shotPeople, shotRooms } from "./shot-fixtures.js";
 
 const views = new Set<View>([
   "home", "room", "search", "create", "join", "settings",
@@ -78,6 +77,9 @@ function roomErrorKey(code: string): MessageKey {
   if (code === "conflict") return "room.error.conflict";
   return "room.error.generic";
 }
+
+import { Icon, Page, RoomPreview } from "./chrome.js";
+import { GruvboxBar, GruvboxHome } from "./GruvboxHome.js";
 
 export function DesignApp({
   session,
@@ -128,7 +130,6 @@ export function DesignApp({
   const [resuming, setResuming] = useState(false);
   const [invitee, setInvitee] = useState<string | null>(null);
   const [friendCatalog, setFriendCatalog] = useState(0);
-  const [searchTab, setSearchTab] = useState<"all" | "youtube" | "vk" | "rutube" | "direct">("all");
   const [narrow, setNarrow] = useState(() => window.innerWidth < 800);
   useEffect(() => {
     const onResize = () => setNarrow(window.innerWidth < 800);
@@ -136,7 +137,6 @@ export function DesignApp({
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const [query, setQuery] = useState("");
-  const [found, setFound] = useState<Array<{ title: string; url: string }>>([]);
   const [people, setPeople] = useState<Array<{ id: string; displayName: string }>>([]);
   const [offline, setOffline] = useState(() => !window.navigator.onLine);
   const { globalStats, statsReady } = useGlobalStats(shot, path, roomId);
@@ -462,67 +462,7 @@ export function DesignApp({
       {(homeVisible || (view === "onboarding" && !narrow)) && style !== "gruvbox" ? <HomeScreen {...homeProps} /> : null}
       {view !== "home" && view !== "room" ? (
         <Page title={view} onClose={() => go("/")}>
-          {view === "search" ? (
-            <div className="search-page">
-              <div className="search-panel">
-                <header className="search-head">
-                  <h2>{t("search.title")}</h2>
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void fetch(`${apiUrl}/video/search?q=${encodeURIComponent(query)}`)
-                        .then((response) => response.json())
-                        .then((payload: { results?: Array<{ title: string; url: string }> }) => setFound(payload.results ?? []))
-                        .catch(() => setFound([]));
-                    }}
-                  >
-                    <input className="inbox" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} aria-label={t("search.placeholder")} autoFocus />
-                    <button type="submit" className="btn btn-primary">{t("profile.search")}</button>
-                  </form>
-                </header>
-                <div className="search-tabs" role="tablist" aria-label={t("search.sources")}>
-                  {(["all", "youtube", "vk", "rutube", "direct"] as const).map((tab) => (
-                    <button key={tab} type="button" role="tab" aria-selected={searchTab === tab} className={searchTab === tab ? "pill on" : "pill"} onClick={() => setSearchTab(tab)}>
-                      {t(`search.source.${tab}`)}
-                    </button>
-                  ))}
-                </div>
-                {found.length === 0 ? (
-                  <p className="empty-note">{t("search.empty")}</p>
-                ) : (
-                  <div className="search-grid">
-                    {found
-                      .filter((item) => searchTab === "all" || (detectSource(item.url)?.id ?? "direct") === searchTab)
-                      .map((item, index) => (
-                        <article key={item.url} className="search-card">
-                          <div className={`th ${posterClasses[index % posterClasses.length]}`} />
-                          <div className="bd">
-                            <b>{item.title || item.url}</b>
-                            <small>{detectSource(item.url)?.id ?? t("search.source.direct")}</small>
-                            <div className="actions">
-                              <button type="button" className="btn btn-primary" onClick={() => window.open(item.url, "_blank", "noopener")}>{t("search.play")}</button>
-                              <button type="button" className="btn btn-outline" onClick={() => void navigator.clipboard?.writeText(item.url)}>{t("search.copy")}</button>
-                            </div>
-                          </div>
-                        </article>
-                      ))}
-                  </div>
-                )}
-                <form
-                  className="search-direct"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    const url = String(new FormData(event.currentTarget).get("url") ?? "").trim();
-                    if (!url) return;
-                    window.open(url, "_blank", "noopener");
-                  }}
-                >
-                  <input name="url" placeholder={t("search.directPlaceholder")} aria-label={t("search.directPlaceholder")} />
-                  <button type="submit" className="btn btn-outline">{t("search.open")}</button>
-                </form>
-              </div>
-            </div>
-          ) : null}
+          {view === "search" ? <SearchScreen apiUrl={apiUrl} query={query} onQuery={setQuery} /> : null}
            {view === "create" ? <CreateRoomWizard open labels={wizardLabels} onSubmit={createRoom} onClose={() => { setInvitee(null); go("/"); }} /> : null}
           {view === "join" ? (joiningInvite && !shot
             ? <EmptyScreen title={t("join.connecting")} />
@@ -558,175 +498,5 @@ export function DesignApp({
       {error ? <p className="app-note">{error}</p> : null}
       {notice ? <p className="app-note">{notice}</p> : null}
     </AppShell>
-  );
-}
-
-function RoomPreview({ unavailable = false, onGo }: { unavailable?: boolean; onGo: (path: string) => void }) {
-  const { t } = useI18n();
-  return (
-    <div className="wrap screen-scroll">
-      <main>
-        <EmptyScreen
-          title={unavailable ? t("room.previewUnavailable") : t("room.previewNone")}
-          body={unavailable
-            ? t("room.previewUnavailableBody")
-            : t("room.previewNoneBody")}
-          action={<button type="button" className="btn btn-primary" onClick={() => onGo("/")}>{t("empty.home")}</button>}
-        />
-      </main>
-    </div>
-  );
-}
-
-function Page({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const { t } = useI18n();
-  return (
-    <div className="screen-fill" data-page={title}>
-      <div className="page-head">
-        <button type="button" className="page-back" onClick={onClose} aria-label={t("page.back")}>{t("page.backShort")}</button>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-const icons = { search: Search, bell: Bell, sun: Sun, moon: Moon, plus: Plus, key: KeyRound, user: UserRound } as const;
-
-function Icon({ name }: { name: keyof typeof icons }) {
-  const Glyph = icons[name];
-  return <Glyph className={`icon icon-${name}`} aria-hidden="true" strokeWidth={1.8} />;
-}
-
-function GruvboxHome({
-  session,
-  rooms,
-  heat,
-  resume,
-  onResume,
-  isShot,
-  name,
-  onName,
-  onSignIn,
-  onGo,
-  code,
-  codeInvalid,
-  onCode,
-  onJoin,
-  onOpen,
-  catalog,
-  friends,
-  onJoinFriend,
-  onInviteFriend,
-}: {
-  session: ClientSession | null;
-  rooms: Array<{ id: string; title: string; code: string; memberCount?: number }>;
-  heat: Array<{ day: string; score: number }>;
-  resume: string | null;
-  onResume?: () => void;
-  isShot: boolean;
-  name: string;
-  onName: (value: string) => void;
-  onSignIn: (event: FormEvent) => void;
-  onGo: (path: string) => void;
-  code: string;
-  codeInvalid: boolean;
-  onCode: (value: string) => void;
-  onJoin: (event: FormEvent) => void;
-  onOpen: (room: { id: string; title: string; code: string; memberCount?: number }) => void;
-  catalog: ReactNode;
-  friends: Array<{ id: string; userId: string; displayName: string; roomId?: string | null; roomTitle?: string | null }>;
-  onJoinFriend: (roomId: string) => void;
-  onInviteFriend: (friendId: string) => void;
-}) {
-  const { t } = useI18n();
-  const rows = rooms.slice(0, 7);
-  return (
-    <div className="g-home wrap">
-      <section className="pane">
-        <div className="pt">{t("sessions.title")} <span className="dim">{rows.length}</span></div>
-        {rows.length === 0 ? <p className="lead">{t("home.noRooms")}</p> : rows.map((item, index) => (
-          <button key={item.id} type="button" className={index === 0 ? "srow on" : "srow"} onClick={() => onOpen(item)}>
-            <span className={`g-th ${posterClasses[index % posterClasses.length]}`} aria-hidden="true" />
-            <b>{item.title}</b>
-            <span className="mono">{item.memberCount ?? 0} live</span>
-            <span className="mono dim">{formatRoomCode(item.code)}</span>
-          </button>
-        ))}
-      </section>
-      <section className="pane">
-        <div className="pt">{t("gruvbox.resume")}</div>
-        <h2>{resume ?? t("resume.empty")}</h2>
-        <p className="dim">{isShot ? t("gruvbox.resumeMeta") : t("gruvbox.resumeHint")}</p>
-        {isShot ? <p className="dim">{t("gruvbox.resumeMetaTwo")}</p> : null}
-        {onResume ? <button type="button" className="go" onClick={onResume}>{t("gruvbox.enterRoom")}</button> : null}
-      </section>
-      <section className="pane">
-        <div className="pt">{t("gruvbox.new")}</div>
-        <h3>{t("gruvbox.newTitle")}</h3>
-        <p>{t("gruvbox.newBody")}</p>
-        <button type="button" className="go" data-testid="home-create-open" onClick={() => onGo(session ? "/create" : "/auth")}>{t("gruvbox.newAction")}</button>
-      </section>
-      <section className="pane">
-        <div className="pt">{t("gruvbox.join")}</div>
-        <h3>{t("gruvbox.joinTitle")}</h3>
-        <form onSubmit={onJoin}>
-          <RoomCodeInput value={code} onChange={onCode} invalid={codeInvalid} />
-          <button type="submit" className="go" data-testid="lobby-join">{t("auth.login")}</button>
-        </form>
-      </section>
-      <section className="pane">
-        <div className="pt">{t("gruvbox.season")}</div>
-        {isShot ? <p className="dim">{t("gruvbox.seasonMeta")}</p> : null}
-        {heat.length > 0 ? <div className="heat-grid">{heat.slice(-49).map((cell) => <i key={cell.day} className={cell.score > 3 ? "a3" : cell.score > 0 ? "a1" : ""} />)}</div> : <p className="lead">{t("gruvbox.seasonEmpty")}</p>}
-      </section>
-      {!session ? (
-        <section className="pane">
-          <div className="pt">{t("gruvbox.login")}</div>
-          <form onSubmit={onSignIn}>
-            <label>{t("gruvbox.nameLabel")}<input data-testid="lobby-name" value={name} onChange={(event) => onName(event.target.value)} placeholder={t("name.placeholder")} /></label>
-            <button type="submit" className="go" data-testid="lobby-sign-in">{t("auth.login")}</button>
-          </form>
-        </section>
-      ) : null}
-      <section className="pane">
-        {catalog}
-        <p className="dim">{t("gruvbox.billHint")}</p>
-      </section>
-      <section className="pane">
-        <div className="pt">{t("gruvbox.friends")}</div>
-        {isShot ? shotPeople.map((person) => (
-          <div key={person.id} className="g-friend">
-            <span className={`av p-${personHue(person.id)}`}>{initials(person.name)}</span>
-            <b>{person.name}</b>
-            <span className="dim">{t("gruvbox.inRoom")}</span>
-          </div>
-        )) : friends.length ? friends.map((person) => (
-          <div key={person.id} className="g-friend">
-            <span className={`av p-${personHue(person.userId)}`}>{initials(person.displayName)}</span>
-            <b>{person.displayName}</b><span className="dim">{person.roomTitle ?? t("home.notInRoom")}</span>
-            {person.roomId ? <button type="button" className="go" onClick={() => { if (person.roomId) onJoinFriend(person.roomId); }}>{t("gruvbox.enter")}</button>
-              : <button type="button" className="go" onClick={() => onInviteFriend(person.userId)}>{t("room.invite")}</button>}
-          </div>
-        )) : <p className="lead">{t("profile.noFriends")}</p>}
-      </section>
-    </div>
-  );
-}
-
-function GruvboxBar({ view, onGo, text, actions }: { view: View; onGo: (path: string) => void; text: ReturnType<typeof copy>; actions: ReactNode }) {
-  const tabs: Array<[View | "home", string]> = [["home", "home"], ["search", "search"], ["room", "room"], ["profile", "profile"]];
-  return (
-    <div className="tabline">
-      <span className="brand"><i className="dot" />LUME</span>
-      <div className="bufs">
-        {tabs.map(([id, label], index) => (
-          <button key={id} type="button" className={view === id || (id === "home" && view === "home") ? "buf on" : "buf"} onClick={() => onGo(id === "home" ? "/" : `/${id}`)}>
-            <span className="nr">{index + 1}</span>{label}
-          </button>
-        ))}
-      </div>
-      <label className="search-lg"><input aria-label={text.search} placeholder={text.search} onFocus={() => onGo("/search")} /></label>
-      <div className="nav-actions">{actions}</div>
-    </div>
   );
 }
