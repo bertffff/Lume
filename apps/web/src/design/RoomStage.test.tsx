@@ -30,7 +30,7 @@ function actions(role: "host" | "viewer", nowPlaying: QueueItem | null, queue: Q
     positionMs: 0, offsetMs: 0, canControl: role === "host", selfId: role, accessToken: "test-token", voiceForce: null,
     clockOffset: 0, skip: { votes: 0, needed: 1 }, typingName: null, typingNames: [], heartbeatAt: null, floats: [],
     sendChat: vi.fn(), kick: vi.fn(), mute: vi.fn(), promote: vi.fn(), addQueue: vi.fn(), playNext: vi.fn(),
-    sendImage: noop, react: noop, reloadHistory: noop, setPlayback: noop, reportViewer: noop, joinVoicePresence: noop,
+    sendImage: noop, react: noop, reloadHistory: noop, removeQueueItem: noop, moveQueueItem: noop, playQueueItem: noop, setPlayback: noop, reportViewer: noop, joinVoicePresence: noop,
     leaveVoicePresence: noop, reportVoice: noop, muteVoices: noop, disconnectVoice: noop, heartbeat: noop, voteSkip: noop,
     sendTyping: noop, sendFloat: noop,
   };

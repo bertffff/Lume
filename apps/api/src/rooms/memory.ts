@@ -128,5 +128,16 @@ export function createMemoryRepository(access: MemoryCatalogAccess = {}): RoomRe
     async insertQueueItem(item) {
       queue.push(item);
     },
+    async deleteQueueItem(roomId, itemId) {
+      const index = queue.findIndex((item) => item.id === itemId && item.roomId === roomId);
+      if (index >= 0) queue.splice(index, 1);
+    },
+    async setQueueOrder(roomId, orderedIds) {
+      orderedIds.forEach((id, index) => {
+        const at = queue.findIndex((item) => item.id === id && item.roomId === roomId);
+        const row = queue[at];
+        if (row) queue[at] = { ...row, position: index };
+      });
+    },
   };
 }

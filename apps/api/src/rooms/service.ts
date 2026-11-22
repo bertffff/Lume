@@ -405,6 +405,41 @@ export class RoomService {
     return this.detailFor(actor.userId, roomId);
   }
 
+  async removeQueueItem(actor: Actor, roomId: string, itemId: string): Promise<RoomDetail> {
+    const { room, member } = await this.requireActive(roomId, actor.userId);
+    const item = (await this.repo.listQueue(roomId)).find((entry) => entry.id === itemId);
+    if (!item) throw new RoomFailure("not_found");
+    if (item.id === room.nowPlayingId) throw new RoomFailure("conflict");
+    const allowed = canControlPlayback(member.role) || member.canRemoveFromQueue === true || item.addedById === actor.userId;
+    if (!allowed) throw new RoomFailure("forbidden");
+    await this.repo.deleteQueueItem(roomId, itemId);
+    return this.detailFor(actor.userId, roomId);
+  }
+
+  async moveQueueItem(actor: Actor, roomId: string, itemId: string, direction: "up" | "down"): Promise<RoomDetail> {
+    const { room, member } = await this.requireActive(roomId, actor.userId);
+    if (!canControlPlayback(member.role) && member.canReorderQueue !== true) throw new RoomFailure("forbidden");
+    const upcoming = (await this.repo.listQueue(roomId)).filter((entry) => !entry.played && entry.id !== room.nowPlayingId);
+    const index = upcoming.findIndex((entry) => entry.id === itemId);
+    if (index < 0) throw new RoomFailure("not_found");
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target >= 0 && target < upcoming.length) {
+      const ids = upcoming.map((entry) => entry.id);
+      [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+      await this.repo.setQueueOrder(roomId, ids);
+    }
+    return this.detailFor(actor.userId, roomId);
+  }
+
+  async playQueueItem(actor: Actor, roomId: string, itemId: string): Promise<RoomDetail> {
+    const { room, member } = await this.requireActive(roomId, actor.userId);
+    if (!canControlPlayback(member.role)) throw new RoomFailure("forbidden");
+    const item = (await this.repo.listQueue(roomId)).find((entry) => entry.id === itemId);
+    if (!item || item.id === room.nowPlayingId) throw new RoomFailure("not_found");
+    await this.repo.startPlaying(roomId, item.id);
+    return this.detailFor(actor.userId, roomId);
+  }
+
   async replacePlaying(actor: Actor, roomId: string, url: string, restoredCategory?: RoomCategory): Promise<RoomDetail> {
     const { room, member } = await this.requireActive(roomId, actor.userId);
     if (!canControlPlayback(member.role) || member.muted) throw new RoomFailure("forbidden");

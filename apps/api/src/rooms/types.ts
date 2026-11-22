@@ -92,6 +92,9 @@ export interface RoomRepository {
   }): Promise<MessageRecord | null>;
   listQueue(roomId: string): Promise<QueueRecord[]>;
   insertQueueItem(item: QueueRecord): Promise<void>;
+  deleteQueueItem(roomId: string, itemId: string): Promise<void>;
+  /** Rewrites positions so the given ids appear in this order; ids not listed keep their relative place after them. */
+  setQueueOrder(roomId: string, orderedIds: string[]): Promise<void>;
 }
 
 export class RoomFailure extends Error {

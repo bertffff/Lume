@@ -277,6 +277,12 @@ export function createPrismaRepository(prisma: PrismaClient): RoomRepository {
         },
       });
     },
+    async deleteQueueItem(roomId, itemId) {
+      await prisma.queueItem.deleteMany({ where: { id: itemId, roomId } });
+    },
+    async setQueueOrder(roomId, orderedIds) {
+      await prisma.$transaction(orderedIds.map((id, index) => prisma.queueItem.updateMany({ where: { id, roomId }, data: { position: index } })));
+    },
   };
 }
 

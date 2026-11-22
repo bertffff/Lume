@@ -110,7 +110,7 @@ export {
   type PlayerObservation,
 } from "./player.js";
 export { chatMessageSchema, chatReactSchema, chatSendSchema, type ChatMessage } from "./chat.js";
-export { queueAddSchema, queueItemSchema, queueNextSchema, type QueueItem } from "./queue.js";
+export { queueAddSchema, queueItemActionSchema, queueItemSchema, queueMoveSchema, queueNextSchema, type QueueItem } from "./queue.js";
 export {
   classifyNetworkPreflight,
   preflightNetworks,

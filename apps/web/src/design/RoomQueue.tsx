@@ -4,7 +4,8 @@ import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import type { useRoomMeta } from "../room/hooks/useRoomMeta.js";
 import type { RoomActions } from "../room/live.js";
-import { Button, Input, Poster } from "../ds/index.js";
+import { ChevronDown, ChevronUp, Play, X } from "lucide-react";
+import { Button, IconButton, Input, Poster } from "../ds/index.js";
 import { roomClock } from "./RoomQueuePreview.js";
 import styles from "./RoomQueue.module.css";
 
@@ -53,10 +54,18 @@ export function RoomQueue({ live, meta, queue, inputRef, refresh, refreshing }: 
       </section>
       <section className={styles.section}>
         <h3 className={styles.heading}>{t("room.upNext")} <small className={styles.count}>{queue.length}</small></h3>
-        {queue.length ? <ol className={styles.list}>{queue.map((item) => (
+        {queue.length ? <ol className={styles.list}>{queue.map((item, index) => (
           <li key={item.id} className={styles.row} data-testid="queue-item" data-url={item.url} data-provider={item.provider} data-title={item.title}>
             <Poster src={item.thumbnailUrl} category="other" className={styles.thumb} /><b className={styles.name}>{item.title}</b>
             {item.durationMs ? <small className={styles.count} data-testid="queue-item-duration" data-duration-ms={item.durationMs}>{roomClock(item.durationMs)}</small> : null}
+            {live.canControl || item.addedById === live.selfId ? (
+              <span className={styles.rowActions}>
+                {live.canControl ? <IconButton icon={Play} size="sm" variant="ghost" label={t("queue.playNow")} data-testid="queue-play" onClick={() => live.playQueueItem(item.id)} /> : null}
+                {live.canControl ? <IconButton icon={ChevronUp} size="sm" variant="ghost" label={t("queue.moveUp")} data-testid="queue-up" disabled={index === 0} onClick={() => live.moveQueueItem(item.id, "up")} /> : null}
+                {live.canControl ? <IconButton icon={ChevronDown} size="sm" variant="ghost" label={t("queue.moveDown")} data-testid="queue-down" disabled={index === queue.length - 1} onClick={() => live.moveQueueItem(item.id, "down")} /> : null}
+                <IconButton icon={X} size="sm" variant="ghost" label={t("queue.remove")} data-testid="queue-remove" onClick={() => live.removeQueueItem(item.id)} />
+              </span>
+            ) : null}
           </li>
         ))}</ol> : <p className={styles.empty}>{t("room.queueEmpty")}</p>}
         <form className={styles.add} onSubmit={(event) => {

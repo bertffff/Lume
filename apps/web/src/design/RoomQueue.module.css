@@ -78,3 +78,9 @@
   color: var(--ds-text-tertiary);
   font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
 }
+
+.rowActions {
+  display: inline-flex;
+  flex: none;
+  gap: var(--ds-space-1);
+}

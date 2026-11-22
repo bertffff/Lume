@@ -472,6 +472,39 @@ export function registerRoomRoutes(
     return reply.send(detail);
   });
 
+  const queueItemParams = z.object({ id: z.string().min(1), itemId: z.string().min(1) });
+  app.delete("/rooms/:id/queue/:itemId", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !service) {
+      if (actor && !service) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = queueItemParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_body" });
+    return run(reply, () => service.removeQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, params.data.itemId));
+  });
+  app.post("/rooms/:id/queue/:itemId/move", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !service) {
+      if (actor && !service) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = queueItemParams.safeParse(request.params);
+    const body = z.object({ direction: z.enum(["up", "down"]) }).safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+    return run(reply, () => service.moveQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, params.data.itemId, body.data.direction));
+  });
+  app.post("/rooms/:id/queue/:itemId/play", async (request, reply) => {
+    const actor = await requireUser(request, reply, env);
+    if (!actor || !service) {
+      if (actor && !service) return reply.code(503).send({ error: "database_unconfigured" });
+      return;
+    }
+    const params = queueItemParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_body" });
+    return run(reply, () => service.playQueueItem({ userId: actor.userId, displayName: actor.displayName }, params.data.id, params.data.itemId));
+  });
+
   app.post("/rooms/:id/queue/next", async (request, reply) => {
     const actor = await requireUser(request, reply, env);
     if (!actor || !service) {

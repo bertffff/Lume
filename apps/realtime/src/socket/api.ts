@@ -34,7 +34,7 @@ export function createRoomApi(baseUrl: string) {
       method: init?.method ?? "GET",
       headers: {
         authorization: `Bearer ${token}`,
-        "content-type": "application/json",
+        ...(init?.body === undefined ? {} : { "content-type": "application/json" }),
       },
       body: init?.body === undefined ? undefined : JSON.stringify(init.body),
     });
@@ -69,6 +69,15 @@ export function createRoomApi(baseUrl: string) {
     },
     playNext(token: string, roomId: string) {
       return request<RoomSession>(token, `/rooms/${roomId}/queue/next`, { method: "POST", body: {} });
+    },
+    removeQueueItem(token: string, roomId: string, itemId: string) {
+      return request<RoomSession>(token, `/rooms/${roomId}/queue/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+    },
+    moveQueueItem(token: string, roomId: string, itemId: string, direction: "up" | "down") {
+      return request<RoomSession>(token, `/rooms/${roomId}/queue/${encodeURIComponent(itemId)}/move`, { method: "POST", body: { direction } });
+    },
+    playQueueItem(token: string, roomId: string, itemId: string) {
+      return request<RoomSession>(token, `/rooms/${roomId}/queue/${encodeURIComponent(itemId)}/play`, { method: "POST", body: {} });
     },
     reloadQueue(token: string, roomId: string, historyId: string) {
       return request<RoomSession>(token, `/rooms/${roomId}/queue/reload`, { method: "POST", body: { historyId } });

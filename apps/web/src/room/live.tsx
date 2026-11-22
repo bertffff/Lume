@@ -13,6 +13,9 @@ export interface RoomActions {
   react: (messageId: string, emoji: string) => void;
   addQueue: (url: string, title?: string) => void;
   reloadHistory: (historyId: string) => void;
+  removeQueueItem: (itemId: string) => void;
+  moveQueueItem: (itemId: string, direction: "up" | "down") => void;
+  playQueueItem: (itemId: string) => void;
   playNext: () => void;
   setPlayback: (mode: "play" | "pause" | "seek", positionMs: number) => void;
   reportViewer: (phase: "buffering" | "ready") => void;

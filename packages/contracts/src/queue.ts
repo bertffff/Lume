@@ -26,3 +26,12 @@ export const queueAddSchema = z.object({
 export const queueNextSchema = z.object({
   roomId: z.string().min(1),
 });
+
+export const queueItemActionSchema = z.object({
+  roomId: z.string().min(1),
+  itemId: z.string().min(1),
+});
+
+export const queueMoveSchema = queueItemActionSchema.extend({
+  direction: z.enum(["up", "down"]),
+});

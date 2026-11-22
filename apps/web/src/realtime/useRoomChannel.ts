@@ -318,6 +318,15 @@ export function useRoomChannel(input: { token: string; roomId: string; selfId: s
       }
       emit("queue:next", { roomId });
     },
+    removeQueueItem(itemId: string) {
+      if (roomId) emit("queue:remove", { roomId, itemId });
+    },
+    moveQueueItem(itemId: string, direction: "up" | "down") {
+      if (roomId) emit("queue:move", { roomId, itemId, direction });
+    },
+    playQueueItem(itemId: string) {
+      if (roomId) emit("queue:play", { roomId, itemId });
+    },
     reloadHistory(historyId: string) {
       if (!roomId) {
         return;

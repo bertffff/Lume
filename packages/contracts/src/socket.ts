@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { chatReactSchema, chatSendSchema } from "./chat.js";
-import { queueAddSchema, queueNextSchema } from "./queue.js";
+import { queueAddSchema, queueItemActionSchema, queueMoveSchema, queueNextSchema } from "./queue.js";
 import { memberRoleSchema } from "./roles.js";
 import { voiceDisconnectSchema, voiceJoinSchema, voiceMuteSchema, voiceStateSchema } from "./voice.js";
 
@@ -115,6 +115,9 @@ export const clientEventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("chat:react"), payload: chatReactSchema }),
   z.object({ event: z.literal("queue:add"), payload: queueAddSchema }),
   z.object({ event: z.literal("queue:next"), payload: queueNextSchema }),
+  z.object({ event: z.literal("queue:remove"), payload: queueItemActionSchema }),
+  z.object({ event: z.literal("queue:move"), payload: queueMoveSchema }),
+  z.object({ event: z.literal("queue:play"), payload: queueItemActionSchema }),
   z.object({ event: z.literal("mod:kick"), payload: modKickSchema }),
   z.object({ event: z.literal("mod:mute"), payload: modMuteSchema }),
   z.object({ event: z.literal("mod:role"), payload: modRoleSchema }),

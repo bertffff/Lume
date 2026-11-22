@@ -16,6 +16,8 @@ import {
   playbackSyncRequestSchema,
   playbackViewerSchema,
   queueAddSchema,
+  queueItemActionSchema,
+  queueMoveSchema,
   roomJoinSchema,
   roomLeaveSchema,
   withdrawSkipVote,
@@ -160,6 +162,15 @@ export function registerSocketHandlers(io: Server, env: RealtimeEnv, redis: Redi
     });
     socket.on("queue:next", (payload: unknown) => {
       void queueNext(io, redis, api, socket, payload);
+    });
+    socket.on("queue:remove", (payload: unknown) => {
+      void queueEdit(io, redis, api, socket, payload, "queue:remove");
+    });
+    socket.on("queue:move", (payload: unknown) => {
+      void queueEdit(io, redis, api, socket, payload, "queue:move");
+    });
+    socket.on("queue:play", (payload: unknown) => {
+      void queueEdit(io, redis, api, socket, payload, "queue:play");
     });
     socket.on("queue:reload", (payload: unknown) => {
       void queueReload(io, api, socket, payload);
@@ -461,6 +472,40 @@ async function queueReload(io: Server, api: RoomApi, socket: Socket, payload: un
     });
   } catch (error) {
     fail(socket, { code: mapFailure(error), message: "queue:reload" });
+  }
+}
+
+async function queueEdit(
+  io: Server,
+  redis: RedisPair | null,
+  api: RoomApi,
+  socket: Socket,
+  payload: unknown,
+  event: "queue:remove" | "queue:move" | "queue:play",
+): Promise<void> {
+  const parsed = (event === "queue:move" ? queueMoveSchema : queueItemActionSchema).safeParse(payload);
+  const actor = actorOf(socket);
+  if (!parsed.success || !actor) {
+    fail(socket, { code: "invalid_payload", message: event });
+    return;
+  }
+  const { roomId, itemId } = parsed.data;
+  try {
+    const session = event === "queue:remove"
+      ? await api.removeQueueItem(actor.token, roomId, itemId)
+      : event === "queue:play"
+        ? await api.playQueueItem(actor.token, roomId, itemId)
+        : await api.moveQueueItem(actor.token, roomId, itemId, (parsed.data as unknown as { direction: "up" | "down" }).direction);
+    io.to(roomId).emit("queue:state", { roomId, queue: session.queue, nowPlaying: session.room.nowPlaying });
+    if (event === "queue:play" && redis) {
+      const seeked = await commitPlayback(redis.pub, roomId, { type: "seek", actorId: actor.userId, positionMs: 0 });
+      if (seeked !== "version_conflict") {
+        const paused = await commitPlayback(redis.pub, roomId, { type: "pause", actorId: actor.userId });
+        if (paused !== "version_conflict") io.to(roomId).emit("playback:state", paused);
+      }
+    }
+  } catch (error) {
+    fail(socket, { code: mapFailure(error), message: event });
   }
 }
 
