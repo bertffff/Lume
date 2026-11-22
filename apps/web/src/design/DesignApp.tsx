@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { Bell } from "lucide-react";
+import { Button } from "../ds/index.js";
 import { AppShell } from "../shell/AppShell.js";
 import { AppHeader } from "../shell/AppHeader.js";
 import { BottomNav } from "../shell/BottomNav.js";
@@ -78,8 +80,9 @@ function roomErrorKey(code: string): MessageKey {
   return "room.error.generic";
 }
 
-import { Icon, Page, RoomPreview } from "./chrome.js";
-import { GruvboxBar } from "./GruvboxHome.js";
+import { RoomPreview } from "./chrome.js";
+import { Page } from "../shell/Page.js";
+import { GruvboxBar } from "../screens/gruvbox/GruvboxBar.js";
 import { GruvboxHome } from "../screens/gruvbox/GruvboxHome.js";
 
 export function DesignApp({
@@ -351,7 +354,7 @@ export function DesignApp({
     status: notifications.phase,
     markingAllRead: notifications.marking === null,
     mutationError: notifications.failedMutation ? t("inbox.markError") : null,
-    icon: <Icon name="bell" />,
+    icon: <Bell aria-hidden="true" size={18} />,
     items: notes.map((row) => {
       const date = new Date(row.createdAt);
       return {
@@ -370,10 +373,8 @@ export function DesignApp({
     onMarkAllRead: () => void notifications.mark(null),
     onRetry: () => void notifications.reload(),
   };
-  const navActions = <>
-    <NotificationInboxPopover {...inbox} viewAllLabel={t("feed.all")} onOpenAll={() => go("/notifications")} />
-    <button type="button" className="theme-btn" onClick={() => void saveAppearance(style, document.documentElement.dataset.theme === "dark" ? "light" : "dark")} aria-label={text.mode}><Icon name="sun" /><Icon name="moon" /></button>
-  </>;
+  const toggleTheme = () => void saveAppearance(style, document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  const navActions = <NotificationInboxPopover {...inbox} viewAllLabel={t("feed.all")} onOpenAll={() => go("/notifications")} />;
   const loadCatalog: RoomFeedLoader = async (selectedFilter, cursor, signal) => {
     if (shot) {
       const categories = ["film", "music", "vlog"] as const;
@@ -447,7 +448,7 @@ export function DesignApp({
 
   return (
     <AppShell className={narrow ? "is-narrow session-hub" : "session-hub"} view={view} style={style} header={
-      view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} text={text} actions={navActions} /> : (
+      view === "room" || view === "auth" ? null : style === "gruvbox" ? <GruvboxBar view={view} onGo={go} searchLabel={text.search} actions={navActions} light={mode === "light"} onToggleTheme={toggleTheme} themeLabel={text.mode} /> : (
         <AppHeader
           searchLabel={text.search}
           query={query}
@@ -528,8 +529,8 @@ export function DesignApp({
                 });
             }} />
           ) : null}
-          {view === "missing" ? <EmptyScreen title={t("empty.notFoundTitle")} body={t("empty.notFoundBody")} action={<><button type="button" className="btn btn-outline" onClick={() => go("/")}>{t("empty.home")}</button><button type="button" className="btn btn-primary" onClick={() => { updateCode(""); go("/join"); }}>{t("empty.tryRoomCode")}</button></>} /> : null}
-          {view === "offline" ? <EmptyScreen title={t("empty.offlineTitle")} body={t("empty.offlineBody")} action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>{t("common.retry")}</button>} /> : null}
+          {view === "missing" ? <EmptyScreen title={t("empty.notFoundTitle")} body={t("empty.notFoundBody")} action={<><Button onClick={() => go("/")}>{t("empty.home")}</Button><Button variant="primary" onClick={() => { updateCode(""); go("/join"); }}>{t("empty.tryRoomCode")}</Button></>} /> : null}
+          {view === "offline" ? <EmptyScreen title={t("empty.offlineTitle")} body={t("empty.offlineBody")} action={<Button variant="primary" onClick={() => window.location.reload()}>{t("common.retry")}</Button>} /> : null}
         </Page>
       ) : null}
       {narrow && view !== "room" ? <BottomNav current={view} onGo={go} /> : null}

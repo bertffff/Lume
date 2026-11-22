@@ -16,3 +16,4 @@ export { Progress } from "./Progress.js";
 export { Skeleton } from "./Skeleton.js";
 export { State, type StateKind } from "./State.js";
 export { Tabs, type TabItem } from "./Tabs.js";
+export { ToastProvider, useToast } from "./Toast.js";

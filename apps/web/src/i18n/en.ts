@@ -233,6 +233,7 @@ export const en: Record<MessageKey, string> = {
   "settings.reactions": "Reactions",
   "settings.telegramOn": "Bot notifications are on",
   "settings.telegramOff": "The bot stays quiet until Telegram is linked",
+  "shell.navigation": "Navigation",
   "settings.sections": "Settings sections",
   "settings.notifTelegram": "Telegram notifications",
   "settings.notifTelegramHint": "Sent to the bot when Telegram is linked. Inside lume you always see everything.",

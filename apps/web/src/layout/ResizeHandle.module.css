@@ -25,11 +25,11 @@
 }
 
 .x::after {
-  inset: var(--ds-space-8) calc(50% - 1px);
+  inset: var(--ds-space-8) calc(50% - var(--ds-border-w));
 }
 
 .y::after {
-  inset: calc(50% - 1px) var(--ds-space-8);
+  inset: calc(50% - var(--ds-border-w)) var(--ds-space-8);
 }
 
 .handle:hover::after,

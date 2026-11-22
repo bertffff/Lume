@@ -231,6 +231,7 @@ export const ru = {
   "settings.reactions": "Реакции",
   "settings.telegramOn": "Уведомления бота включены",
   "settings.telegramOff": "Бот молчит, пока Telegram не привязан",
+  "shell.navigation": "Навигация",
   "settings.sections": "Разделы настроек",
   "settings.notifTelegram": "Уведомления в Telegram",
   "settings.notifTelegramHint": "Приходят в бота, если привязан Telegram. Внутри lume вы видите всё.",

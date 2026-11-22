@@ -1,0 +1,72 @@
+.root {
+  position: fixed;
+  z-index: var(--ds-z-popover);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3);
+  overflow: auto;
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-1);
+}
+
+.tab {
+  min-height: var(--ds-control-sm);
+  padding: 0 var(--ds-space-2);
+  border: var(--ds-border-w) solid var(--ds-border);
+  border-radius: var(--ds-radius-chip);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-medium) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+  cursor: pointer;
+}
+
+.tab.on {
+  border-color: var(--ds-accent);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-text);
+}
+
+.tab:focus-visible,
+.option:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: var(--ds-space-1);
+}
+
+.option {
+  display: grid;
+  place-items: center;
+  height: var(--ds-control-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: transparent;
+  font-size: var(--ds-fs-title);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.option:hover {
+  background: var(--ds-surface-2);
+}
+
+.none {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}

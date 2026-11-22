@@ -1,32 +1,21 @@
 import { useEffect, useState } from "react";
 import { apiUrl } from "../api/client.js";
+import { Badge, Button, Card, Field, Input, List, ListRow, Modal, State, Tabs, useToast } from "../ds/index.js";
 import { useI18n } from "../i18n/context.js";
 import type { MessageKey } from "../i18n/ru.js";
 import { AppShell } from "../shell/AppShell.js";
-import { Badge, Button, Card, ConfirmDialog, EmptyState, Input, useToast } from "../ui/index.js";
+import styles from "./AdminScreen.module.css";
 
 type Tab = "users" | "rooms" | "reports" | "audit";
+type Row = Record<string, string | null>;
+interface Pending { path: string; body: unknown; title: string; bodyText: string }
 
-const tabKeys: Record<Tab, MessageKey> = {
-  users: "admin.users",
-  rooms: "admin.rooms",
-  reports: "admin.reports",
-  audit: "admin.audit",
-};
+const tabKeys: Record<Tab, MessageKey> = { users: "admin.users", rooms: "admin.rooms", reports: "admin.reports", audit: "admin.audit" };
+const tabs = ["users", "rooms", "reports", "audit"] as const;
+const roleKeys = { USER: "admin.role.user", ADMIN: "admin.role.admin", SUPERADMIN: "admin.role.superadmin" } as const;
+const statusKeys = { open: "admin.status.open", live: "admin.status.live", ended: "admin.status.ended", pending: "admin.status.pending", reviewed: "admin.status.reviewed" } as const;
 
-const roleKeys = {
-  USER: "admin.role.user",
-  ADMIN: "admin.role.admin",
-  SUPERADMIN: "admin.role.superadmin",
-} as const;
-const statusKeys = {
-  open: "admin.status.open",
-  live: "admin.status.live",
-  ended: "admin.status.ended",
-  pending: "admin.status.pending",
-  reviewed: "admin.status.reviewed",
-} as const;
-
+/** Operator view: one table per tab, a search box, paging, and a confirm step before anything destructive. */
 export function AdminScreen({ token }: { token: string }) {
   const { t } = useI18n();
   const toast = useToast();
@@ -34,9 +23,9 @@ export function AdminScreen({ token }: { token: string }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [pages, setPages] = useState(1);
-  const [rows, setRows] = useState<Array<Record<string, string | null>>>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
-  const [pending, setPending] = useState<{ path: string; body: unknown; title: string; bodyText: string } | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -50,7 +39,7 @@ export function AdminScreen({ token }: { token: string }) {
         if (!response.ok) throw new Error("admin_failed");
         return response.json();
       })
-      .then((payload: { pages?: number; users?: Array<Record<string, string | null>>; rooms?: Array<Record<string, string | null>>; reports?: Array<Record<string, string | null>>; audit?: Array<Record<string, string | null>> }) => {
+      .then((payload: { pages?: number; users?: Row[]; rooms?: Row[]; reports?: Row[]; audit?: Row[] }) => {
         setPages(payload.pages ?? 1);
         setRows(payload.users ?? payload.rooms ?? payload.reports ?? payload.audit ?? []);
       })
@@ -87,124 +76,78 @@ export function AdminScreen({ token }: { token: string }) {
     return value;
   }
 
-  function actionFor(row: Record<string, string | null>): { label: string; path: string; body: unknown; title: string; bodyText: string } | null {
-    if (tab === "users") {
-      return {
-        label: t("admin.ban"),
-        path: `/admin/users/${row.id}/ban`,
-        body: { reason: "admin" },
-        title: `${t("admin.ban")}?`,
-        bodyText: row.displayName ?? "",
-      };
-    }
-    if (tab === "rooms") {
-      return {
-        label: t("admin.close"),
-        path: `/admin/rooms/${row.id}/close`,
-        body: {},
-        title: `${t("admin.close")}?`,
-        bodyText: row.title ?? "",
-      };
-    }
-    if (tab === "reports") {
-      return {
-        label: t("admin.resolve"),
-        path: `/admin/reports/${row.id}`,
-        body: { status: "reviewed" },
-        title: `${t("admin.resolve")}?`,
-        bodyText: row.reason ?? "",
-      };
-    }
+  function actionFor(row: Row): (Pending & { label: string }) | null {
+    if (tab === "users") return { label: t("admin.ban"), path: `/admin/users/${row.id}/ban`, body: { reason: "admin" }, title: `${t("admin.ban")}?`, bodyText: row.displayName ?? "" };
+    if (tab === "rooms") return { label: t("admin.close"), path: `/admin/rooms/${row.id}/close`, body: {}, title: `${t("admin.close")}?`, bodyText: row.title ?? "" };
+    if (tab === "reports") return { label: t("admin.resolve"), path: `/admin/reports/${row.id}`, body: { status: "reviewed" }, title: `${t("admin.resolve")}?`, bodyText: row.reason ?? "" };
     return null;
   }
 
+  const table = failed ? (
+    <State kind="error" compact bare title={t("admin.failed")} action={<Button onClick={() => setReloadKey((value) => value + 1)}>{t("admin.retry")}</Button>} />
+  ) : rows.length === 0 ? (
+    <State kind="empty" compact bare title={t("admin.empty")} />
+  ) : (
+    <List label={t(tabKeys[tab])}>
+      {rows.map((row) => {
+        const action = actionFor(row);
+        return (
+          <ListRow
+            key={String(row.id)}
+            title={String(row.displayName ?? row.title ?? row.action ?? row.reason ?? "")}
+            trailing={
+              <span className={styles.trailing}>
+                <Badge tone={tab === "reports" ? "info" : "neutral"}>{humanValue(row.status ?? row.role)}</Badge>
+                {action ? <Button size="sm" variant="danger" onClick={() => setPending(action)}>{action.label}</Button> : null}
+              </span>
+            }
+          />
+        );
+      })}
+    </List>
+  );
+
   return (
     <AppShell view="admin" className="admin-shell">
-      <section className="wrap admin-page" data-testid="admin-screen">
-        <main>
-          <header className="admin-head">
-            <h1>{t("admin.title")}</h1>
-            <div className="tabs" role="tablist" aria-label={t("admin.title")}>
-              {(["users", "rooms", "reports", "audit"] as const).map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === name}
-                  className={tab === name ? "tab on" : "tab"}
-                  onClick={() => {
-                    setTab(name);
-                    setPage(0);
-                  }}
-                >
-                  {t(tabKeys[name])}
-                </button>
-              ))}
-            </div>
-          </header>
-
-          <Input
-            label={t("admin.search")}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(0);
-            }}
-            placeholder={t("admin.search")}
-          />
-
-          <Card title={t(tabKeys[tab])} action={<Badge count={rows.length} tone="neutral" />}>
-            {failed ? (
-              <EmptyState
-                title={t("admin.failed")}
-                action={<Button onClick={() => setReloadKey((value) => value + 1)}>{t("admin.retry")}</Button>}
-              />
-            ) : rows.length === 0 ? (
-              <EmptyState title={t("admin.empty")} />
-            ) : (
-              <div className="admin-table" role="table">
-                {rows.map((row) => {
-                  const action = actionFor(row);
-                  return (
-                    <div key={String(row.id)} className="admin-row" role="row">
-                      <span role="cell">{row.displayName ?? row.title ?? row.action ?? row.reason}</span>
-                      <Badge tone={tab === "reports" ? "social" : "neutral"}>{humanValue(row.status ?? row.role)}</Badge>
-                      {action ? (
-                        <Button size="sm" variant="danger" onClick={() => setPending(action)}>
-                          {action.label}
-                        </Button>
-                      ) : null}
-                    </div>
-                  );
-                })}
+      <section className={styles.root} data-testid="admin-screen">
+        <h1 className={styles.title}>{t("admin.title")}</h1>
+        <Tabs
+          label={t("admin.title")}
+          value={tab}
+          onChange={(id) => { setTab(id as Tab); setPage(0); }}
+          tabs={tabs.map((name) => ({
+            id: name,
+            label: t(tabKeys[name]),
+            panel: (
+              <div className={styles.panel}>
+                <Field label={t("admin.search")}>
+                  <Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder={t("admin.search")} />
+                </Field>
+                <Card as="section" aria-label={t(tabKeys[name])}>{table}</Card>
+                <div className={styles.pager}>
+                  <Button size="sm" disabled={page <= 0} onClick={() => setPage((value) => value - 1)}>{t("admin.prev")}</Button>
+                  <span className={styles.page}>{page + 1}/{pages}</span>
+                  <Button size="sm" disabled={page + 1 >= pages} onClick={() => setPage((value) => value + 1)}>{t("admin.next")}</Button>
+                </div>
               </div>
-            )}
-          </Card>
-
-          <div className="admin-pager">
-            <Button size="sm" variant="outline" disabled={page <= 0} onClick={() => setPage((value) => value - 1)}>
-              {t("admin.prev")}
-            </Button>
-            <span>
-              {page + 1}/{pages}
-            </span>
-            <Button size="sm" variant="outline" disabled={page + 1 >= pages} onClick={() => setPage((value) => value + 1)}>
-              {t("admin.next")}
-            </Button>
-          </div>
-        </main>
+            ),
+          }))}
+        />
       </section>
-
-      <ConfirmDialog
+      <Modal
         open={pending !== null}
+        size="sm"
         title={pending?.title ?? ""}
-        body={pending?.bodyText ?? ""}
-        confirmLabel={pending ? t("admin.confirm") : ""}
-        danger
-        busy={busy}
-        onConfirm={() => void act()}
-        onCancel={() => setPending(null)}
-      />
+        onClose={() => setPending(null)}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setPending(null)}>{t("common.cancel")}</Button>
+            <Button variant="danger" loading={busy} onClick={() => void act()}>{pending ? t("admin.confirm") : ""}</Button>
+          </>
+        }
+      >
+        <p className={styles.confirm}>{pending?.bodyText}</p>
+      </Modal>
     </AppShell>
   );
 }

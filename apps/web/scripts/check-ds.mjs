@@ -5,9 +5,8 @@ import { join, relative } from "node:path";
  * Guard for the design system and everything migrated onto it:
  * no !important, no inline style, no raw colours outside tokens, no raw px in spacing.
  */
-const roots = ["src/ds", "src/gallery", "src/shell", "src/screens"];
-// Screens migrated out of the legacy layer: only their CSS modules are held to the token rules.
-const migratedModules = ["src/design"];
+const roots = ["src"];
+const migratedModules = [];
 const tokenDir = join("src", "ds", "tokens");
 const spacing = /(?:^|[;{\s])(?:padding|margin|gap|row-gap|column-gap|inset|top|right|bottom|left)(?:-[a-z]+)?\s*:\s*[^;}]*\b[1-9]\d*px/;
 

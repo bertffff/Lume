@@ -4,10 +4,13 @@ import {
   emojiPickerCategoryIds,
   type EmojiPickerCategory,
 } from "@lume/contracts";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "../i18n/context.js";
 import type { MessageKey } from "../i18n/ru.js";
+import { Input } from "../ds/index.js";
+import { cx } from "../ds/cx.js";
+import styles from "./EmojiPicker.module.css";
 
 type PickerTab = "recent" | EmojiPickerCategory;
 
@@ -75,6 +78,20 @@ export function EmojiPicker({
     };
   }, [anchor]);
 
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (!position) {
+      panel.style.visibility = "hidden";
+      return;
+    }
+    panel.style.visibility = "";
+    panel.style.left = `${position.left}px`;
+    panel.style.top = `${position.top}px`;
+    panel.style.width = `${position.width}px`;
+    panel.style.maxHeight = `${position.maxHeight}px`;
+  }, [position]);
+
   useEffect(() => {
     searchRef.current?.focus({ preventScroll: true });
     return () => {
@@ -120,27 +137,15 @@ export function EmojiPicker({
   }, [anchor, onClose]);
 
   const panel = (
-    <div
-      ref={panelRef}
-      className="emoji-picker"
-      data-testid="emoji-picker"
-      role="dialog"
-      aria-modal="false"
-      aria-label={t("emoji.title")}
-      style={
-        position
-          ? { position: "fixed", left: position.left, top: position.top, width: position.width, maxHeight: position.maxHeight }
-          : { visibility: "hidden" }
-      }
-    >
-      <div className="emoji-tabs" role="tablist">
+    <div ref={panelRef} className={styles.root} data-testid="emoji-picker" role="dialog" aria-modal="false" aria-label={t("emoji.title")}>
+      <div className={styles.tabs} role="tablist">
         {emojiPickerCategoryIds.map((id) => (
           <button
             key={id}
             type="button"
             role="tab"
             aria-selected={!needle && tab === id}
-            className={!needle && tab === id ? "on" : ""}
+            className={cx(styles.tab, !needle && tab === id && styles.on)}
             data-testid={`emoji-tab-${id}`}
             onClick={() => {
               setQuery("");
@@ -151,7 +156,7 @@ export function EmojiPicker({
           </button>
         ))}
       </div>
-      <input
+      <Input
         ref={searchRef}
         data-testid="emoji-search"
         value={query}
@@ -159,14 +164,15 @@ export function EmojiPicker({
         placeholder={t("emoji.search")}
         aria-label={t("emoji.search")}
       />
-      <div className="emoji-grid" data-testid="emoji-grid">
+      <div className={styles.grid} data-testid="emoji-grid">
         {shown.length === 0 ? (
-          <p className="empty-note">{needle ? t("emoji.none") : t("emoji.noRecent")}</p>
+          <p className={styles.none}>{needle ? t("emoji.none") : t("emoji.noRecent")}</p>
         ) : null}
         {shown.map((emoji) => (
           <button
             key={emoji}
             type="button"
+            className={styles.option}
             data-testid="emoji-option"
             aria-label={emojiKeywords[emoji]?.[0] ?? emoji}
             onClick={() => onPick(emoji)}

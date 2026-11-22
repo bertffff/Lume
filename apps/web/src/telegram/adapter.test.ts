@@ -2,16 +2,14 @@ import { describe, expect, it } from "vitest";
 import { previewThemeParams, themeParamsToCssVars } from "./adapter.js";
 
 describe("telegram theme params", () => {
-  it("maps the preview palette onto lume variables", () => {
+  it("maps the preview palette onto design tokens", () => {
     expect(themeParamsToCssVars(previewThemeParams)).toMatchObject({
-      "--lume-bg": "#17212b",
-      "--lume-accent": "#5288c1",
-      "--lume-text": "#f5f5f5",
-      "--bg": "#17212b",
-      "--s1": "#232e3c",
-      "--text": "#f5f5f5",
-      "--accent": "#5288c1",
-      "--accent-ink": "#ffffff",
+      "--ds-bg": "#17212b",
+      "--ds-surface-1": "#232e3c",
+      "--ds-text-primary": "#f5f5f5",
+      "--ds-text-secondary": "#8aa0b3",
+      "--ds-accent": "#5288c1",
+      "--ds-text-on-accent": "#ffffff",
     });
   });
 });

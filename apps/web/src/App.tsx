@@ -2,7 +2,7 @@ import { defaultRoomLayout, layoutAspectGroup, magicTokenFromSearch, parseRoomCo
 import { useEffect, useMemo, useState } from "react";
 import { api, apiUrl } from "./api/client.js";
 import { detectLocale, I18nProvider } from "./i18n/context.js";
-import { ToastProvider } from "./ui/Toast.js";
+import { ToastProvider } from "./ds/index.js";
 import { useRoomChannel } from "./realtime/useRoomChannel.js";
 import { DesignApp } from "./design/DesignApp.js";
 import { AdminScreen } from "./screens/AdminScreen.js";

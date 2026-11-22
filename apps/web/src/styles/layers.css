@@ -1,5 +1,3 @@
 /* Must be the first CSS the bundle sees: it fixes layer priority for everything that follows.
-   `app` (global.css) and `legacy` (old design CSS) sit above Tailwind, in that order,
-   exactly as the unlayered CSS used to,
-   while unlayered CSS modules of the design system beat `legacy`. */
-@layer theme, base, components, utilities, app, legacy;
+   `app` (global.css, app.css) sits above Tailwind; unlayered CSS modules of the design system beat it. */
+@layer theme, base, components, utilities, app;
