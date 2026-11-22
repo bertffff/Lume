@@ -3,7 +3,9 @@ import type { DayPart } from "../screens/home/greeting.js";
 
 /**
  * Home-screen "splashes": short jokes shown next to the greeting, picked at random on each visit.
- * Add a line here and it appears; `when` limits it to one part of the day, `{name}` is the viewer's first name.
+ * Add a line here and it appears; `when` limits it to one part of the day, `{name}` is the viewer's name.
+ * People use nicknames, not only names: `{name}` always stands as a bare nominative word, so write
+ * gender-neutral lines (no past-tense verbs agreeing with the name, no declension of it).
  * Keep them kind and short (≤ 40 characters reads best at the tilted size).
  */
 export interface Splash {
@@ -18,7 +20,8 @@ const ru: readonly Splash[] = [
   { text: "Титры — тоже кино." },
   { text: "Тихо, тут смотрят." },
   { text: "Только не перематывай!" },
-  { text: "{name}, а плед взял?" },
+  { text: "{name}, плед при тебе?" },
+  { text: "{name} на связи — можно начинать." },
   { text: "Свет приглушён, чат включён." },
   { text: "Всё синхронно. Почти." },
   { text: "Нажми «/» — найдёшь что угодно." },
@@ -34,7 +37,8 @@ const en: readonly Splash[] = [
   { text: "The credits are cinema too." },
   { text: "Quiet, people are watching." },
   { text: "Don't you dare skip ahead!" },
-  { text: "{name}, got a blanket?" },
+  { text: "{name}, is the blanket within reach?" },
+  { text: "{name} is here — we can start." },
   { text: "Lights down, chat up." },
   { text: "Everything is in sync. Almost." },
   { text: "Press “/” to find anything." },
@@ -42,6 +46,12 @@ const en: readonly Splash[] = [
   { text: "Can't sleep? Us neither.", when: "night" },
   { text: "Coffee and a film in the morning? Fine.", when: "morning" },
 ];
+
+/** A name that is safe to splice into a sentence: one short word, no spaces, links or emoji soup. */
+export function usableName(raw: string): string {
+  const name = raw.trim();
+  return /^[\p{L}\p{N}_.-]{1,18}$/u.test(name) && !/^\d+$/.test(name) ? name : "";
+}
 
 export const splashes: Readonly<Record<Locale, readonly Splash[]>> = { ru, en };
 
@@ -52,7 +62,7 @@ export const splashes: Readonly<Record<Locale, readonly Splash[]>> = { ru, en };
 export function pickSplash(locale: Locale, part: DayPart, firstName: string, random: () => number = Math.random): string {
   const pool = splashes[locale].filter((item) => item.when === undefined || item.when === part);
   const chosen = pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))] ?? splashes.ru[0];
-  const name = firstName.trim();
+  const name = usableName(firstName);
   // A line that addresses the viewer by name is meaningless for a guest: fall back to a neutral one.
   if (chosen && chosen.text.includes("{name}") && !name) {
     return pickSplash(locale, part, firstName, () => 0);

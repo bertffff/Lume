@@ -69,6 +69,7 @@
   margin: 0;
   font: var(--ds-fw-bold) var(--ds-fs-headline) / var(--ds-lh-headline) var(--ds-font-display);
   letter-spacing: var(--ds-tracking-display);
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
