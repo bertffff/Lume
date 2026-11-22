@@ -1,0 +1,106 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-body) / var(--ds-lh-body) var(--ds-font-display);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  color: var(--ds-text-tertiary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+}
+
+.legend .cell {
+  width: var(--ds-space-3);
+}
+
+.grid {
+  display: grid;
+  align-content: start;
+  grid-template-rows: repeat(7, auto);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--ds-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: block;
+  min-width: 0;
+}
+
+.cell {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 1;
+  border-radius: var(--ds-space-1);
+}
+
+.day {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.day:hover {
+  outline: 1px solid var(--ds-text-secondary);
+}
+
+.day:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 1px;
+}
+
+.l0 { background: var(--ds-heat-0); }
+.l1 { background: var(--ds-heat-1); }
+.l2 { background: var(--ds-heat-2); }
+.l3 { background: var(--ds-heat-3); }
+.l4 { background: var(--ds-heat-4); }
+
+.r0 { grid-row-start: 1; }
+.r1 { grid-row-start: 2; }
+.r2 { grid-row-start: 3; }
+.r3 { grid-row-start: 4; }
+.r4 { grid-row-start: 5; }
+.r5 { grid-row-start: 6; }
+.r6 { grid-row-start: 7; }
+
+.readout {
+  min-height: var(--ds-lh-small);
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.readout [role="tooltip"] {
+  display: flex;
+  gap: var(--ds-space-3);
+}
+
+.readout time {
+  color: var(--ds-text-primary);
+  font-weight: var(--ds-fw-medium);
+}
+
+.empty {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}

@@ -8,11 +8,14 @@
 .list {
   display: flex;
   gap: var(--ds-space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
   border-bottom: var(--ds-border-w) solid var(--ds-border);
 }
 
 .tab {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: var(--ds-space-2);
   min-height: var(--ds-control-md);

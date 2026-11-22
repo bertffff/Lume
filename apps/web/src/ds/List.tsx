@@ -13,10 +13,12 @@ export interface ListRowProps {
   trailing?: ReactNode;
   selected?: boolean;
   onSelect?: () => void;
+  /** Extra attributes for the row itself (data-*), e.g. test hooks and machine-readable values. */
+  attrs?: Record<`data-${string}`, string | number | undefined>;
 }
 
 /** One row. With `onSelect` the whole row is a button; trailing actions stay outside it. */
-export function ListRow({ leading, title, subtitle, trailing, selected = false, onSelect }: ListRowProps) {
+export function ListRow({ leading, title, subtitle, trailing, selected = false, onSelect, attrs }: ListRowProps) {
   const body = (
     <>
       {leading ? <span className={styles.leading}>{leading}</span> : null}
@@ -27,7 +29,7 @@ export function ListRow({ leading, title, subtitle, trailing, selected = false, 
     </>
   );
   return (
-    <li className={cx(styles.row, selected && styles.selected)}>
+    <li className={cx(styles.row, selected && styles.selected)} {...attrs}>
       {onSelect ? <button type="button" className={cx(styles.main, styles.button)} onClick={onSelect} aria-current={selected || undefined}>{body}</button> : <div className={styles.main}>{body}</div>}
       {trailing ? <span className={styles.trailing}>{trailing}</span> : null}
     </li>
