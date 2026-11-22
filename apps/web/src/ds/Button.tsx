@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import type { ButtonHTMLAttributes } from "react";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cx } from "./cx.js";
 import { Icon } from "./Icon.js";
 import styles from "./Button.module.css";
@@ -15,9 +15,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   block?: boolean;
 }
 
-export function Button({ variant = "secondary", size = "md", icon, loading = false, block = false, className, children, disabled, type = "button", ...rest }: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({ variant = "secondary", size = "md", icon, loading = false, block = false, className, children, disabled, type = "button", ...rest }, ref) {
   return (
     <button
+      ref={ref}
       type={type}
       className={cx(styles.root, styles[variant], styles[size], block && styles.block, className)}
       aria-busy={loading || undefined}
@@ -28,7 +29,7 @@ export function Button({ variant = "secondary", size = "md", icon, loading = fal
       {children}
     </button>
   );
-}
+});
 
 export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label"> {
   icon: LucideIcon;
@@ -38,10 +39,10 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   pressed?: boolean;
 }
 
-export function IconButton({ icon, label, variant = "secondary", size = "md", pressed, className, type = "button", ...rest }: IconButtonProps) {
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton({ icon, label, variant = "secondary", size = "md", pressed, className, type = "button", ...rest }, ref) {
   return (
-    <button type={type} className={cx(styles.root, styles.square, styles[variant], styles[size], className)} aria-label={label} title={label} aria-pressed={pressed} {...rest}>
+    <button ref={ref} type={type} className={cx(styles.root, styles.square, styles[variant], styles[size], className)} aria-label={label} title={label} aria-pressed={pressed} {...rest}>
       <Icon icon={icon} size={size === "lg" ? "lg" : "md"} />
     </button>
   );
-}
+});

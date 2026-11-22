@@ -1,18 +1,18 @@
 @layer legacy {
-/* CreateRoomWizard: layout, state and affordances only.
+/* CreateRoomWizard: layout,
+state and affordances only.
    All visible copy is supplied by props/i18n; nothing here is localised text.
    Scoped under the shared modal so overrides win over .ui-overlay .modal rules. */
 
-.ui-overlay .modal .create-wizard {
+.ui-overlay .modal .create-wizard{
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-inline-size: 0;
   overflow-wrap: anywhere;
 }
-
 /* Step indicator */
-.ui-overlay .modal .create-wizard__steps {
+.ui-overlay .modal .create-wizard__steps{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -20,8 +20,7 @@
   padding: 0;
   list-style: none;
 }
-
-.ui-overlay .modal .create-wizard__steps li {
+.ui-overlay .modal .create-wizard__steps li{
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -33,8 +32,7 @@
   color: var(--text-2, #c6baad);
   font: 500 12.5px/1.2 var(--font-ui, system-ui, sans-serif);
 }
-
-.ui-overlay .modal .create-wizard__steps li span {
+.ui-overlay .modal .create-wizard__steps li span{
   display: grid;
   place-items: center;
   flex: none;
@@ -46,67 +44,57 @@
   font-size: 11px;
   font-weight: 700;
 }
-
-.ui-overlay .modal .create-wizard__steps li[aria-current="step"] {
+.ui-overlay .modal .create-wizard__steps li[aria-current="step"]{
   border-color: var(--accent, #ffb23e);
   background: var(--accent-soft, rgba(255, 178, 62, 0.16));
   color: var(--text, #f3ede6);
   font-weight: 600;
 }
-
-.ui-overlay .modal .create-wizard__steps li[aria-current="step"] span {
+.ui-overlay .modal .create-wizard__steps li[aria-current="step"] span{
   background: var(--accent, #ffb23e);
   color: var(--accent-ink, #1a1205);
 }
-
 /* The heading is focused programmatically on every step change. */
-.ui-overlay .modal .create-wizard h3 {
+.ui-overlay .modal .create-wizard h3{
   margin: 0;
   color: var(--text, #f3ede6);
   font: 600 clamp(1.05rem, 3vw, 1.25rem)/1.25 var(--font-display, var(--font-ui, system-ui, sans-serif));
 }
-
-.ui-overlay .modal .create-wizard h3:focus {
+.ui-overlay .modal .create-wizard h3:focus{
   outline: 2px solid var(--focus-outline, var(--accent-text, #ffb23e));
   outline-offset: 3px;
   border-radius: var(--r-xs, 4px);
 }
-
 /* Fieldsets carry the section legends for each step. */
-.ui-overlay .modal .create-wizard fieldset {
+.ui-overlay .modal .create-wizard fieldset{
   min-inline-size: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
-
-.ui-overlay .modal .create-wizard legend {
+.ui-overlay .modal .create-wizard legend{
   margin-block-end: 8px;
   padding: 0;
   color: var(--text-2, #c6baad);
   font: 600 12px/1.2 var(--font-ui, system-ui, sans-serif);
 }
-
 /* Preset picker */
-.ui-overlay .modal .create-wizard__presets {
+.ui-overlay .modal .create-wizard__presets{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-
-.ui-overlay .modal .create-wizard__presets button {
+.ui-overlay .modal .create-wizard__presets button{
   min-block-size: 36px;
   padding: 6px 12px;
 }
-
-.ui-overlay .modal .create-wizard__presets button[aria-pressed="true"] {
+.ui-overlay .modal .create-wizard__presets button[aria-pressed="true"]{
   border-color: transparent;
   background: var(--accent, #ffb23e);
   color: var(--accent-ink, #1a1205);
   font-weight: 600;
 }
-
-.ui-overlay .modal .create-wizard__hint {
+.ui-overlay .modal .create-wizard__hint{
   margin-block-start: 8px;
   padding: 8px 12px;
   border-inline-start: 3px solid var(--accent, #ffb23e);
@@ -116,39 +104,33 @@
   font-size: 12px;
   line-height: 1.45;
 }
-
 /* Labelled inputs / selects */
-.ui-overlay .modal .create-wizard__field {
+.ui-overlay .modal .create-wizard__field{
   display: grid;
   gap: 6px;
   min-inline-size: 0;
 }
-
-.ui-overlay .modal .create-wizard__field label {
+.ui-overlay .modal .create-wizard__field label{
   color: var(--text-2, #c6baad);
   font: 600 12.5px/1.3 var(--font-ui, system-ui, sans-serif);
 }
-
 .ui-overlay .modal .create-wizard__field input[aria-invalid="true"],
-.ui-overlay .modal .create-wizard__field select[aria-invalid="true"] {
+.ui-overlay .modal .create-wizard__field select[aria-invalid="true"]{
   --line-2: var(--danger, #ff6b5e);
   border-color: var(--danger, #ff6b5e);
 }
-
-.ui-overlay .modal .create-wizard__field p[role="alert"] {
+.ui-overlay .modal .create-wizard__field p[role="alert"]{
   color: var(--danger, #ff6b5e);
   font-size: 12px;
   line-height: 1.35;
 }
-
 /* Access radios and rights checkboxes share the same card treatment. */
-.ui-overlay .modal .create-wizard__choices {
+.ui-overlay .modal .create-wizard__choices{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 8px;
 }
-
-.ui-overlay .modal .create-wizard__choice {
+.ui-overlay .modal .create-wizard__choice{
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -164,24 +146,20 @@
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-
-.ui-overlay .modal .create-wizard__choice:hover {
+.ui-overlay .modal .create-wizard__choice:hover{
   border-color: var(--text-3, #9c9186);
   background: var(--s3, #29231f);
 }
-
-.ui-overlay .modal .create-wizard__choice:focus-within {
+.ui-overlay .modal .create-wizard__choice:focus-within{
   outline: 2px solid var(--focus-outline, var(--accent-text, #ffb23e));
   outline-offset: 2px;
   border-color: var(--accent, #ffb23e);
 }
-
-.ui-overlay .modal .create-wizard__choice:has(input:checked) {
+.ui-overlay .modal .create-wizard__choice:has(input:checked){
   border-color: var(--accent, #ffb23e);
   background: var(--accent-soft, rgba(255, 178, 62, 0.16));
 }
-
-.ui-overlay .modal .create-wizard__choice input {
+.ui-overlay .modal .create-wizard__choice input{
   grid-column: 1;
   grid-row: 1;
   inline-size: 16px;
@@ -190,24 +168,21 @@
   accent-color: var(--accent, #ffb23e);
   cursor: pointer;
 }
-
-.ui-overlay .modal .create-wizard__choice span {
+.ui-overlay .modal .create-wizard__choice span{
   grid-column: 2;
   grid-row: 1;
   min-inline-size: 0;
   font: 500 13.5px/1.3 var(--font-ui, system-ui, sans-serif);
 }
-
-.ui-overlay .modal .create-wizard__choice small {
+.ui-overlay .modal .create-wizard__choice small{
   grid-column: 2;
   grid-row: 2;
   color: var(--text-2, #c6baad);
   font-size: 12px;
   line-height: 1.35;
 }
-
 /* Submission / network error */
-.ui-overlay .modal .create-wizard > p[role="alert"] {
+.ui-overlay .modal .create-wizard > p[role="alert"]{
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--danger, #ff6b5e) 42%, transparent);
   border-radius: var(--r-sm, 6px);
@@ -216,28 +191,25 @@
   font-size: 13px;
   line-height: 1.4;
 }
-
 /* Footer (lives in .mf, outside the form) */
-.ui-overlay .modal .create-wizard__actions {
+.ui-overlay .modal .create-wizard__actions{
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   inline-size: 100%;
 }
-
-.ui-overlay .modal .create-wizard__actions button {
+.ui-overlay .modal .create-wizard__actions button{
   min-block-size: 36px;
   padding: 6px 12px;
 }
-
-.ui-overlay .modal .create-wizard__actions button[disabled] {
+.ui-overlay .modal .create-wizard__actions button[disabled]{
   cursor: not-allowed;
   opacity: 0.6;
 }
-
-/* 390px-class screens: single-column choices, full-width stepper/actions. */
-@media (max-width: 480px) {
+/* 390px-class screens: single-column choices,
+full-width stepper/actions. */
+@media (max-width: 480px){
   .ui-overlay .modal .create-wizard {
     gap: 14px;
   }
@@ -255,9 +227,7 @@
     flex: 1 1 auto;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .ui-overlay .modal .create-wizard__choice {
+@media (prefers-reduced-motion: reduce) {.ui-overlay .modal .create-wizard__choice{
     transition: none;
   }
 }

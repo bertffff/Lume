@@ -1,0 +1,49 @@
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4);
+  background: var(--ds-overlay);
+  color: var(--ds-text-primary);
+  -webkit-backdrop-filter: blur(var(--ds-surface-blur));
+  backdrop-filter: blur(var(--ds-surface-blur));
+  text-align: center;
+}
+
+.glyph {
+  display: grid;
+  place-items: center;
+  width: var(--ds-control-lg);
+  height: var(--ds-control-lg);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-semibold) var(--ds-fs-title) / var(--ds-lh-title) var(--ds-font-display);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ds-space-2);
+}
+
+.replace {
+  display: flex;
+  gap: var(--ds-space-2);
+  width: min(100%, 460px);
+}
+
+.replace > :first-child {
+  flex: 1;
+  min-width: 0;
+}

@@ -47,9 +47,8 @@ test("chat follows new messages, previews attachments, and the narrow dock keeps
   await expect(preview).toHaveAttribute("src", /\/uploads\//);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  // The persistent narrow rail became an on-demand dock. The invite and
-  // settings controls stay in the header/player even while the dock is shut.
-  await expect(page.getByTestId("mobile-sheet-toggle")).toBeVisible();
+  // On phones the dock is inline; the invite and settings controls stay in reach.
+  await expect(page.getByTestId("mobile-sheet-toggle")).toBeHidden();
   await expect(page.getByTestId("session-dock-invite")).toBeVisible();
   await expect(page.getByTestId("room-personal-settings")).toBeVisible();
 
@@ -59,8 +58,6 @@ test("chat follows new messages, previews attachments, and the narrow dock keeps
   await expect(dock.getByTestId("chat-log")).toBeVisible();
   const focusable = await dock.locator("button:visible").count();
   expect(focusable).toBeGreaterThanOrEqual(5);
-  await page.getByTestId("mobile-sheet-close").click();
-  await expect(dock).toBeHidden();
 
   // Deafen now lives in the voice card and appears only after joining.
   await page.getByTestId("voice-join").click();

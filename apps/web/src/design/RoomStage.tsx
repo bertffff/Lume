@@ -1,6 +1,7 @@
 import { layoutAspectGroup, sharedVoiceSeconds, shouldHoldForReady, voiceSessionStartedAt, type RoomLayout } from "@lume/contracts";
 import { MessageCircle, Pause, Play, Settings2, SkipForward } from "lucide-react";
-import { useContext, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { Button, IconButton, Progress } from "../ds/index.js";
+import { useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { ResizeHandle } from "../layout/ResizeHandle.js";
@@ -9,6 +10,7 @@ import { clamp } from "../layout/weights.js";
 import { useRoomMeta } from "../room/hooks/useRoomMeta.js";
 import { useRoomActions } from "../room/live.js";
 import { useVoiceChannel } from "../voice/useVoiceChannel.js";
+import { PlayerError } from "./PlayerError.js";
 import { RoomChat } from "./RoomChat.js";
 import { RoomHeader } from "./RoomHeader.js";
 import { RoomPeople } from "./RoomPeople.js";
@@ -21,6 +23,7 @@ import { RoomPersonalSettings } from "./RoomPersonalSettings.js";
 import { SessionDock, type DockTab } from "./SessionDock.js";
 import { RoomAppearanceContext } from "./room-appearance.js";
 import { currentStyle, subscribeAppearance } from "./theme.js";
+import styles from "./RoomStage.module.css";
 
 function useVoiceClock(joined: boolean, token?: string) {
   const [clock, setClock] = useState(() => Date.now());
@@ -98,7 +101,7 @@ export function RoomStage({ layout, synced, onLayout, onLeave, onRefreshed, noti
   useEffect(() => {
     if (!dockOpen) return;
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape" && !event.defaultPrevented && workspace.current?.querySelector(".room-dock")?.contains(document.activeElement)) {
+      if (event.key === "Escape" && !event.defaultPrevented && workspace.current?.querySelector('[data-testid="session-dock"]')?.contains(document.activeElement)) {
         setDockOpen(false);
         (dockFocus.current ?? dockToggle.current)?.focus();
       }
@@ -106,6 +109,13 @@ export function RoomStage({ layout, synced, onLayout, onLeave, onRefreshed, noti
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [dockOpen]);
+
+  useLayoutEffect(() => {
+    const element = workspace.current;
+    if (!element) return;
+    element.style.setProperty("--room-share", `${layout.playerRatio * 100}%`);
+    element.style.setProperty("--room-aspect", String(layout.videoAspect));
+  }, [layout.playerRatio, layout.videoAspect, live]);
 
   if (!live) return null;
   const { room, members, self, messages, voice: presence } = live.state;
@@ -163,62 +173,56 @@ export function RoomStage({ layout, synced, onLayout, onLeave, onRefreshed, noti
   }
 
   return (
-    <div className="room-live" data-room-style={style} data-testid="room-live" data-dock-open={dockOpen}>
+    <div className={styles.live} data-room-style={style} data-testid="room-live" data-dock-open={dockOpen}>
       <RoomHeader title={meta.settings?.title ?? room.title} code={room.code} synced={synced} playbackStatus={status}
         memberCount={members.length} participants={members} onPeople={() => openDock("people")} onLeave={onLeave} appearance={appearance}
         onSettings={self.role === "host" ? () => setSettings("host") : undefined} />
-      <div className="room-notices">{notices}</div>
-      <div ref={workspace} className="room-workspace" style={{ "--room-player-share": `${layout.playerRatio * 100}%` } as CSSProperties}>
-        <section className="room-player" aria-label={t("player.stage")}>
-          <PlayerPanel aspect={layout.videoAspect} reload={reload} onError={setErrorUrl} onAspect={(videoAspect) => onLayout({ ...layout, videoAspect })}
-            stage={{ className: "room-stage stage-card", "data-testid": "player-frame", "data-preset": layout.preset, "data-aspect": layoutAspectGroup(layout.videoAspect) }}
-            overlay={<>
-              {now && <strong className="room-media-title" title={now.title}>{now.title}</strong>}
-              {playerError && <div className="room-player-error" data-testid="player-error">
-                <h2>{t("room.videoUnavailable")}</h2>
-                <div>
-                  <button type="button" data-testid="player-retry" onClick={() => {
+      <div className={styles.notices}>{notices}</div>
+      <div ref={workspace} className={styles.workspace}>
+        <div className={styles.main}>
+          <section className={styles.player} aria-label={t("player.stage")}>
+            <PlayerPanel aspect={layout.videoAspect} reload={reload} onError={setErrorUrl} onAspect={(videoAspect) => onLayout({ ...layout, videoAspect })}
+              stage={{ "data-testid": "player-frame", "data-preset": layout.preset, "data-aspect": layoutAspectGroup(layout.videoAspect) }}
+              overlay={<>
+                {now && <strong className={styles.mediaTitle} title={now.title}>{now.title}</strong>}
+                {playerError && <PlayerError url={playerError} refreshState={refreshState}
+                  onRetry={() => {
                     if (extractors) void refreshStream();
                     else { setErrorUrl(null); setReload((value) => value + 1); }
                     recover("retry", playerError);
-                  }}>{t(refreshState === "error" ? "room.refreshFailed" : "room.refreshLink")}</button>
-                  <button type="button" data-testid="player-open" onClick={() => {
+                  }}
+                  onOpen={() => {
                     const url = URL.canParse(playerError) ? new URL(playerError) : null;
                     if (url && (url.protocol === "http:" || url.protocol === "https:")) window.open(url, "_blank", "noopener,noreferrer");
                     recover("open", playerError);
-                  }}>{t("room.openPlatform")}</button>
+                  }}
+                  onReplace={(url) => {
+                    live.addQueue(url);
+                    setErrorUrl(null);
+                    recover("replace", url);
+                  }} />}
+                <div className={styles.floats} data-testid="float-log" data-hide-other={meta.hideOther} data-room-hide-reactions={meta.settings?.hideReactions ?? false}>
+                  {live.floats.filter((item) => (!meta.hideOther && !meta.settings?.hideReactions) || item.userId === live.selfId).slice(-2).map((item) => <span key={item.id}>{item.emoji}</span>)}
                 </div>
-                <form onSubmit={(event) => {
-                  event.preventDefault();
-                  const url = String(new FormData(event.currentTarget).get("url") ?? "").trim();
-                  if (!url) return;
-                  live.addQueue(url);
-                  setErrorUrl(null);
-                  recover("replace", url);
-                }}>
-                  <input name="url" type="url" required aria-label={t("room.newLink")} placeholder={t("room.newLink")} data-testid="player-replace-url" />
-                  <button type="submit" data-testid="player-replace">{t("room.replaceVideo")}</button>
-                </form>
-              </div>}
-              <div className="room-floats" data-testid="float-log" data-hide-other={meta.hideOther} data-room-hide-reactions={meta.settings?.hideReactions ?? false}>
-                {live.floats.filter((item) => (!meta.hideOther && !meta.settings?.hideReactions) || item.userId === live.selfId).slice(-2).map((item) => <span key={item.id}>{item.emoji}</span>)}
-              </div>
-            </>}
-            controls={<>
-              <button type="button" className="room-play" data-testid="playback-play" disabled={!now || !live.canControl} aria-label={t(playing && now ? "player.pause" : "player.play")}
-                onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)}>{playing && now ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}</button>
-              {now ? <span className="room-time">{roomClock(live.positionMs)}{duration ? ` / ${roomClock(duration)}` : ""}</span> : <strong className="room-time">{t("room.playerFree")}</strong>}
-              {duration ? <progress max={duration} value={Math.min(duration, live.positionMs)} aria-label={t("player.stage")} /> : <span className="room-playbar-spacer" />}
-              {live.canControl && queue.length > 0 ? <button type="button" data-testid="queue-next" onClick={live.playNext} aria-label={t("queue.next")} title={t("queue.next")}><SkipForward aria-hidden="true" /></button> : null}
-              {now && !live.canControl && live.skip.needed > 1 ? <button type="button" onClick={() => live.voteSkip()} title={t("player.skip")}>{t("room.skipVotes", live.skip)}</button> : null}
-              <button type="button" data-testid="room-personal-settings" aria-label={t("room.layoutGroup")} title={t("room.layoutGroup")} onClick={() => setSettings("personal")}><Settings2 aria-hidden="true" /></button>
-            </>}
-          />
-        </section>
-        <RoomVoiceCard voice={voice} members={members} presence={presence} sharedSeconds={sharedVoiceSeconds(presence, voiceClock.clock)} startedAt={voiceSessionStartedAt(presence)} localSeconds={voiceClock.seconds} />
-        <RoomQueuePreview queue={queue} onAdd={() => openDock("queue", true)} />
-        <div className="room-resize"><ResizeHandle axis="x" label={t("layout.resize")} onPointerDown={resize} onDrag={resize} onEnd={() => undefined} onKey={(delta) => onLayout({ ...layout, playerRatio: clamp(layout.playerRatio + delta, 0.35, 0.8), preset: "custom" })} /></div>
-        <button type="button" ref={dockToggle} className="room-dock-toggle" data-testid="mobile-sheet-toggle" aria-expanded={dockOpen} onClick={() => openDock(tab)}><MessageCircle aria-hidden="true" />{t("room.openPanels")}</button>
+              </>}
+              controls={<>
+                <IconButton icon={playing && now ? Pause : Play} variant="primary" label={t(playing && now ? "player.pause" : "player.play")}
+                  data-testid="playback-play" disabled={!now || !live.canControl} onClick={() => live.setPlayback(playing ? "pause" : "play", live.positionMs)} />
+                {now ? <span className={styles.time}>{roomClock(live.positionMs)}{duration ? ` / ${roomClock(duration)}` : ""}</span> : <strong className={styles.free}>{t("room.playerFree")}</strong>}
+                <div className={styles.progress}>{duration ? <Progress value={live.positionMs / duration} label={t("player.stage")} /> : null}</div>
+                {live.canControl && queue.length > 0 ? <IconButton icon={SkipForward} variant="ghost" size="sm" data-testid="queue-next" label={t("queue.next")} onClick={live.playNext} /> : null}
+                {now && !live.canControl && live.skip.needed > 1 ? <Button size="sm" variant="ghost" onClick={() => live.voteSkip()} title={t("player.skip")}>{t("room.skipVotes", live.skip)}</Button> : null}
+                <IconButton icon={Settings2} variant="ghost" size="sm" data-testid="room-personal-settings" label={t("room.layoutGroup")} onClick={() => setSettings("personal")} />
+              </>}
+            />
+          </section>
+          <div className={styles.tray}>
+            <RoomVoiceCard voice={voice} members={members} presence={presence} sharedSeconds={sharedVoiceSeconds(presence, voiceClock.clock)} startedAt={voiceSessionStartedAt(presence)} localSeconds={voiceClock.seconds} />
+            <RoomQueuePreview queue={queue} onAdd={() => openDock("queue", true)} />
+          </div>
+        </div>
+        <div className={styles.resize}><ResizeHandle axis="x" label={t("layout.resize")} onPointerDown={resize} onDrag={resize} onEnd={() => undefined} onKey={(delta) => onLayout({ ...layout, playerRatio: clamp(layout.playerRatio + delta, 0.35, 0.8), preset: "custom" })} /></div>
+        <Button ref={dockToggle} className={styles.dockToggle} icon={MessageCircle} data-testid="mobile-sheet-toggle" aria-expanded={dockOpen} onClick={() => openDock(tab)}>{t("room.openPanels")}</Button>
         <SessionDock tab={tab} role={self.role} open={dockOpen} onTab={setTab} onClose={() => {
           setDockOpen(false);
           (dockFocus.current ?? dockToggle.current)?.focus();

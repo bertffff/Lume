@@ -4,7 +4,7 @@ import { createRoom } from "./helpers/create-room";
 import { uniqueName } from "./helpers/identity";
 import { openQueue } from "./helpers/room-ui";
 
-test("the mobile room sheet switches chat, members, and the live queue", async ({ page }) => {
+test("the mobile room dock switches chat, members, and the live queue", async ({ page }) => {
   await page.goto("/");
   await page.getByTestId("lobby-name").fill(uniqueName("Аня"));
   await page.getByTestId("lobby-sign-in").click();
@@ -16,12 +16,12 @@ test("the mobile room sheet switches chat, members, and the live queue", async (
   await expect(page.getByTestId("queue-item")).toHaveCount(1, { timeout: 15_000 });
 
   await page.setViewportSize({ width: 390, height: 844 });
+  // On phones the dock is part of the page (the chat is readable at once), not a sheet behind a button.
   const dock = page.getByTestId("session-dock");
-  await expect(dock).toBeHidden();
-  await page.getByTestId("mobile-sheet-toggle").click();
   await expect(dock).toBeVisible();
-  await expect(dock).toHaveAttribute("data-open", "true");
+  await expect(page.getByTestId("mobile-sheet-toggle")).toBeHidden();
   expect((await dock.boundingBox())?.width).toBeGreaterThanOrEqual(360);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   if (process.env.LUME_UX_SCREENSHOT_DIR) {
     await page.screenshot({ path: join(process.env.LUME_UX_SCREENSHOT_DIR, "cinema-390-mobile-dock.png"), animations: "disabled" });
   }
@@ -37,12 +37,5 @@ test("the mobile room sheet switches chat, members, and the live queue", async (
   await page.getByTestId("session-dock-people").click();
   await expect(page.getByTestId("session-dock-people")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("rail-people")).toContainText(uniqueName("Аня"));
-
-  await page.keyboard.press("Escape");
-  await expect(dock).toHaveAttribute("data-open", "false");
-  await expect(dock).toBeHidden();
-
-  await page.getByTestId("mobile-sheet-toggle").click();
-  await expect(dock).toHaveAttribute("data-open", "true");
-  await expect(page.getByTestId("session-dock-people")).toHaveAttribute("aria-selected", "true");
+  await expect(dock).toBeVisible();
 });

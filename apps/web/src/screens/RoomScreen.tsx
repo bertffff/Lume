@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/context.js";
 import { RoomStage } from "../design/RoomStage.js";
 import { RoomProvider } from "../room/live.js";
-import { Modal } from "../ui/index.js";
+import { Modal } from "../ds/index.js";
+import { State } from "../ds/index.js";
+import styles from "./RoomScreen.module.css";
 import type { useRoomChannel } from "../realtime/useRoomChannel.js";
 
 export function RoomScreen({
@@ -69,8 +71,8 @@ export function RoomScreen({
 
   if (!live.state) {
     return (
-      <main className="app-room" id="app-main" tabIndex={-1}>
-        <p className="empty-note">{live.error === "kicked" ? t("room.kicked") : live.error ? t("room.connectFailed") : t("realtime.connecting")}</p>
+      <main className={styles.connecting} id="app-main" tabIndex={-1}>
+        <State kind={live.error ? "error" : "empty"} title={live.error === "kicked" ? t("room.kicked") : live.error ? t("room.connectFailed") : t("realtime.connecting")} />
       </main>
     );
   }
@@ -133,15 +135,15 @@ export function RoomScreen({
         <RoomStage key={state.room.id} layout={layout} synced={live.status === "online"} onLayout={onLayout} onLeave={onLeave}
           onRefreshed={(next) => setRefreshed({ ...next, roomId: state.room.id })}
           notices={<>
-            {warn && <p className="app-banner">{t("room.warnSession")}</p>}
-            {live.error && <p className="app-note" role="status" data-testid="room-error" data-code={live.error}>
+            {warn && <p className={styles.banner}>{t("room.warnSession")}</p>}
+            {live.error && <p className={styles.note} role="status" data-testid="room-error" data-code={live.error}>
               {live.error === "kicked" ? t("room.kicked") : t("room.connectionLost")}
             </p>}
           </>} />
-        <Modal open={helpOpen} title={t("room.hotkeys")} onClose={() => setHelpOpen(false)}>
-          <p><b>J / L</b> — {t("room.hotkeysSeek")}</p>
-          <p><b>K</b> — {t("room.hotkeysPause")}</p>
-          <p><b>?</b> — {t("room.hotkeysHelp")}</p>
+        <Modal open={helpOpen} size="sm" title={t("room.hotkeys")} onClose={() => setHelpOpen(false)}>
+          <p className={styles.hotkey}><kbd>J / L</kbd> {t("room.hotkeysSeek")}</p>
+          <p className={styles.hotkey}><kbd>K</kbd> {t("room.hotkeysPause")}</p>
+          <p className={styles.hotkey}><kbd>?</kbd> {t("room.hotkeysHelp")}</p>
         </Modal>
       </>
     </RoomProvider>

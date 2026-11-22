@@ -1,5 +1,6 @@
 @layer legacy {
-/* TeleRave-v2 standard/light canvas and restrained panel chrome, adapted to
+/* TeleRave-v2 standard/light canvas and restrained panel chrome,
+adapted to
    Lume's semantic roles. Opaque text/ink steps maintain readable contrast. */
 html[data-style="telerave"][data-theme="dark"]{
   color-scheme:dark;
@@ -23,7 +24,6 @@ html[data-style="telerave"][data-theme="dark"]{
   --p-lisa:#F4BD87; --p-me:#77DDBE; --p-artem:#96BBFF; --p-mark:#C7A7F9;
   --p-dasha:#F6A3AD; --p-sonya:#EAD085; --p-nick:#B1D788; --p-katya:#EDABDD;
 }
-
 html[data-style="telerave"][data-theme="light"]{
   color-scheme:light;
   --bg:#F8F8FA; --s1:#FFFFFF; --s2:#F0F0F4; --s3:#E6E3EE;
@@ -46,7 +46,6 @@ html[data-style="telerave"][data-theme="light"]{
   --p-lisa:#84400D; --p-me:#11644C; --p-artem:#254F92; --p-mark:#603589;
   --p-dasha:#932D41; --p-sonya:#70510F; --p-nick:#435E22; --p-katya:#862D68;
 }
-
 html[data-style="telerave"]{
   --font-ui:"Outfit",system-ui,sans-serif;
   --font-display:var(--font-ui);
@@ -64,11 +63,9 @@ html[data-style="telerave"]{
   accent-color:var(--accent);
   scrollbar-color:var(--text-3) transparent;
 }
-
 html[data-style="telerave"] body{font-family:var(--font-ui)}
 html[data-style="telerave"] .style-frame[data-frame-style="telerave"]{background:var(--frame-canvas);color:var(--text)}
 html[data-style="telerave"] .style-frame-legacy{background:var(--frame-bg);border:1px solid var(--line);box-shadow:var(--shadow-card);backdrop-filter:blur(16px)}
-
 /* Shared appearance controls. Import after the existing style sheets so this
    focus outline supersedes Cinema's shadow-only button rule. */
 :root[data-style] :is(body,.design-app,.cinema-room) .appearance-option{

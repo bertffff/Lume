@@ -39,6 +39,6 @@ test("room flow follows the measured width and the resize handle persists the ra
   await expect(frame).toHaveAttribute("data-aspect", "vertical");
 
   await page.setViewportSize({ width: 820, height: 900 });
-  await expect(page.getByTestId("session-dock")).toBeHidden();
-  await expect(page.getByTestId("mobile-sheet-toggle")).toBeVisible();
+  await expect(page.getByTestId("session-dock")).toBeVisible();
+  await expect(page.getByTestId("mobile-sheet-toggle")).toBeHidden();
 });

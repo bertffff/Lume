@@ -1,7 +1,10 @@
 import { positionAt, shouldCorrectDrift, type AdapterPhase, type PlayerAdapter } from "@lume/contracts";
 import { Maximize, Play } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from "react";
+import { Button, Icon, IconButton } from "../../ds/index.js";
+import { cx } from "../../ds/cx.js";
 import { useI18n } from "../../i18n/context.js";
+import styles from "./PlayerPanel.module.css";
 import { containSize } from "../contain.js";
 import { createPlayerAdapter } from "../../player/create.js";
 import { useFollowSync } from "../../player/useFollowSync.js";
@@ -23,7 +26,7 @@ export function PlayerPanel({
   aspect: number;
   onAspect: (aspect: number) => void;
   onError?: (url: string) => void;
-  stage: Omit<ComponentPropsWithRef<"div">, "ref" | "children"> & Record<`data-${string}`, string>;
+  stage: Omit<ComponentPropsWithRef<"div">, "ref" | "children" | "className"> & Record<`data-${string}`, string>;
   overlay: ReactNode;
   controls: ReactNode;
   reload: number;
@@ -115,6 +118,13 @@ export function PlayerPanel({
 
   useEffect(() => {
     const mount = mountRef.current;
+    if (!mount) return;
+    mount.style.width = `${box.width}px`;
+    mount.style.height = `${box.height}px`;
+  }, [box, mediaId]);
+
+  useEffect(() => {
+    const mount = mountRef.current;
     if (!mount || !mediaId || !mediaUrl || mediaProvider === undefined || mediaExternalId === undefined) {
       adapterRef.current?.destroy();
       adapterRef.current = null;
@@ -198,56 +208,54 @@ export function PlayerPanel({
 
   return (
     <>
-    <div {...stage} ref={frameRef}>
-      {nowPlaying ? (
-        <div ref={mountRef} className="player-embed" data-testid="player-mount" style={{ width: box.width, height: box.height }} />
-      ) : (
-        <div className="player-empty" data-testid="player-empty">
-          <span className="pe-ic"><Play aria-hidden="true" /></span>
-          <h2>{t("player.emptyTitle")}</h2>
-          <p>{t("player.emptyBody")}</p>
-        </div>
-      )}
-      {nowPlaying && blocked ? (
-        <button type="button" className="player-unblock" onClick={() => void adapterRef.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))}>
-          {t("player.unblock")}
-        </button>
-      ) : null}
-      {overlay}
-    </div>
-    <div className="room-playbar" data-testid="room-playbar">
-      {controls}
-      {nowPlaying ? (
-        <div className="room-player-tools">
-          <button
-            type="button"
-            className="mini"
-            title={t("player.speed")}
-            aria-label={t("player.speed")}
-            onClick={() => {
-              const rates = [1, 1.25, 1.5, 2] as const;
-              const next = rates[(rates.indexOf(rate as 1 | 1.25 | 1.5 | 2) + 1) % rates.length] ?? 1;
-              setRate(next);
-              adapterRef.current?.setPlaybackRate?.(next);
-            }}
-          >
-            {rate}×
+      <div {...stage} className={styles.stage} ref={frameRef}>
+        {nowPlaying ? (
+          <div ref={mountRef} className={styles.embed} data-testid="player-mount" />
+        ) : (
+          <div className={styles.empty} data-testid="player-empty">
+            <span className={styles.emptyIcon}><Icon icon={Play} size="lg" /></span>
+            <h2 className={styles.emptyTitle}>{t("player.emptyTitle")}</h2>
+            <p className={styles.emptyBody}>{t("player.emptyBody")}</p>
+          </div>
+        )}
+        {nowPlaying && blocked ? (
+          <button type="button" className={styles.unblock} onClick={() => void adapterRef.current?.play().then(() => setBlocked(false)).catch(() => setBlocked(true))}>
+            {t("player.unblock")}
           </button>
-          <button
-            type="button"
-            className="mini"
-            title={t("player.fullscreen")}
-            aria-label={t("player.fullscreen")}
-            onClick={() => {
-              if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-              else void frameRef.current?.requestFullscreen?.().catch(() => undefined);
-            }}
-          >
-            <Maximize aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-    </div>
+        ) : null}
+        {overlay}
+      </div>
+      <div className={cx(styles.playbar)} data-testid="room-playbar">
+        {controls}
+        {nowPlaying ? (
+          <div className={styles.tools}>
+            <Button
+              size="sm"
+              variant="ghost"
+              title={t("player.speed")}
+              aria-label={t("player.speed")}
+              onClick={() => {
+                const rates = [1, 1.25, 1.5, 2] as const;
+                const next = rates[(rates.indexOf(rate as 1 | 1.25 | 1.5 | 2) + 1) % rates.length] ?? 1;
+                setRate(next);
+                adapterRef.current?.setPlaybackRate?.(next);
+              }}
+            >
+              {rate}×
+            </Button>
+            <IconButton
+              icon={Maximize}
+              size="sm"
+              variant="ghost"
+              label={t("player.fullscreen")}
+              onClick={() => {
+                if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+                else void frameRef.current?.requestFullscreen?.().catch(() => undefined);
+              }}
+            />
+          </div>
+        ) : null}
+      </div>
     </>
   );
 }

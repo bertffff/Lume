@@ -5,8 +5,10 @@ import { apiUrl } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
 import { useChatScroll } from "../room/hooks/useChatScroll.js";
 import type { RoomActions } from "../room/live.js";
+import { Avatar, Icon, IconButton, Input } from "../ds/index.js";
+import { cx } from "../ds/cx.js";
 import { EmojiPicker } from "./EmojiPicker.js";
-import { initials, personHue } from "./theme.js";
+import styles from "./RoomChat.module.css";
 
 export function RoomChat({ live, recent, onRecent, active, commandLine }: {
   live: RoomActions;
@@ -74,41 +76,41 @@ export function RoomChat({ live, recent, onRecent, active, commandLine }: {
 
   return (
     <>
-      {unread > 0 && <button type="button" className="room-chat-jump" data-testid="unread-anchor" onClick={() => jump(true)}>{t("room.newMessagesShort", { count: unread })}</button>}
-      <div className="room-chat-log" data-testid="chat-log" role="log" aria-label={t("chat.title")} ref={chatRef} onScroll={chat.onScroll}>
-        {messages.length === 0 && <p className="room-empty">{t("room.chatEmpty")}</p>}
+      {unread > 0 && <button type="button" className={styles.jump} data-testid="unread-anchor" onClick={() => jump(true)}>{t("room.newMessagesShort", { count: unread })}</button>}
+      <div className={styles.log} data-testid="chat-log" role="log" aria-label={t("chat.title")} ref={chatRef} onScroll={chat.onScroll}>
+        {messages.length === 0 && <p className={styles.empty}>{t("room.chatEmpty")}</p>}
         {messages.map((message, index) => {
           const mine = message.userId === live.selfId;
           return (
             <Fragment key={message.id}>
-              {index === unreadStart && <span className="room-unread-divider" data-testid="unread-divider">{t("room.unreadTitle")}</span>}
-              <div className="room-message" data-mine={mine} data-testid="chat-message" data-unread={index >= unreadStart}>
-                {!mine && <span className={`av p-${personHue(message.userId)}`} aria-hidden="true">{initials(message.displayName)}</span>}
-                <div>{!mine && <b>{message.displayName}</b>}{message.body}{message.imageUrl && <img className="chat-attach" src={message.imageUrl} alt={t("chat.photo")} loading="lazy" />}</div>
+              {index === unreadStart && <span className={styles.divider} data-testid="unread-divider">{t("room.unreadTitle")}</span>}
+              <div className={cx(styles.message, mine && styles.mine)} data-mine={mine} data-testid="chat-message" data-unread={index >= unreadStart}>
+                {!mine && <Avatar name={message.displayName} size="sm" />}
+                <div className={styles.bubble}>{!mine && <b className={styles.author}>{message.displayName}</b>}{message.body}{message.imageUrl && <img className={cx(styles.photo, "chat-attach")} src={message.imageUrl} alt={t("chat.photo")} loading="lazy" />}</div>
               </div>
             </Fragment>
           );
         })}
       </div>
-      {chat.newCount > 0 && <button type="button" className="room-chat-jump" data-testid="chat-new" onClick={() => jump(false)}>{t("chat.new", { count: chat.newCount })}</button>}
-      <div className="room-reactions">{Object.values(emojiCategories).flat().slice(0, 5).map((emoji) => <button key={emoji} type="button" onClick={() => live.sendFloat(emoji)} aria-label={t("room.reaction", { emoji })}>{emoji}</button>)}</div>
-      {live.typingName && <small className="room-typing">{live.typingName} {t("chat.typing")}</small>}
+      {chat.newCount > 0 && <button type="button" className={styles.jump} data-testid="chat-new" onClick={() => jump(false)}>{t("chat.new", { count: chat.newCount })}</button>}
+      <div className={styles.reactions}>{Object.values(emojiCategories).flat().slice(0, 5).map((emoji) => <button key={emoji} type="button" className={styles.reaction} onClick={() => live.sendFloat(emoji)} aria-label={t("room.reaction", { emoji })}>{emoji}</button>)}</div>
+      {live.typingName && <small className={styles.typing}>{live.typingName} {t("chat.typing")}</small>}
       {active && emojiOpen && <EmojiPicker recent={recent} anchor={emojiButton.current} onPick={pickEmoji} onClose={() => setEmojiOpen(false)} />}
-      <form className="room-composer" onSubmit={(event) => {
+      <form className={styles.composer} onSubmit={(event) => {
         event.preventDefault();
         if (!draft.trim()) return;
         live.sendChat(draft.trim());
         setDraft("");
       }}>
-        <button type="button" data-testid="emoji-picker-toggle" ref={emojiButton} aria-expanded={active && emojiOpen} aria-label={t("room.emoji")} onClick={() => setEmojiOpen((value) => !value)}><Smile aria-hidden="true" /></button>
-        <label className="room-attach" title={t("chat.attach")}>
+        <IconButton icon={Smile} variant="ghost" ref={emojiButton} data-testid="emoji-picker-toggle" aria-expanded={active && emojiOpen} label={t("room.emoji")} onClick={() => setEmojiOpen((value) => !value)} />
+        <label className={styles.attach} title={t("chat.attach")}>
           <input type="file" accept="image/*" data-testid="chat-attach" aria-label={t("chat.attach")} disabled={uploading} onChange={(event) => { void attachImage(event.target.files?.[0]); event.target.value = ""; }} />
-          <Paperclip aria-hidden="true" />
+          <Icon icon={Paperclip} size="md" />
         </label>
-        <input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder={t("chat.placeholder")} aria-label={t("room.message")} />
-        <button type="submit" data-testid="chat-send" aria-label={t("chat.send")}><Send aria-hidden="true" /></button>
+        <div className={styles.input}><Input data-testid="chat-input" value={draft} onChange={(event) => { setDraft(event.target.value); live.sendTyping(); }} placeholder={t("chat.placeholder")} aria-label={t("room.message")} /></div>
+        <IconButton icon={Send} variant="ghost" type="submit" className={cx(styles.send, draft.trim() && styles.ready)} data-testid="chat-send" label={t("chat.send")} />
       </form>
-      {commandLine && <form className="room-command" onSubmit={(event) => { event.preventDefault(); if (command.trim()) live.sendChat(command.trim()); setCommand(""); }}>
+      {commandLine && <form className={styles.command} onSubmit={(event) => { event.preventDefault(); if (command.trim()) live.sendChat(command.trim()); setCommand(""); }}>
         <span>ROOM :</span><input aria-label={t("room.message")} value={command} onChange={(event) => setCommand(event.target.value)} />
       </form>}
     </>

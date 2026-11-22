@@ -84,14 +84,16 @@ interface RoomSeed {
   host: keyof typeof people;
   members: Array<keyof typeof people>;
   category: CategoryId;
-  media: { title: string; poster: string; provider: string; id: string; durationMin: number };
+  media?: { title: string; poster: string; provider: string; id: string; durationMin: number; url?: string };
+  /** Videos waiting in the queue behind the current one. */
+  upNext?: Array<{ title: string; poster: string; durationMin: number }>;
   startedAgoMin: number;
   maxMembers?: number;
   description?: string;
 }
 
 const rooms: RoomSeed[] = [
-  { title: "Ночной кинозал", host: "liza", members: ["artem", "mark", "dasha", "vera"], category: "film", startedAgoMin: 8, description: "Субботний сеанс, начинаем в 22:00", media: { title: "Пустая дорога — режиссёрская версия", poster: "p1", provider: "youtube", id: "road0001", durationMin: 123 } },
+  { title: "Ночной кинозал", host: "liza", members: ["artem", "mark", "dasha", "vera"], category: "film", startedAgoMin: 8, description: "Субботний сеанс, начинаем в 22:00", media: { title: "Пустая дорога — режиссёрская версия", poster: "p1", provider: "direct", id: "demo.mp4", durationMin: 3, url: `${posterBase}/demo.mp4` }, upNext: [{ title: "Город после дождя", poster: "p2", durationMin: 108 }, { title: "Лес, который помнит", poster: "p3", durationMin: 52 }] },
   { title: "Пятничный звук", host: "sonya", members: ["pasha", "katya", "igor", "max", "vera", "nik"], category: "music", startedAgoMin: 19, media: { title: "Концерт на крыше — live", poster: "p4", provider: "vk", id: "roof0002", durationMin: 72 } },
   { title: "Нуар по средам", host: "nik", members: ["max", "katya"], category: "film", startedAgoMin: 31, media: { title: "Город после дождя", poster: "p2", provider: "youtube", id: "rain0003", durationMin: 108 } },
   { title: "Документалки", host: "dasha", members: ["pasha"], category: "other", startedAgoMin: 44, media: { title: "Лес, который помнит", poster: "p3", provider: "rutube", id: "wood0004", durationMin: 52 } },
@@ -99,7 +101,8 @@ const rooms: RoomSeed[] = [
   { title: "Хребты и тропы", host: "pasha", members: ["vera"], category: "vlog", startedAgoMin: 90, media: { title: "Три дня на хребте", poster: "p6", provider: "youtube", id: "ridge006", durationMin: 34 } },
   { title: "Станция «Горизонт»", host: "max", members: ["igor", "katya", "pasha", "vera"], category: "film", startedAgoMin: 120, maxMembers: 5, media: { title: "Холодный сектор", poster: "p7", provider: "youtube", id: "cold0007", durationMin: 96 } },
   { title: "Ночной рынок", host: "vera", members: ["katya", "max", "igor", "pasha", "dasha", "nik", "sonya"], category: "vlog", startedAgoMin: 160, media: { title: "Уличная еда после полуночи", poster: "p8", provider: "youtube", id: "food0008", durationMin: 27 } },
-  { title: "Кино на двоих", host: "igor", members: ["vera"], category: "film", startedAgoMin: 210, media: { title: "Последний рейс", poster: "p1", provider: "youtube", id: "last0009", durationMin: 101 } },
+  { title: "Кино на двоих", host: "igor", members: ["vera"], category: "film", startedAgoMin: 210, media: { title: "Последний рейс", poster: "p1", provider: "direct", id: "missing.mp4", durationMin: 101, url: `${posterBase}/missing.mp4` } },
+  { title: "Тихая комната", host: "liza", members: [], category: "other", startedAgoMin: 5 },
   { title: "Фоновый плейлист", host: "pasha", members: [], category: "music", startedAgoMin: 300, media: { title: "Lo-fi для работы", poster: "p5", provider: "youtube", id: "lofi0010", durationMin: 180 } },
   { title: "Ужасы на ночь", host: "katya", members: ["max"], category: "film", startedAgoMin: 380, media: { title: "Дом на краю", poster: "p2", provider: "rutube", id: "edge0011", durationMin: 94 } },
 ];
@@ -120,14 +123,25 @@ async function seedRoom(seed: RoomSeed, owners: Record<string, { id: string }>) 
       category: seed.category, categorySelection: "auto", createdAt: ago(seed.startedAgoMin * minute),
     },
   });
-  const item = await prisma.queueItem.create({
-    data: {
-      roomId: created.id, url: `https://example.test/${seed.media.provider}/${seed.media.id}`, provider: seed.media.provider,
-      externalId: seed.media.id, title: seed.media.title, thumbnail: poster(seed.media.poster),
-      durationMs: seed.media.durationMin * minute, position: 0, addedById: host.id, inferredCategory: seed.category,
-    },
-  });
-  await prisma.room.update({ where: { id: created.id }, data: { nowPlayingId: item.id } });
+  if (seed.media) {
+    const media = seed.media;
+    const item = await prisma.queueItem.create({
+      data: {
+        roomId: created.id, url: media.url ?? `https://example.test/${media.provider}/${media.id}`, provider: media.provider,
+        externalId: media.id, title: media.title, thumbnail: poster(media.poster),
+        durationMs: media.durationMin * minute, position: 0, addedById: host.id, inferredCategory: seed.category,
+      },
+    });
+    await prisma.room.update({ where: { id: created.id }, data: { nowPlayingId: item.id } });
+    for (const [index, next] of (seed.upNext ?? []).entries()) {
+      await prisma.queueItem.create({
+        data: {
+          roomId: created.id, url: `https://example.test/youtube/next${index}`, provider: "youtube", externalId: `next${index}`, title: next.title,
+          thumbnail: poster(next.poster), durationMs: next.durationMin * minute, position: index + 1, addedById: host.id, inferredCategory: seed.category,
+        },
+      });
+    }
+  }
   const roster = [seed.host, ...seed.members];
   await prisma.roomMember.createMany({
     data: roster.map((key, index) => ({ roomId: created.id, userId: owners[key]!.id, role: index === 0 ? ("host" as const) : ("viewer" as const), joinedAt: ago((seed.startedAgoMin - index) * minute) })),
@@ -198,14 +212,14 @@ async function main() {
     ].map(([key, body], index) => ({ roomId: lobby.id, userId: owners[key!]!.id, body: body!, createdAt: ago((9 - index) * minute) })),
   });
 
-  const road = rooms[0]!.media;
+  const road = rooms[0]!.media!;
   await prisma.user.update({
     where: { id: albert.id },
     data: {
       lastRoomSnapshotAt: ago(40 * minute),
       lastRoomSnapshot: {
         title: "Пустая дорога", description: "", isPublic: true, maxMembers: 25, categorySelection: "auto", videoUrl: `https://example.test/${road.provider}/${road.id}`,
-        inferredCategory: "film", positionMs: (72 * 60 + 44) * 1000, posterUrl: poster("p1"), durationMs: road.durationMin * minute,
+        inferredCategory: "film", positionMs: 95_000, posterUrl: poster("p1"), durationMs: road.durationMin * minute,
         queue: [{ url: "https://example.test/youtube/rain0003", title: "Город после дождя" }, { url: "https://example.test/rutube/wood0004", title: "Лес, который помнит" }], historyCount: 3,
       },
     },

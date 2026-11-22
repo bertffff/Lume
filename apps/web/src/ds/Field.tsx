@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
-import { cloneElement, useId, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { cloneElement, forwardRef, useId, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cx } from "./cx.js";
 import { Icon } from "./Icon.js";
 import styles from "./Field.module.css";
@@ -38,9 +38,9 @@ function Shell({ icon, invalid, trailing, children }: { icon?: LucideIcon; inval
   );
 }
 
-export function Input({ icon, className, trailing, ...rest }: InputHTMLAttributes<HTMLInputElement> & { icon?: LucideIcon; trailing?: ReactNode }) {
-  return <Shell icon={icon} invalid={rest["aria-invalid"] === true} trailing={trailing}><input className={cx(styles.control, className)} {...rest} /></Shell>;
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { icon?: LucideIcon; trailing?: ReactNode }>(function Input({ icon, className, trailing, ...rest }, ref) {
+  return <Shell icon={icon} invalid={rest["aria-invalid"] === true} trailing={trailing}><input ref={ref} className={cx(styles.control, className)} {...rest} /></Shell>;
+});
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (

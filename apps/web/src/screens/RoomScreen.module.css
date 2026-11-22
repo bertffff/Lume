@@ -1,0 +1,45 @@
+.connecting {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: var(--ds-space-6);
+  background: var(--ds-bg);
+}
+
+.banner,
+.note {
+  margin: 0;
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius-control);
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.banner {
+  background: var(--ds-warn-soft);
+  color: var(--ds-warn);
+}
+
+.note {
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
+.hotkey {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.hotkey kbd {
+  min-width: var(--ds-space-12);
+  padding: var(--ds-space-1) var(--ds-space-2);
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-primary);
+  font: var(--ds-fw-medium) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-mono);
+  text-align: center;
+}

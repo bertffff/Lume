@@ -1,3 +1,5 @@
+import { cx } from "../ds/cx.js";
+import styles from "./ResizeHandle.module.css";
 import { useRef, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 export function ResizeHandle({
@@ -44,7 +46,7 @@ export function ResizeHandle({
       aria-orientation={axis === "x" ? "vertical" : "horizontal"}
       aria-label={label}
       tabIndex={0}
-      className={`resize-handle resize-handle-${axis}`}
+      className={cx(styles.handle, styles[axis])}
       onPointerDown={(event) => {
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);

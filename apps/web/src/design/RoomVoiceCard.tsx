@@ -1,8 +1,9 @@
-import { AudioLines, LogOut, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { AudioLines, Volume2, LogOut, Mic, MicOff, VolumeX } from "lucide-react";
+import { Avatar, Button, Icon, IconButton } from "../ds/index.js";
 import type { LiveRoom } from "../realtime/useRoomChannel.js";
 import { useI18n } from "../i18n/context.js";
 import type { useVoiceChannel } from "../voice/useVoiceChannel.js";
-import { initials, personHue } from "./theme.js";
+import styles from "./RoomVoiceCard.module.css";
 
 function voiceErrorKey(code: string) {
   if (code === "livekit_disabled") return "voice.errorDisabled";
@@ -11,6 +12,7 @@ function voiceErrorKey(code: string) {
   return "voice.errorGeneric";
 }
 
+/** Voice at a glance: who is on the line, and the three controls that matter. */
 export function RoomVoiceCard({ voice, members, presence, sharedSeconds, startedAt, localSeconds }: {
   voice: ReturnType<typeof useVoiceChannel>;
   members: LiveRoom["members"];
@@ -21,34 +23,36 @@ export function RoomVoiceCard({ voice, members, presence, sharedSeconds, started
 }) {
   const { t } = useI18n();
   return (
-    <section className="room-card room-voice" data-testid="voice-card">
-      <div className="room-card-heading">
-        <h2><AudioLines aria-hidden="true" />{t("room.voiceTitle")} <small>{presence.length}</small></h2>
-        {voice.joined && <small data-testid="voice-session" data-seconds={sharedSeconds} data-start={startedAt ?? ""} data-local-seconds={localSeconds}>{t("room.onAir", { seconds: sharedSeconds })}</small>}
+    <section className={styles.root} data-testid="voice-card">
+      <div className={styles.heading}>
+        <h2 className={styles.title}><Icon icon={AudioLines} size="sm" />{t("room.voiceTitle")} <small className={styles.count}>{presence.length}</small></h2>
+        {voice.joined && <small className={styles.onAir} data-testid="voice-session" data-seconds={sharedSeconds} data-start={startedAt ?? ""} data-local-seconds={localSeconds}>{t("room.onAir", { seconds: sharedSeconds })}</small>}
+        <div className={styles.controls}>
+          {voice.joined ? (
+            <>
+              <IconButton icon={voice.muted ? MicOff : Mic} size="sm" data-testid="voice-toggle" label={voice.muted ? t("room.micOn") : t("room.micOff")} onClick={() => void voice.toggleMute()} />
+              <IconButton icon={voice.deafened ? VolumeX : Volume2} size="sm" data-testid="voice-deafen" label={voice.deafened ? t("voice.undeafen") : t("voice.deafen")} onClick={() => void voice.toggleDeafen()} />
+              <IconButton icon={LogOut} size="sm" variant="danger" data-testid="voice-leave" label={t("voice.leave")} onClick={() => void voice.leave()} />
+            </>
+          ) : <Button size="sm" icon={Mic} data-testid="voice-join" disabled={(voice.enabled === false && !voice.stub) || voice.busy} onClick={() => void voice.join()}>{t("room.voiceJoin")}</Button>}
+        </div>
       </div>
-      {presence.length > 0 && <ul className="room-speakers" aria-label={t("room.voiceTitle")}>
-        {presence.map((entry) => {
-          const member = members.find((item) => item.userId === entry.userId);
-          if (!member) return null;
-          const speaking = entry.speaking && !entry.muted;
-          const label = `${member.displayName} · ${speaking ? t("room.speaking") : entry.muted ? t("room.micOff") : t("room.inVoice")}`;
-          return <li key={entry.userId} title={label} aria-label={label} data-testid={`voice-member-${entry.userId}`} data-muted={entry.muted} data-speaking={speaking} className={`av p-${personHue(entry.userId)}`}>
-            {initials(member.displayName)}
-            {entry.muted && <MicOff className="room-muted-icon" aria-hidden="true" data-testid={`member-muted-${entry.userId}`} />}
-          </li>;
-        })}
-      </ul>}
-      <div className="room-voice-controls">
-        {voice.joined ? (
-          <>
-            <button type="button" data-testid="voice-toggle" aria-label={voice.muted ? t("room.micOn") : t("room.micOff")} title={voice.muted ? t("room.micOn") : t("room.micOff")} onClick={() => void voice.toggleMute()}>{voice.muted ? <MicOff aria-hidden="true" /> : <Mic aria-hidden="true" />}</button>
-            <button type="button" data-testid="voice-deafen" aria-label={voice.deafened ? t("voice.undeafen") : t("voice.deafen")} title={voice.deafened ? t("voice.undeafen") : t("voice.deafen")} onClick={() => void voice.toggleDeafen()}>{voice.deafened ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}</button>
-            <button type="button" data-testid="voice-leave" aria-label={t("voice.leave")} title={t("voice.leave")} onClick={() => void voice.leave()}><LogOut aria-hidden="true" /></button>
-          </>
-        ) : <button type="button" data-testid="voice-join" disabled={(voice.enabled === false && !voice.stub) || voice.busy} onClick={() => void voice.join()}><Mic aria-hidden="true" />{t("room.voiceJoin")}</button>}
-      </div>
+        {presence.length > 0 && <ul className={styles.speakers} aria-label={t("room.voiceTitle")}>
+          {presence.map((entry) => {
+            const member = members.find((item) => item.userId === entry.userId);
+            if (!member) return null;
+            const speaking = entry.speaking && !entry.muted;
+            const label = `${member.displayName} · ${speaking ? t("room.speaking") : entry.muted ? t("room.micOff") : t("room.inVoice")}`;
+            return (
+              <li key={entry.userId} className={styles.speaker} title={label} aria-label={label} data-testid={`voice-member-${entry.userId}`} data-muted={entry.muted} data-speaking={speaking}>
+                <Avatar name={member.displayName} size="md" speaking={speaking} />
+                {entry.muted && <span className={styles.muted} data-testid={`member-muted-${entry.userId}`}><Icon icon={MicOff} size="sm" /></span>}
+              </li>
+            );
+          })}
+        </ul>}
       {(voice.error || voice.enabled === false) && (
-        <p className="room-empty" role="status" data-testid="voice-fallback" data-stub={voice.stub}>
+        <p className={styles.note} role="status" data-testid="voice-fallback" data-stub={voice.stub}>
           {voice.error ? <span data-testid="voice-error" data-code={voice.error}>{t(voiceErrorKey(voice.error))}</span> : t("voice.disabledBanner")}
         </p>
       )}

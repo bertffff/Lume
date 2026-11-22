@@ -1,0 +1,121 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  margin: 0;
+  padding: var(--ds-space-2);
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+  border-radius: var(--ds-radius-control);
+}
+
+.row:hover {
+  background: var(--ds-surface-2);
+}
+
+.person {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--ds-space-3);
+  min-width: 0;
+  padding: var(--ds-space-2);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: none;
+  color: var(--ds-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.person:focus-visible,
+.summary:focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: -2px;
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font: var(--ds-fw-medium) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-caption) / var(--ds-lh-caption) var(--ds-font-text);
+}
+
+.menu {
+  position: relative;
+  flex: none;
+}
+
+.summary {
+  display: grid;
+  place-items: center;
+  width: var(--ds-control-md);
+  height: var(--ds-control-md);
+  border-radius: var(--ds-radius-control);
+  color: var(--ds-text-secondary);
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:hover {
+  background: var(--ds-surface-3);
+  color: var(--ds-text-primary);
+}
+
+.actions {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: var(--ds-z-popover);
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: var(--ds-space-1);
+  border: var(--ds-border-w) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.actions button {
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: none;
+  color: var(--ds-text-primary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.actions button:hover {
+  background: var(--ds-surface-3);
+}
+
+.actions .danger {
+  color: var(--ds-danger);
+}

@@ -1,5 +1,5 @@
 @layer legacy {
-.profile-view {
+.profile-view{
   --profile-rail: clamp(12rem, 24vw, 17rem);
   --profile-radius: 14px;
   --profile-gap: clamp(12px, 2vw, 24px);
@@ -16,43 +16,37 @@
   margin-inline: auto;
   padding: 12px clamp(12px, 3vw, 28px) 96px;
 }
-
-/* Style changes affect geometry, never which sections exist or their DOM order. */
-[data-style="gruvbox"] .profile-view {
+/* Style changes affect geometry,
+never which sections exist or their DOM order. */
+[data-style="gruvbox"] .profile-view{
   --profile-radius: 4px;
   --profile-rail: clamp(12rem, 21vw, 15rem);
 }
-
-[data-style="telerave"] .profile-view {
+[data-style="telerave"] .profile-view{
   --profile-radius: 20px;
   --profile-rail: clamp(13rem, 27vw, 19rem);
 }
-
 .profile-view__sidebar,
 .profile-view__workspace,
-.profile-view__panel:not([hidden]) {
+.profile-view__panel:not([hidden]){
   display: grid;
   gap: var(--profile-gap);
   min-inline-size: 0;
 }
-
 .profile-view__panel[hidden],
-.profile-view__season-readout[hidden] {
+.profile-view__season-readout[hidden]{
   display: none;
 }
-
 .profile-view__tabs,
-.profile-view__kpis {
+.profile-view__kpis{
   display: grid;
   gap: 8px;
 }
-
-.profile-view__tabs {
+.profile-view__tabs{
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-
 .profile-view__tabs > button,
-.profile-view__day {
+.profile-view__day{
   box-sizing: border-box;
   min-inline-size: 0;
   min-block-size: 44px;
@@ -64,70 +58,58 @@
   font: inherit;
   cursor: pointer;
 }
-
-.profile-view__tabs > button {
+.profile-view__tabs > button{
   overflow-wrap: anywhere;
 }
-
-.profile-view__tabs > [aria-selected="true"] {
+.profile-view__tabs > [aria-selected="true"]{
   border-color: currentColor;
   box-shadow: inset 0 -2px currentColor;
   font-weight: 700;
 }
-
 .profile-view__tabs > button:hover,
-.profile-view__day:hover {
+.profile-view__day:hover{
   border-color: currentColor;
   text-decoration: underline;
 }
-
 .profile-view__tabs > button:focus-visible,
 .profile-view__panel:focus-visible,
-.profile-view__day:focus-visible {
+.profile-view__day:focus-visible{
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
-
-.profile-view__kpis {
+.profile-view__kpis{
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
 }
-
 .profile-view__kpi,
-.profile-view__season {
+.profile-view__season{
   padding: clamp(10px, 1.5vw, 20px);
   border: 1px solid var(--profile-line);
   border-radius: var(--profile-radius);
   background: var(--profile-fill);
 }
-
-.profile-view__kpi dd {
+.profile-view__kpi dd{
   margin: 4px 0 0;
   font-size: clamp(1rem, 2vw, 1.5rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-
-[data-style="telerave"] .profile-view__kpi {
+[data-style="telerave"] .profile-view__kpi{
   border-inline-start: 3px solid currentColor;
 }
-
-[data-style="gruvbox"] .profile-view__kpi {
+[data-style="gruvbox"] .profile-view__kpi{
   display: grid;
   align-content: space-between;
 }
-
-.profile-view__season {
+.profile-view__season{
   display: grid;
   gap: 8px;
 }
-
 .profile-view__season h2,
-.profile-view__season p {
+.profile-view__season p{
   margin: 0;
 }
-
-.profile-view__season-readout {
+.profile-view__season-readout{
   /* Static block position follows the trigger; inline edges stay within the grid. */
   position: absolute;
   inset-inline: 0;
@@ -138,13 +120,11 @@
   background: Canvas;
   color: CanvasText;
 }
-
-.profile-view__season-readout time {
+.profile-view__season-readout time{
   margin-inline-end: 8px;
   font-weight: 700;
 }
-
-.profile-view__season-grid {
+.profile-view__season-grid{
   position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
@@ -153,36 +133,29 @@
   margin: 0;
   list-style: none;
 }
-
-.profile-view__day {
+.profile-view__day{
   display: block;
   inline-size: 100%;
   border-radius: calc(var(--profile-radius) / 2);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
-
-.profile-view__day[data-intensity="low"] {
+.profile-view__day[data-intensity="low"]{
   background: color-mix(in srgb, currentColor 14%, transparent);
 }
-
-.profile-view__day[data-intensity="high"] {
+.profile-view__day[data-intensity="high"]{
   background: color-mix(in srgb, currentColor 23%, transparent);
   font-weight: 700;
 }
-
-@media (max-width: 760px) {
-  .profile-view {
+@media (max-width: 760px) {.profile-view{
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
-@media (max-width: 480px) {
-  .profile-view__tabs {
+@media (max-width: 480px) {.profile-view__tabs{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-.profile-achievements-grid {
+.profile-achievements-grid{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -190,8 +163,7 @@
   margin: 12px 0;
   list-style: none;
 }
-
-.profile-achievements-grid li {
+.profile-achievements-grid li{
   display: grid;
   align-content: start;
   gap: 4px;
@@ -202,7 +174,6 @@
   overflow-wrap: anywhere;
   font-size: .78rem;
 }
-
-.profile-achievements-grid li.got { border-color: var(--accent-text, var(--accent)); }
-.profile-achievements-grid small { color: var(--text-2); }
+.profile-achievements-grid li.got{ border-color: var(--accent-text, var(--accent)); }
+.profile-achievements-grid small{ color: var(--text-2); }
 }

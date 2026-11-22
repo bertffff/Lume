@@ -1,7 +1,10 @@
 @layer legacy {
-/* Variant G v2 — Gruvbox, uncompromising.
+/* Variant G v2 — Gruvbox,
+uncompromising.
    Official palette only (morhetz/gruvbox). JetBrains Mono throughout.
-   Composition is a tiled vim/tmux product: panes, buffer tabline, airline statusline.
+   Composition is a tiled vim/tmux product: panes,
+buffer tabline,
+airline statusline.
    Not a reskin of E. Person hues map 1:1 onto the 7 official hue pairs.
    Light yellow/green/aqua nicks use documented AA text steps (official faded fails 4.5:1). */
 
@@ -65,7 +68,8 @@ html[data-style="gruvbox"]{
   --fill-yellow:#fabd2f; --fill-yellow-ink:#1d2021;
   --fill-orange:#fe8019; --fill-orange-ink:#1d2021;
 }
-html[data-style="gruvbox"], html[data-style="gruvbox"] body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv02","calt";font-variant-ligatures:contextual;accent-color:var(--orange);scrollbar-color:var(--bg3) transparent;scrollbar-width:thin}
+html[data-style="gruvbox"],
+html[data-style="gruvbox"] body{background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv02","calt";font-variant-ligatures:contextual;accent-color:var(--orange);scrollbar-color:var(--bg3) transparent;scrollbar-width:thin}
 html[data-style="gruvbox"] .mono{font-variant-numeric:tabular-nums}
 html[data-style="gruvbox"] .av.p-lisa{background:var(--p-lisa-fill);color:var(--p-lisa-ink)}
 html[data-style="gruvbox"] .av.p-me{background:var(--p-me-fill);color:var(--p-me-ink)}
@@ -75,13 +79,20 @@ html[data-style="gruvbox"] .av.p-dasha{background:var(--p-dasha-fill);color:var(
 html[data-style="gruvbox"] .av.p-sonya{background:var(--p-sonya-fill);color:var(--p-sonya-ink)}
 html[data-style="gruvbox"] .av.p-nick{background:var(--p-nick-fill);color:var(--p-nick-ink)}
 html[data-style="gruvbox"] .av.p-katya{background:var(--purple);color:var(--ink)}
-html[data-style="gruvbox"] .n.p-lisa, html[data-style="gruvbox"] .nm.p-lisa{color:var(--p-lisa)}
-html[data-style="gruvbox"] .n.p-me, html[data-style="gruvbox"] .nm.p-me{color:var(--p-me)}
-html[data-style="gruvbox"] .n.p-artem, html[data-style="gruvbox"] .nm.p-artem{color:var(--p-artem)}
-html[data-style="gruvbox"] .n.p-mark, html[data-style="gruvbox"] .nm.p-mark{color:var(--p-mark)}
-html[data-style="gruvbox"] .n.p-dasha, html[data-style="gruvbox"] .nm.p-dasha{color:var(--p-dasha)}
-html[data-style="gruvbox"] .n.p-sonya, html[data-style="gruvbox"] .nm.p-sonya{color:var(--p-sonya)}
-html[data-style="gruvbox"] .n.p-nick, html[data-style="gruvbox"] .nm.p-nick{color:var(--p-nick)}
+html[data-style="gruvbox"] .n.p-lisa,
+html[data-style="gruvbox"] .nm.p-lisa{color:var(--p-lisa)}
+html[data-style="gruvbox"] .n.p-me,
+html[data-style="gruvbox"] .nm.p-me{color:var(--p-me)}
+html[data-style="gruvbox"] .n.p-artem,
+html[data-style="gruvbox"] .nm.p-artem{color:var(--p-artem)}
+html[data-style="gruvbox"] .n.p-mark,
+html[data-style="gruvbox"] .nm.p-mark{color:var(--p-mark)}
+html[data-style="gruvbox"] .n.p-dasha,
+html[data-style="gruvbox"] .nm.p-dasha{color:var(--p-dasha)}
+html[data-style="gruvbox"] .n.p-sonya,
+html[data-style="gruvbox"] .nm.p-sonya{color:var(--p-sonya)}
+html[data-style="gruvbox"] .n.p-nick,
+html[data-style="gruvbox"] .nm.p-nick{color:var(--p-nick)}
 html[data-style="gruvbox"] .av.speak{outline:2px solid var(--p-lisa);outline-offset:2px;box-shadow:0 0 0 5px color-mix(in srgb,var(--p-lisa) 30%,transparent)}
 html[data-style="gruvbox"] .av.speak.p-lisa{outline-color:var(--p-lisa)}
 /* Tabline / buffers */
@@ -92,8 +103,6 @@ html[data-style="gruvbox"] .buf{color:var(--text-3);border-right:1px solid var(-
 html[data-style="gruvbox"] .buf .nr{color:var(--yellow)}
 html[data-style="gruvbox"] .buf.on{background:var(--bg);color:var(--fg0);box-shadow:inset 0 -2px 0 var(--yellow)}
 html[data-style="gruvbox"] .buf.on .nr{color:var(--orange)}
-html[data-style="gruvbox"] .tr{color:var(--text-3)}
-html[data-style="gruvbox"] .hash{color:var(--aqua)}
 html[data-style="gruvbox"] .theme-btn{color:var(--yellow)}
 html[data-style="gruvbox"] .kbd{color:var(--bg4);border:1px solid var(--bg2)}
 /* Panes */
@@ -102,47 +111,17 @@ html[data-style="gruvbox"] .pt{background:var(--bg);color:var(--aqua);font-weigh
 html[data-style="gruvbox"] .pt .dim{color:var(--text-3);font-weight:400}
 /* Airline statusline */
 html[data-style="gruvbox"] .status{background:var(--bg1);border-top:1px solid var(--bg2);font-weight:500}
-html[data-style="gruvbox"] .sl-mode{background:var(--mode-bg);color:var(--mode-fg);font-weight:700;letter-spacing:.06em}
-html[data-style="gruvbox"] .sl-file{background:var(--bg2);color:var(--fg0)}
-html[data-style="gruvbox"] .sl-mid{color:var(--text-3)}
-html[data-style="gruvbox"] .sl-aqua{color:var(--aqua)}
-html[data-style="gruvbox"] .sl-yellow{color:var(--yellow)}
-html[data-style="gruvbox"] .sl-blue{color:var(--blue)}
-html[data-style="gruvbox"] .sl-purple{color:var(--purple)}
-html[data-style="gruvbox"] .sl-orange{color:var(--orange)}
-html[data-style="gruvbox"] .sl-block{background:var(--bg2);color:var(--fg)}
-html[data-style="gruvbox"] .sl-keys{background:var(--bg0);color:var(--text-3)}
-html[data-style="gruvbox"] .sl-keys b{color:var(--yellow);font-weight:600}
 html[data-style="gruvbox"] .style-frame-terminal{background:var(--s2);border-bottom:1px solid var(--bg2)}
 html[data-style="gruvbox"] .style-frame-status{background:var(--s2);border-top:1px solid var(--bg2);color:var(--text)}
 html[data-style="gruvbox"] .style-frame-status-label{background:var(--mode-bg);color:var(--mode-fg);font-weight:700}
 html[data-style="gruvbox"] .style-frame-status-detail{color:var(--text-2)}
 html[data-style="gruvbox"] .heat-top .stats{color:var(--text-2)}
 html[data-style="gruvbox"] .heat-top .stats b{color:var(--green);font-weight:600}
-html[data-style="gruvbox"] .heat-months{color:var(--text-3)}
-html[data-style="gruvbox"] .heat-days{color:var(--text-3)}
-html[data-style="gruvbox"] .heat-days span:nth-child(even){visibility:hidden}
 html[data-style="gruvbox"] .heat-grid i{background:var(--heat-0)}
 html[data-style="gruvbox"] .heat-grid i.a1{background:var(--heat-1)}
-html[data-style="gruvbox"] .heat-grid i.a2{background:var(--heat-2)}
 html[data-style="gruvbox"] .heat-grid i.a3{background:var(--heat-3)}
-html[data-style="gruvbox"] .heat-grid i.a4{background:var(--heat-4)}
-html[data-style="gruvbox"] .heat-grid i.tip{outline:1px solid var(--fg0);outline-offset:1px}
-html[data-style="gruvbox"] .heat-grid i.tip::after{content:attr(data-tip);background:var(--fg0);color:var(--bg0-h);pointer-events:none}
-html[data-style="gruvbox"][data-theme="light"] .heat-grid i.tip::after{background:var(--fg);color:var(--bg0-h)}
-html[data-style="gruvbox"] .heat-grid i.tip::before{content:"";border:5px solid transparent;border-top-color:var(--fg0);border-bottom:0;pointer-events:none}
-html[data-style="gruvbox"][data-theme="light"] .heat-grid i.tip::before{border-top-color:var(--fg)}
-html[data-style="gruvbox"] .heat-leg{color:var(--text-3)}
-html[data-style="gruvbox"] .heat-leg i{background:var(--heat-0)}
-html[data-style="gruvbox"] .heat-leg i.a1{background:var(--heat-1)}
-html[data-style="gruvbox"] .heat-leg i.a2{background:var(--heat-2)}
-html[data-style="gruvbox"] .heat-leg i.a3{background:var(--heat-3)}
-html[data-style="gruvbox"] .heat-leg i.a4{background:var(--heat-4)}
-html[data-style="gruvbox"] .stage-root{color-scheme:dark}
 /* G final-screen helpers — stay strictly tiled / mono */
 html[data-style="gruvbox"] .search-lg{color:var(--text-3);border-left:1px solid var(--bg2)}
-html[data-style="gruvbox"] .codein i{border:1px solid var(--bg2);background:var(--bg0);color:var(--fg0);font-weight:600}
-html[data-style="gruvbox"] .codein i.blank{color:var(--text-3)}
 html[data-style="gruvbox"] .go{background:var(--fill-yellow,#fabd2f);color:var(--fill-yellow-ink,#1d2021);font-weight:700}
 html[data-style="gruvbox"] .overlay{background:color-mix(in srgb,var(--bg0-h) 55%,#000 45%)}
 html[data-style="gruvbox"] .modal{background:var(--bg0);border:1px solid var(--bg2)}
@@ -150,46 +129,30 @@ html[data-style="gruvbox"] .mh{border-bottom:1px solid var(--bg2);color:var(--aq
 html[data-style="gruvbox"] .mh h2{font-weight:600;color:var(--fg0);letter-spacing:0}
 html[data-style="gruvbox"] .mf{border-top:1px solid var(--bg2)}
 html[data-style="gruvbox"] .field label{color:var(--text-3)}
-html[data-style="gruvbox"] .inbox, html[data-style="gruvbox"] .field .box{border:1px solid var(--bg2);background:var(--bg0-h);color:var(--fg)}
+html[data-style="gruvbox"] .inbox,
+html[data-style="gruvbox"] .field .box{border:1px solid var(--bg2);background:var(--bg0-h);color:var(--fg)}
 html[data-style="gruvbox"] .choice{border:1px solid var(--bg2);background:var(--bg0)}
 html[data-style="gruvbox"] .choice.on{border-color:var(--yellow)}
 html[data-style="gruvbox"] .choice b{color:var(--fg0)}
 html[data-style="gruvbox"] .choice p{color:var(--text-3)}
 html[data-style="gruvbox"] .steps span{background:var(--bg2)}
 html[data-style="gruvbox"] .steps span.on{background:var(--yellow)}
-html[data-style="gruvbox"] .prov .buf.on{background:var(--bg);color:var(--fg0);box-shadow:inset 0 -2px 0 var(--yellow)}
-html[data-style="gruvbox"] .res .th{background:center/cover;border:1px solid var(--bg2)}
-html[data-style="gruvbox"] .res .th .dur{background:#1d2021;color:#fbf1c7}
-html[data-style="gruvbox"] .res b{color:var(--fg0);font-weight:500}
-html[data-style="gruvbox"] .res small{color:var(--text-3)}
-html[data-style="gruvbox"] .lrow{border-bottom:1px solid var(--bg1)}
-html[data-style="gruvbox"] .lrow:last-child{border-bottom:0}
-html[data-style="gruvbox"] .seg{border:1px solid var(--bg2);background:var(--bg1)}
-html[data-style="gruvbox"] .seg button{color:var(--text-3)}
-html[data-style="gruvbox"] .seg button.on{background:var(--bg0);color:var(--fg0);box-shadow:inset 0 -2px 0 var(--yellow)}
-html[data-style="gruvbox"] .sku{border:1px solid var(--bg2);background:var(--bg0)}
-html[data-style="gruvbox"] .sku .prev{border:1px solid var(--bg2)}
-html[data-style="gruvbox"] .sku .price{color:var(--yellow)}
 html[data-style="gruvbox"] .empty h2{color:var(--fg0);font-weight:600}
 html[data-style="gruvbox"] .empty p{color:var(--text-2)}
 html[data-style="gruvbox"] .auth-card{background:var(--bg0);border:1px solid var(--bg2)}
 html[data-style="gruvbox"] .tg-btn{background:#458588;color:#fbf1c7;font-weight:600}
 html[data-style="gruvbox"] .or{color:var(--text-3)}
-html[data-style="gruvbox"] .or::before, html[data-style="gruvbox"] .or::after{content:"";background:var(--bg2)}
+html[data-style="gruvbox"] .or::before,
+html[data-style="gruvbox"] .or::after{content:"";background:var(--bg2)}
 html[data-style="gruvbox"] .npanel{background:var(--bg0);border:1px solid var(--bg2)}
 html[data-style="gruvbox"] .nitem{border-bottom:1px solid var(--bg1)}
 html[data-style="gruvbox"] .nitem .t{font-weight:600;color:var(--fg0)}
-html[data-style="gruvbox"] .nitem .s, html[data-style="gruvbox"] .nitem .ago{color:var(--text-3)}
-html[data-style="gruvbox"] .ctl{background:var(--bg0);border:1px solid var(--bg2)}
+html[data-style="gruvbox"] .nitem .s{color:var(--text-3)}
 html[data-style="gruvbox"] .btn{border:1px solid var(--bg2);color:var(--fg);background:var(--bg1)}
-html[data-style="gruvbox"] .btn-primary, html[data-style="gruvbox"] .btn.primary{background:var(--fill-yellow,#fabd2f);color:var(--fill-yellow-ink,#1d2021);border-color:transparent;font-weight:700}
+html[data-style="gruvbox"] .btn-primary,
+html[data-style="gruvbox"] .btn.primary{background:var(--fill-yellow,#fabd2f);color:var(--fill-yellow-ink,#1d2021);border-color:transparent;font-weight:700}
 html[data-style="gruvbox"] .toggle{background:var(--bg2);border:1px solid var(--bg2)}
 html[data-style="gruvbox"] .toggle.on{background:var(--yellow)}
 html[data-style="gruvbox"] .toggle i{background:var(--bg0)}
 html[data-style="gruvbox"] .toggle.on i{background:var(--ink,#1d2021)}
-html[data-style="gruvbox"] .qrow{border-bottom:1px solid var(--bg1)}
-html[data-style="gruvbox"] .qrow .th{background:center/cover;border:1px solid var(--bg2)}
-html[data-style="gruvbox"] .actsheet{border:1px solid var(--yellow);background:var(--bg0-h)}
-html[data-style="gruvbox"] .actsheet button{color:var(--fg)}
-html[data-style="gruvbox"] .actsheet button.danger{color:var(--red)}
 }
