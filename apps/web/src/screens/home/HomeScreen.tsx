@@ -7,6 +7,7 @@ import { ProgressCard, RemindersCard, StatsStrip } from "./SideWidgets.js";
 import { Stories } from "./Stories.js";
 import { useI18n } from "../../i18n/context.js";
 import { copy } from "../../design/copy.js";
+import { dayPartOf } from "./greeting.js";
 import type { HomeProps } from "./types.js";
 import styles from "./HomeScreen.module.css";
 
@@ -15,6 +16,7 @@ export function HomeScreen(props: HomeProps) {
   const { t, locale } = useI18n();
   const text = copy(locale);
   const signedIn = props.displayName !== null;
+  const greeting = t(`home.greeting.${dayPartOf(props.hour)}`);
   const firstName = props.displayName?.split(/\s+/)[0] ?? "";
   const watching = props.friends.filter((friend) => friend.roomId).length;
   const subtitle = !signedIn
@@ -28,7 +30,10 @@ export function HomeScreen(props: HomeProps) {
       <div className={styles.main}>
         <div className={styles.top}>
           <header className={styles.greeting}>
-            <h1 className={styles.title}>{signedIn ? `${text.evening}, ${firstName}` : text.evening}</h1>
+            <div className={styles.titleRow}>
+              <h1 className={styles.title}>{signedIn ? `${greeting}, ${firstName}` : greeting}</h1>
+              {props.splash ? <p className={styles.splash} data-testid="home-splash">{props.splash}</p> : null}
+            </div>
             <p className={styles.subtitle}>{subtitle}</p>
           </header>
           <div className={styles.stats}><StatsStrip stats={props.stats} ready={props.statsReady} /></div>

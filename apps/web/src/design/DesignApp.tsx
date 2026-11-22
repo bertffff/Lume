@@ -5,6 +5,8 @@ import { AppHeader } from "../shell/AppHeader.js";
 import { BottomNav } from "../shell/BottomNav.js";
 import { HomeScreen } from "../screens/home/HomeScreen.js";
 import type { HomeFriend, HomeProps, HomeResume } from "../screens/home/types.js";
+import { dayPartOf } from "../screens/home/greeting.js";
+import { pickSplash, splashes } from "../i18n/splashes.js";
 import { detectSource, formatRoomCode, parseRoomCode, roomPresets, type RoomPresetId } from "@lume/contracts";
 import { api, apiUrl, ClientError } from "../api/client.js";
 import { useI18n } from "../i18n/context.js";
@@ -99,6 +101,9 @@ export function DesignApp({
   const webApp = useMemo(() => readTelegramWebApp(), []);
   const { style, mode, setStyle, setMode, saveAppearance } = useAppearance(session);
   const [name, setName] = useState("");
+  // One greeting and one splash per visit: re-renders must not reshuffle them.
+  const [visitHour] = useState(() => new Date().getHours());
+  const [visitSplash] = useState(() => pickSplash(locale, dayPartOf(new Date().getHours()), (session?.user.displayName ?? "").split(/\s+/)[0] ?? ""));
   const [code, setCode] = useState("");
   const [codeInvalid, setCodeInvalid] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -357,6 +362,8 @@ export function DesignApp({
     : shot ? { title: shotRooms[0]?.title ?? "", positionMs: 4_364_000, durationMs: 7_390_000, posterUrl: null } : null;
   const homeProps: HomeProps = {
     displayName: session?.user.displayName ?? null,
+    hour: shot ? 20 : visitHour,
+    splash: shot ? (splashes[locale][0]?.text ?? null) : visitSplash,
     friends: homeFriends,
     resume: homeResume,
     resuming,
@@ -445,7 +452,8 @@ export function DesignApp({
           onOpen={(item) => { if (!session) { go("/auth"); return; } void api.joinRoom(session.accessToken, item.code).then((result) => onOpen(result.room.id)); }}
         />
       ) : null}
-      {(homeVisible || view === "onboarding") && style !== "gruvbox" ? <HomeScreen {...homeProps} /> : null}
+      {/* On phones the onboarding card is laid out in the page flow, so the home behind it is desktop-only. */}
+      {(homeVisible || (view === "onboarding" && !narrow)) && style !== "gruvbox" ? <HomeScreen {...homeProps} /> : null}
       {view !== "home" && view !== "room" ? (
         <Page title={view} onClose={() => go("/")}>
           {view === "search" ? (

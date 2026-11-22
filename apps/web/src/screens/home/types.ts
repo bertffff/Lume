@@ -30,6 +30,10 @@ export interface HomeStats {
 
 export interface HomeProps {
   displayName: string | null;
+  /** Local hour 0–23: picks the greeting. Fixtures pass a fixed value so screenshots stay stable. */
+  hour: number;
+  /** Short joke next to the greeting; null hides it. */
+  splash: string | null;
   friends: readonly HomeFriend[];
   resume: HomeResume | null;
   resuming: boolean;

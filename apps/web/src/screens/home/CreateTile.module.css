@@ -1,8 +1,9 @@
 .tile {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: var(--ds-space-6);
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--ds-space-4);
   width: 100%;
   min-height: 208px;
   font: inherit;
@@ -16,6 +17,11 @@
   height: var(--ds-control-lg);
   border-radius: var(--ds-radius-control);
   background: color-mix(in srgb, var(--ds-text-on-accent) 14%, transparent);
+  transition: transform var(--ds-dur-base) var(--ds-ease-emphasized);
+}
+
+.tile:hover .plus {
+  transform: rotate(90deg);
 }
 
 .copy {

@@ -7,6 +7,7 @@ const allowed = new Set([
   "src/i18n/en.ts",
   "src/design/copy.ts",
   "src/design/shot-fixtures.ts",
+  "src/i18n/splashes.ts",
 ]);
 // Dev-only specimen sheet; excluded from production builds.
 const allowedPrefixes = ["src/gallery/"];
