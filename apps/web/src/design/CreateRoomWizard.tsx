@@ -4,9 +4,11 @@ import {
 } from "@lume/contracts";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useI18n } from "../i18n/context.js";
-import { Modal } from "../ui/Modal.js";
+import { Button, Chip, Field, Input, Select } from "../ds/index.js";
+import { Modal } from "../ds/index.js";
+import { cx } from "../ds/cx.js";
 import { permissionLabel } from "./copy.js";
-import "./create-room-wizard.css";
+import styles from "./CreateRoomWizard.module.css";
 
 const steps = ["video", "access", "rights"] as const;
 const categories = ["auto", "film", "music", "vlog", "other"] as const satisfies readonly RoomCategorySelection[];
@@ -127,110 +129,103 @@ function OpenWizard({ labels, onClose, onSubmit }: Omit<CreateRoomWizardProps, "
 
   return (
     <Modal
-      open lg title={t("create.title")} testId="create-room-wizard" closeTestId="create-close"
+      open size="lg" title={t("create.title")} testId="create-room-wizard" closeTestId="create-close"
       onClose={() => { if (!pending.current) onClose(); }}
       footer={
-        <div className="create-wizard__actions">
+        <>
           {step === "video" ? (
-            <button type="button" data-testid="create-cancel" onClick={onClose}>{t("common.cancel")}</button>
+            <Button variant="ghost" data-testid="create-cancel" onClick={onClose}>{t("common.cancel")}</Button>
           ) : (
-            <button type="button" data-testid="create-back" disabled={busy} onClick={() => {
+            <Button variant="ghost" data-testid="create-back" disabled={busy} onClick={() => {
               setSubmitError(null);
               setStep(step === "rights" ? "access" : "video");
-            }}>{t("join.back")}</button>
+            }}>{t("join.back")}</Button>
           )}
           {step === "rights" ? (
-            <button type="submit" form={formId} className="btn btn-primary" data-testid="lobby-create" disabled={busy} aria-busy={busy || undefined}>
+            <Button type="submit" form={formId} variant="primary" data-testid="lobby-create" disabled={busy} loading={busy} aria-busy={busy || undefined}>
               {busy ? t("create.creating") : t("create.submit")}
-            </button>
+            </Button>
           ) : (
-            <button type="submit" form={formId} className="btn btn-primary" data-testid="create-next">{t("join.next")}</button>
+            <Button type="submit" form={formId} variant="primary" data-testid="create-next">{t("join.next")}</Button>
           )}
-        </div>
+        </>
       }
     >
-      <form id={formId} className="create-wizard" onSubmit={handleSubmit} noValidate>
-        <ol className="create-wizard__steps" role="list">
+      <form id={formId} className={styles.form} onSubmit={handleSubmit} noValidate>
+        <ol className={styles.steps} role="list">
           {steps.map((item, index) => (
-            <li key={item} aria-current={item === step ? "step" : undefined}>
-              <span aria-hidden="true">{index + 1}</span>{labels.steps[item]}
+            <li key={item} className={styles.step} aria-current={item === step ? "step" : undefined}>
+              <span className={styles.num} aria-hidden="true">{index + 1}</span>{labels.steps[item]}
             </li>
           ))}
         </ol>
-        <h3 tabIndex={-1} ref={stepHeading} data-testid={`create-step-${step}`}>{labels.steps[step]}</h3>
+        <h3 className={styles.heading} tabIndex={-1} ref={stepHeading} data-testid={`create-step-${step}`}>{labels.steps[step]}</h3>
         {step === "video" && (
           <>
-            <fieldset>
-              <legend>{t("create.preset")}</legend>
-              <div className="create-wizard__presets" data-testid="create-presets">
+            <fieldset className={styles.fieldset}>
+              <legend className={styles.legend}>{t("create.preset")}</legend>
+              <div className={styles.presets} data-testid="create-presets">
                 {roomPresets.map(({ id }) => (
-                  <button type="button" key={id} aria-pressed={draft.preset === id} data-testid={`create-preset-${id}`} onClick={() => selectPreset(id)}>
+                  <Chip key={id} selected={draft.preset === id} data-testid={`create-preset-${id}`} onClick={() => selectPreset(id)}>
                     {labels.presetOptions[id].name}
-                  </button>
+                  </Chip>
                 ))}
               </div>
               {preset && (
-                <p className="create-wizard__hint" data-testid="create-preset-summary" data-max={preset.maxMembers} data-slow={preset.slowModeSeconds} data-public={preset.isPublic}>
+                <p className={styles.hint} data-testid="create-preset-summary" data-max={preset.maxMembers} data-slow={preset.slowModeSeconds} data-public={preset.isPublic}>
                   {labels.presetOptions[preset.id].hint}
                 </p>
               )}
             </fieldset>
-            <div className="create-wizard__field">
-              <label htmlFor={`${formId}-title`}>{t("create.roomName")}</label>
-              <input
-                ref={titleInput} id={`${formId}-title`} data-testid="lobby-title" required value={draft.title}
-                placeholder={t("create.namePlaceholder")} aria-invalid={invalid.title}
-                aria-describedby={invalid.title ? `${formId}-title-error` : undefined}
+            <Field label={t("create.roomName")} error={invalid.title ? labels.invalidTitle : undefined}>
+              <Input
+                ref={titleInput} data-testid="lobby-title" required value={draft.title}
+                placeholder={t("create.namePlaceholder")}
                 onChange={(event) => updateDetail("title", event.target.value)}
               />
-              {invalid.title && <p id={`${formId}-title-error`} role="alert">{labels.invalidTitle}</p>}
-            </div>
-            <div className="create-wizard__field">
-              <label htmlFor={`${formId}-video`}>{labels.videoUrl}</label>
-              <input
-                ref={videoInput} id={`${formId}-video`} data-testid="create-video-url" type="url" value={draft.videoUrl}
-                aria-invalid={invalid.videoUrl} aria-describedby={invalid.videoUrl ? `${formId}-video-error` : undefined}
+            </Field>
+            <Field label={labels.videoUrl} error={invalid.videoUrl ? labels.invalidVideoUrl : undefined}>
+              <Input
+                ref={videoInput} data-testid="create-video-url" type="url" value={draft.videoUrl}
                 onChange={(event) => updateDetail("videoUrl", event.target.value)}
               />
-              {invalid.videoUrl && <p id={`${formId}-video-error`} role="alert">{labels.invalidVideoUrl}</p>}
-            </div>
-            <div className="create-wizard__field">
-              <label htmlFor={`${formId}-category`}>{labels.category}</label>
-              <select
-                id={`${formId}-category`} data-testid="create-category" value={draft.categorySelection}
+            </Field>
+            <Field label={labels.category}>
+              <Select
+                data-testid="create-category" value={draft.categorySelection}
                 onChange={(event) => {
                   const selected = categories.find((category) => category === event.target.value);
                   if (selected) updateDraft({ categorySelection: selected });
                 }}
               >
                 {categories.map((category) => <option key={category} value={category}>{labels.categories[category]}</option>)}
-              </select>
-            </div>
+              </Select>
+            </Field>
           </>
         )}
         {step === "access" && (
-          <fieldset>
-            <legend>{t("create.who")}</legend>
-            <div className="create-wizard__choices">
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>{t("create.who")}</legend>
+            <div className={styles.choices}>
               {(["byCode", "public"] as const).map((access) => (
-                <label className="create-wizard__choice" key={access}>
+                <label className={cx(styles.choice, draft.isPublic === (access === "public") && styles.on)} key={access}>
                   <input
                     type="radio" name="access" data-testid={`create-access-${access}`} aria-labelledby={`${formId}-${access}-label`} aria-describedby={`${formId}-${access}-hint`}
                     checked={draft.isPublic === (access === "public")} onChange={() => updateDraft({ isPublic: access === "public" })}
                   />
-                  <span id={`${formId}-${access}-label`}>{t(`create.${access}`)}</span>
-                  <small id={`${formId}-${access}-hint`}>{t(`create.${access}Hint`)}</small>
+                  <span className={styles.choiceName} id={`${formId}-${access}-label`}>{t(`create.${access}`)}</span>
+                  <small className={styles.choiceHint} id={`${formId}-${access}-hint`}>{t(`create.${access}Hint`)}</small>
                 </label>
               ))}
             </div>
           </fieldset>
         )}
         {step === "rights" && (
-          <fieldset disabled={busy}>
-            <legend>{t("create.rights")}</legend>
-            <div className="create-wizard__choices" data-testid="create-preset-rights">
+          <fieldset className={styles.fieldset} disabled={busy}>
+            <legend className={styles.legend}>{t("create.rights")}</legend>
+            <div className={styles.choices} data-testid="create-preset-rights">
               {viewerPermissionKeys.map((key) => (
-                <label className="create-wizard__choice" key={key}>
+                <label className={cx(styles.choice, draft.defaults[key] && styles.on)} key={key}>
                   <input
                     type="checkbox" data-testid={`create-permission-${key}`} checked={draft.defaults[key]}
                     onChange={(event) => updateDraft({ defaults: { ...draft.defaults, [key]: event.target.checked } })}
@@ -241,7 +236,7 @@ function OpenWizard({ labels, onClose, onSubmit }: Omit<CreateRoomWizardProps, "
             </div>
           </fieldset>
         )}
-        {submitError && <p role="alert">{submitError}</p>}
+        {submitError && <p className={styles.error} role="alert">{submitError}</p>}
       </form>
     </Modal>
   );

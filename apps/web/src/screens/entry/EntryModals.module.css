@@ -1,0 +1,26 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+}
+
+.lead {
+  margin: 0;
+  color: var(--ds-text-secondary);
+  font: var(--ds-fw-regular) var(--ds-fs-small) / var(--ds-lh-small) var(--ds-font-text);
+}
+
+.title {
+  margin: 0;
+  font: var(--ds-fw-bold) var(--ds-fs-title) / var(--ds-lh-title) var(--ds-font-display);
+}
+
+.glyph {
+  display: grid;
+  place-items: center;
+  width: var(--ds-control-lg);
+  height: var(--ds-control-lg);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent-text);
+}
